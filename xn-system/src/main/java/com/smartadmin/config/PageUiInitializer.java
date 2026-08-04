@@ -44,6 +44,23 @@ public class PageUiInitializer implements CommandLineRunner {
         ensureMineMessagesConfig();
         ensureSecurityConfig();
         ensurePermissionContentConfig();
+        ensureCodegenConfig();
+    }
+
+    private void ensureCodegenConfig() {
+        if (pageUiConfigRepository.findByRoutePath("/system/codegen").isPresent()) {
+            return;
+        }
+        SysPageUiConfig config = new SysPageUiConfig();
+        config.setRoutePath("/system/codegen");
+        config.setBuiltIn(true);
+        config.setSearchConfig("""
+                [
+                  {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索表名/备注"},
+                  {"label":"系统表","prop":"includeSys","type":"select","placeholder":"是否包含","options":[{"label":"是","value":"true"},{"label":"否","value":"false"}]}
+                ]
+                """);
+        pageUiConfigRepository.save(config);
     }
 
     private void ensureOnlineConfig() {

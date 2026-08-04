@@ -63,6 +63,7 @@ public class RbacInitializer implements CommandLineRunner {
         ensureJobPermissions();
         ensureJobLogPermissions();
         ensureApiDocsPermissions();
+        ensureCodegenPermissions();
         removeLegacyPermissionIfEmpty("menu:system:logs");
         ensureRoleDataScopes();
         // 启动补齐权限后刷新接口注册表，避免新 API 未登记被守卫拦截
@@ -556,6 +557,24 @@ public class RbacInitializer implements CommandLineRunner {
         Permission menu = ensureMenuPermission("menu:system:api-docs", "接口文档", "/system/api-docs", tools, 4);
         upsertButton("api-docs:view", "查看", menu, 1);
         permissionRepository.findByCode("api-docs:view").ifPresent(this::grantToPrivilegedRoles);
+    }
+
+    /** 表驱动代码生成 */
+    private void ensureCodegenPermissions() {
+        Permission tools = permissionRepository.findByCode("menu:system:tools")
+                .or(() -> permissionRepository.findByCode("menu:system"))
+                .orElse(null);
+        Permission menu = ensureMenuPermission("menu:system:codegen", "代码生成", "/system/codegen", tools, 6);
+        // 工具栏刷新 + 行内生成（对齐 xnButton / xnTable 标准列表）
+        upsertButton("codegen:refresh", "刷新", menu, 1);
+        upsertTableButton("codegen:generate", "生成", menu, 2);
+        permissionRepository.findByCode("codegen:refresh").ifPresent(this::grantToPrivilegedRoles);
+        permissionRepository.findByCode("codegen:generate").ifPresent(this::grantToPrivilegedRoles);
+        upsertApi("api:GET:/api/codegen/tables", "代码生成-表列表", "GET", "/api/codegen/tables", menu, 1);
+        upsertApi("api:GET:/api/codegen/tables/{tableName}/columns", "代码生成-表字段", "GET",
+                "/api/codegen/tables/{tableName}/columns", menu, 2);
+        upsertApi("api:POST:/api/codegen/preview", "代码生成-预览", "POST", "/api/codegen/preview", menu, 3);
+        upsertApi("api:POST:/api/codegen/generate", "代码生成-生成", "POST", "/api/codegen/generate", menu, 4);
     }
 
     private Permission ensureMenuPermission(String code, String name, String path, Permission parent, int sort) {

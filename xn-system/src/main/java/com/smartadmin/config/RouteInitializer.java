@@ -8,6 +8,7 @@ import com.smartadmin.entity.SysRoute;
 import com.smartadmin.repository.PermissionRepository;
 import com.smartadmin.repository.RoleRepository;
 import com.smartadmin.repository.SysRouteRepository;
+import com.smartadmin.service.AppCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
@@ -48,6 +49,7 @@ public class RouteInitializer implements CommandLineRunner {
     private final SysRouteRepository routeRepository;
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
+    private final AppCacheService appCacheService;
 
     @Override
     @Transactional
@@ -76,12 +78,15 @@ public class RouteInitializer implements CommandLineRunner {
         ensureApiDocsRoute();
         ensurePostRoute();
         ensureRecycleRoute();
+        ensureCodegenRoute();
         ensureSystemMenuStructure();
         ensureHomeRoute();
         ensureMonitorRoutes();
         ensureRouteIcons();
         ensurePermissionControlDefaults();
         syncMenuPermissionsFromRoutes();
+        // 补齐内置菜单后清菜单/权限缓存，避免 Redis 旧树导致侧栏看不到新菜单
+        appCacheService.evictAllPermissionCaches();
     }
 
     /**
@@ -116,6 +121,7 @@ public class RouteInitializer implements CommandLineRunner {
                 "/system/jobs/logs",
                 "/system/api-docs",
                 "/system/recycle",
+                "/system/codegen",
                 "/messages/mine",
                 "/monitor/redis",
                 "/monitor/sql"
@@ -198,6 +204,7 @@ public class RouteInitializer implements CommandLineRunner {
         moveMenu("/system/jobs/logs", "menu:system:job-log", toolsGroup, 3);
         moveMenu("/system/api-docs", "menu:system:api-docs", toolsGroup, 4);
         moveMenu("/system/recycle", "menu:system:recycle", toolsGroup, 5);
+        moveMenu("/system/codegen", "menu:system:codegen", toolsGroup, 6);
 
         // 个人中心（顶级，不在系统管理下）
         if (personalGroup.getParent() != null) {
@@ -621,6 +628,8 @@ public class RouteInitializer implements CommandLineRunner {
         setIconByPath("/system/files", "FolderOpened");
         setIconByPath("/system/jobs", "Timer");
         setIconByPath("/system/api-docs", "Document");
+        setIconByPath("/system/recycle", "Delete");
+        setIconByPath("/system/codegen", "MagicStick");
         setIconByPath("/system/logs/login", "Position");
         setIconByPath("/system/logs/oper", "Document");
         setIconByPath("/system/logs/exception", "Warning");
@@ -912,6 +921,11 @@ public class RouteInitializer implements CommandLineRunner {
     private void ensureRecycleRoute() {
         ensureMenuRoute("/system/recycle", "system/recycle", "回收站",
                 "Delete", "menu:system:recycle", PERM_TOOLS_GROUP, 5);
+    }
+
+    private void ensureCodegenRoute() {
+        ensureMenuRoute("/system/codegen", "system/codegen", "代码生成",
+                "MagicStick", "menu:system:codegen", PERM_TOOLS_GROUP, 6);
     }
 
     private void ensureMenuRoute(String path, String viewPath, String title, String icon,
