@@ -15,6 +15,7 @@ public class AppConfigVO {
     private UiConfig ui = new UiConfig();
     private StorageConfig storage = new StorageConfig();
     private LogRetentionConfig logRetention = new LogRetentionConfig();
+    private SensitiveDataConfig sensitiveData = new SensitiveDataConfig();
 
     @Getter
     @Setter
@@ -131,5 +132,16 @@ public class AppConfigVO {
         private Integer operDays = 90;
         private Integer exceptionDays = 90;
         private Integer jobDays = 90;
+    }
+
+    /**
+     * 用户敏感字段脱敏：无 {@code user:sensitive:view} 时对勾选字段打码。
+     * fields 仅支持 phone / email。
+     */
+    @Getter
+    @Setter
+    public static class SensitiveDataConfig {
+        private Boolean enabled = true;
+        private java.util.List<String> fields = new java.util.ArrayList<>(java.util.List.of("phone", "email"));
     }
 }

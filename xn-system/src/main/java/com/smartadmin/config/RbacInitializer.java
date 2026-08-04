@@ -1601,8 +1601,11 @@ public class RbacInitializer implements CommandLineRunner {
         if (menuUserForImport != null) {
             upsertButton("user:import", "导入", menuUserForImport, 5);
             upsertButton("user:export", "导出", menuUserForImport, 6);
+            // 能力型按钮：出现在「角色权限 → 用户管理 → 按钮权限」，不进用户页工具栏
+            upsertCapabilityButton("user:sensitive:view", "查看敏感信息", menuUserForImport, 7);
             permissionRepository.findByCode("user:import").ifPresent(this::grantToPrivilegedRoles);
             permissionRepository.findByCode("user:export").ifPresent(this::grantToPrivilegedRoles);
+            permissionRepository.findByCode("user:sensitive:view").ifPresent(this::grantToPrivilegedRoles);
         }
         ensureMenuCrudButtons("menu:system:role", "role", true, false);
         ensureMenuCrudButtons("menu:system:route", "route", false, true);
@@ -1666,6 +1669,37 @@ public class RbacInitializer implements CommandLineRunner {
         permission.setParent(parent);
         permission.setType(PermissionType.BUTTON);
         applyButtonMeta(permission, code);
+        permissionRepository.save(permission);
+    }
+
+    /** 仅角色分配用的能力权限：BUTTON 类型便于勾选，action=capability 不进工具栏 */
+    private void upsertCapabilityButton(String code, String name, Permission parent, int sort) {
+        Permission permission = permissionRepository.findByCode(code).orElse(null);
+        if (permission == null) {
+            Permission p = new Permission();
+            p.setCode(code);
+            p.setName(name);
+            p.setType(PermissionType.BUTTON);
+            p.setParent(parent);
+            p.setSort(sort);
+            p.setBuiltIn(true);
+            p.setAction("capability");
+            p.setIcon(null);
+            p.setButtonColor("primary");
+            p.setMethod(null);
+            p.setPath(null);
+            permissionRepository.save(p);
+            return;
+        }
+        permission.setName(name);
+        permission.setSort(sort);
+        permission.setParent(parent);
+        permission.setType(PermissionType.BUTTON);
+        permission.setAction("capability");
+        permission.setIcon(null);
+        permission.setButtonColor("primary");
+        permission.setMethod(null);
+        permission.setPath(null);
         permissionRepository.save(permission);
     }
 

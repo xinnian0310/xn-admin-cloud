@@ -15,6 +15,7 @@ import com.smartadmin.repository.SysPostRepository;
 import com.smartadmin.repository.SysUnitRepository;
 import com.smartadmin.repository.UserRepository;
 import com.smartadmin.util.ExcelExportUtil;
+import com.smartadmin.util.SensitiveDataUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +47,7 @@ public class UserService {
     private final AppCacheService appCacheService;
     private final RecycleService recycleService;
     private final PasswordPolicyService passwordPolicyService;
+    private final AppConfigService appConfigService;
 
     public PageResult<UserVO> list(int page, int size, String keyword, Long roleId, Long unitId) {
         rbacService.checkPermission("user:view");
@@ -256,8 +258,13 @@ public class UserService {
     private void applyRequest(User user, UserRequest request, boolean isCreate) {
         user.setUsername(request.getUsername());
         user.setNickname(request.getNickname());
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
+        // 无敏感查看权限时接口返回掩码；更新时跳过含 * 的值，避免把打码写回库
+        if (isCreate || !SensitiveDataUtil.isMasked(request.getEmail())) {
+            user.setEmail(request.getEmail());
+        }
+        if (isCreate || !SensitiveDataUtil.isMasked(request.getPhone())) {
+            user.setPhone(request.getPhone());
+        }
         user.setStatus(request.getStatus() != null ? request.getStatus() : 1);
         List<Long> roleIds = request.getRoleIds() != null ? request.getRoleIds() : List.of();
         if (roleIds.isEmpty()) {
@@ -317,8 +324,8 @@ public class UserService {
                     return List.of(
                             nullToEmpty(u.getUsername()),
                             nullToEmpty(u.getNickname()),
-                            nullToEmpty(u.getEmail()),
-                            nullToEmpty(u.getPhone()),
+                            nullToEmpty(vo.getEmail()),
+                            nullToEmpty(vo.getPhone()),
                             nullToEmpty(vo.getUnitName()),
                             nullToEmpty(vo.getPostName()),
                             roles,
@@ -364,6 +371,34 @@ public class UserService {
         } else {
             vo.fillUnitRoles(List.of());
         }
+        applySensitiveMask(vo);
         return vo;
+    }
+
+    /** 无 {@code user:sensitive:view} 时，按系统配置对勾选字段打码 */
+    private void applySensitiveMask(UserVO vo) {
+        if (rbacService.hasPermission("user:sensitive:view")) {
+            return;
+        }
+        var cfg = appConfigService.resolveSensitiveData();
+        if (cfg == null || Boolean.FALSE.equals(cfg.getEnabled())) {
+            return;
+        }
+        var fields = cfg.getFields();
+        if (fields == null || fields.isEmpty()) {
+            return;
+        }
+        boolean masked = false;
+        if (fields.contains("phone")) {
+            vo.setPhone(SensitiveDataUtil.maskPhone(vo.getPhone()));
+            masked = true;
+        }
+        if (fields.contains("email")) {
+            vo.setEmail(SensitiveDataUtil.maskEmail(vo.getEmail()));
+            masked = true;
+        }
+        if (masked) {
+            vo.setSensitiveMasked(true);
+        }
     }
 }

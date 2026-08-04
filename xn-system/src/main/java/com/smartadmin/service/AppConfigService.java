@@ -127,8 +127,39 @@ public class AppConfigService {
         if (vo.getLogRetention() == null) {
             vo.setLogRetention(new AppConfigVO.LogRetentionConfig());
         }
+        vo.setSensitiveData(normalizeSensitiveData(vo.getSensitiveData()));
         return vo;
     }
+
+    /** 供业务读取脱敏策略（走缓存公开配置） */
+    public AppConfigVO.SensitiveDataConfig resolveSensitiveData() {
+        return normalize(getPublic()).getSensitiveData();
+    }
+
+    private AppConfigVO.SensitiveDataConfig normalizeSensitiveData(AppConfigVO.SensitiveDataConfig cfg) {
+        if (cfg == null) {
+            cfg = new AppConfigVO.SensitiveDataConfig();
+        }
+        if (cfg.getEnabled() == null) {
+            cfg.setEnabled(true);
+        }
+        if (cfg.getFields() == null || cfg.getFields().isEmpty()) {
+            cfg.setFields(new java.util.ArrayList<>(java.util.List.of("phone", "email")));
+        } else {
+            java.util.List<String> cleaned = cfg.getFields().stream()
+                    .filter(f -> f != null && !f.isBlank())
+                    .map(f -> f.trim().toLowerCase())
+                    .filter(ALLOWED_SENSITIVE_FIELDS::contains)
+                    .distinct()
+                    .toList();
+            cfg.setFields(new java.util.ArrayList<>(cleaned.isEmpty()
+                    ? java.util.List.of("phone", "email")
+                    : cleaned));
+        }
+        return cfg;
+    }
+
+    private static final java.util.Set<String> ALLOWED_SENSITIVE_FIELDS = java.util.Set.of("phone", "email");
 
     private void validate(AppConfigVO vo) {
         if (vo.getApp() == null || !StringUtils.hasText(vo.getApp().getName())) {
@@ -157,6 +188,18 @@ public class AppConfigService {
             validateRetentionDays(vo.getLogRetention().getExceptionDays(), "异常日志保留天数");
             validateRetentionDays(vo.getLogRetention().getJobDays(), "任务日志保留天数");
         }
+        if (vo.getSensitiveData() != null && vo.getSensitiveData().getFields() != null) {
+            for (String field : vo.getSensitiveData().getFields()) {
+                if (field == null || field.isBlank()) {
+                    continue;
+                }
+                if (!ALLOWED_SENSITIVE_FIELDS.contains(field.trim().toLowerCase())) {
+                    throw new BusinessException("不支持的敏感字段: " + field + "（仅支持 phone、email）");
+                }
+            }
+        }
+        // 写入前再规范化
+        vo.setSensitiveData(normalizeSensitiveData(vo.getSensitiveData()));
     }
 
     private void validateRetentionDays(Integer days, String label) {
