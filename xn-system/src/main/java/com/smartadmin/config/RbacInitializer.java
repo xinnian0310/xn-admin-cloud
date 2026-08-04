@@ -42,6 +42,7 @@ public class RbacInitializer implements CommandLineRunner {
         ensurePermissionMenuRenamed();
         ensurePermissionContentMenu();
         ensureTableColumnPermissions();
+        ensureUserUiConfigPermissions();
         ensurePageApiPermissions();
         ensureRouteCodegenPermissions();
         ensureNoticePermissions();
@@ -360,13 +361,6 @@ public class RbacInitializer implements CommandLineRunner {
                 "/api/login-page-configs/batch-delete",
                 menu,
                 7);
-        upsertApi(
-                "api:POST:/api/login-page-configs/upload",
-                "上传登录页背景图",
-                "POST",
-                "/api/login-page-configs/upload",
-                menu,
-                8);
     }
 
     /** 登录日志：只读 + 删除/清空/导出，挂在「日志管理」下 */
@@ -1476,6 +1470,27 @@ public class RbacInitializer implements CommandLineRunner {
                 "/api/table-columns",
                 menuDashboard,
                 6);
+        upsertApi(
+                "api:GET:/api/user-ui-config",
+                "个人布局配置查询",
+                "GET",
+                "/api/user-ui-config",
+                menuDashboard,
+                12);
+        upsertApi(
+                "api:PUT:/api/user-ui-config",
+                "个人布局配置保存",
+                "PUT",
+                "/api/user-ui-config",
+                menuDashboard,
+                13);
+        upsertApi(
+                "api:DELETE:/api/user-ui-config",
+                "个人布局配置重置",
+                "DELETE",
+                "/api/user-ui-config",
+                menuDashboard,
+                14);
         upsertApi("api:PUT:/api/auth/me", "更新个人信息", "PUT", "/api/auth/me", menuDashboard, 7);
         upsertApi(
                 "api:POST:/api/auth/refresh",
@@ -1514,6 +1529,9 @@ public class RbacInitializer implements CommandLineRunner {
                         "api:GET:/api/page-ui",
                         "api:GET:/api/table-columns",
                         "api:PUT:/api/table-columns",
+                        "api:GET:/api/user-ui-config",
+                        "api:PUT:/api/user-ui-config",
+                        "api:DELETE:/api/user-ui-config",
                         "api:PUT:/api/auth/me",
                         "api:POST:/api/auth/refresh",
                         "api:GET:/api/roles/options",
@@ -1746,6 +1764,42 @@ public class RbacInitializer implements CommandLineRunner {
         permissionRepository
                 .findByCode("api:PUT:/api/table-columns")
                 .ifPresent(this::grantToPrivilegedRoles);
+    }
+
+    /** 个人布局 / 字号偏好（登录用户均可读写自己的配置） */
+    private void ensureUserUiConfigPermissions() {
+        Permission menuDashboard = permissionRepository.findByCode("menu:dashboard").orElse(null);
+        if (menuDashboard == null) {
+            return;
+        }
+        saveApiStandalone(
+                "api:GET:/api/user-ui-config",
+                "个人布局配置查询",
+                "GET",
+                "/api/user-ui-config",
+                menuDashboard,
+                12);
+        saveApiStandalone(
+                "api:PUT:/api/user-ui-config",
+                "个人布局配置保存",
+                "PUT",
+                "/api/user-ui-config",
+                menuDashboard,
+                13);
+        saveApiStandalone(
+                "api:DELETE:/api/user-ui-config",
+                "个人布局配置重置",
+                "DELETE",
+                "/api/user-ui-config",
+                menuDashboard,
+                14);
+        for (String code :
+                List.of(
+                        "api:GET:/api/user-ui-config",
+                        "api:PUT:/api/user-ui-config",
+                        "api:DELETE:/api/user-ui-config")) {
+            grantApiToAllRoles(code);
+        }
     }
 
     private void grantToPrivilegedRoles(Permission permission) {
@@ -2215,21 +2269,32 @@ public class RbacInitializer implements CommandLineRunner {
                         });
     }
 
-    /** 种子账号（幂等校正用户名大小写 / 密码 / 角色）： SuperAdmin / SuperAdmin → 超级管理员；admin / admin → 管理员。 */
+    /** 种子账号（幂等校正用户名大小写 / 角色；密码仅在新建时写入默认值）： SuperAdmin → 超级管理员；admin → 管理员。 */
     private void ensureSeedAccounts() {
         Role superAdmin = roleRepository.findByCode("SUPER_ADMIN").orElse(null);
         Role adminRole = roleRepository.findByCode("ADMIN").orElse(null);
 
-        // 旧超管用户名：SUPER_ADMIN / superadmin 等 → SuperAdmin
+        // 旧超管用户名：SUPER_ADMIN / superadmin 等 → SuperAdmin（不预置邮箱/手机号）
         normalizeSeedUser(
                 List.of("SuperAdmin", "SUPER_ADMIN", "superadmin", "superAdmin", "SUPERADMIN"),
                 "SuperAdmin",
                 "SuperAdmin",
                 "超级管理员",
-                "superadmin@smartadmin.com",
-                "13800000000",
+                null,
+                null,
                 "ADMIN",
                 superAdmin);
+        // 已存在超管账号：清空预置邮箱/手机号
+        userRepository
+                .findByUsernameIgnoreCase("SuperAdmin")
+                .ifPresent(
+                        user -> {
+                            if (user.getEmail() != null || user.getPhone() != null) {
+                                user.setEmail(null);
+                                user.setPhone(null);
+                                userRepository.save(user);
+                            }
+                        });
 
         // 若仍无超管账号，且旧 admin 挂着 SUPER_ADMIN 角色，则升迁并改名
         if (superAdmin != null && userRepository.findByUsernameIgnoreCase("SuperAdmin").isEmpty()) {
@@ -2249,9 +2314,8 @@ public class RbacInitializer implements CommandLineRunner {
                                 if (wasSuper) {
                                     legacy.setUsername("SuperAdmin");
                                     legacy.setNickname("超级管理员");
-                                    legacy.setPassword(passwordEncoder.encode("SuperAdmin"));
-                                    legacy.setEmail("superadmin@smartadmin.com");
-                                    legacy.setPhone("13800000000");
+                                    legacy.setEmail(null);
+                                    legacy.setPhone(null);
                                     legacy.setStatus(1);
                                     legacy.setRoles(new HashSet<>(Set.of(superAdmin)));
                                     legacy.setRole("ADMIN");
@@ -2269,7 +2333,6 @@ public class RbacInitializer implements CommandLineRunner {
                                     && adminRole != null) {
                                 legacy.setUsername("admin");
                                 legacy.setNickname("管理员");
-                                legacy.setPassword(passwordEncoder.encode("admin"));
                                 legacy.setEmail("admin@smartadmin.com");
                                 legacy.setPhone("13800000001");
                                 legacy.setStatus(1);
@@ -2295,7 +2358,7 @@ public class RbacInitializer implements CommandLineRunner {
                 adminRole);
     }
 
-    /** 找到任一别名用户并校正为标准用户名/密码/角色；不存在则新建 */
+    /** 找到任一别名用户并校正为标准用户名/角色；不存在则新建（含默认密码）。已存在账号不覆盖密码。 */
     private void normalizeSeedUser(
             List<String> aliases,
             String username,
@@ -2342,10 +2405,7 @@ public class RbacInitializer implements CommandLineRunner {
             user.setStatus(1);
             dirty = true;
         }
-        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            user.setPassword(passwordEncoder.encode(rawPassword));
-            dirty = true;
-        }
+        // 故意不回写密码：运维改密后重启不得被种子逻辑覆盖
         Set<Role> expected = new HashSet<>(Set.of(role));
         Set<String> currentCodes =
                 user.getRoles() == null

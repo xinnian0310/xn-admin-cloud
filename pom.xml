@@ -11,7 +11,7 @@
 
   <groupId>com.smartadmin</groupId>
   <artifactId>xn-admin-cloud</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0.0</version>
   <packaging>pom</packaging>
   <name>xn-admin-cloud</name>
   <description>xn-admin 微服务后端（gateway + system / file / log / job）</description>

@@ -184,6 +184,32 @@ public class AppConfigService {
                 throw new BusinessException("布局模式无效");
             }
         }
+        if (vo.getUi() != null) {
+            if (vo.getUi().getFontSize() != null) {
+                vo.getUi()
+                        .getFontSize()
+                        .setSidebar(
+                                normalizeRequiredPx(vo.getUi().getFontSize().getSidebar(), "侧栏字号"));
+                vo.getUi()
+                        .getFontSize()
+                        .setHeader(
+                                normalizeRequiredPx(vo.getUi().getFontSize().getHeader(), "顶栏字号"));
+                vo.getUi()
+                        .getFontSize()
+                        .setTagsView(
+                                normalizeRequiredPx(
+                                        vo.getUi().getFontSize().getTagsView(), "标签栏字号"));
+                vo.getUi()
+                        .getFontSize()
+                        .setMain(normalizeRequiredPx(vo.getUi().getFontSize().getMain(), "正文字号"));
+            }
+            if (vo.getUi().getTagsView() != null) {
+                vo.getUi()
+                        .getTagsView()
+                        .setHeight(
+                                normalizeRequiredPx(vo.getUi().getTagsView().getHeight(), "标签栏高度"));
+            }
+        }
         if (vo.getUi() != null && vo.getUi().getElementPlus() != null) {
             String locale = vo.getUi().getElementPlus().getLocale();
             if (StringUtils.hasText(locale) && !Set.of("zh-cn", "en").contains(locale)) {
@@ -221,5 +247,17 @@ public class AppConfigService {
         if (days < 0 || days > 3650) {
             throw new BusinessException(label + "须在 0~3650 之间");
         }
+    }
+
+    /** 系统配置字号/高度：必填正整数，统一为 Npx */
+    private String normalizeRequiredPx(String raw, String label) {
+        if (!StringUtils.hasText(raw)) {
+            throw new BusinessException(label + "不能为空");
+        }
+        String text = raw.trim().toLowerCase().replace("px", "").trim();
+        if (!text.matches("^[1-9]\\d*$")) {
+            throw new BusinessException(label + "须为正整数（单位 px）");
+        }
+        return text + "px";
     }
 }

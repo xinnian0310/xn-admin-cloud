@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 按当前前端登录页默认表现填充「登录页设置」数据。
  *
- * <p>当前登录页：默认渐变背景、登录框居中、不开启验证； 标题/副标题由前端 appConfig（心念后台管理系统 / 心念科技）展示。
+ * <p>登录页布局由前端固定；本配置仅管理验证码开关与类型。
  */
 @Component
 @Order(7)
@@ -37,7 +37,7 @@ public class LoginPageConfigInitializer implements CommandLineRunner {
         // Hibernate ddl-auto 不会把已有 NOT NULL 改成可空，启动时兼容修正
         relaxNullableColumns();
 
-        // 1) 当前登录页：渐变背景 + 默认居中 + 无验证 → 启用
+        // 1) 当前登录页：不开启验证 → 启用
         SysLoginPageConfig current = findOrCreate(NAME_CURRENT, LEGACY_DEFAULT);
         current.setName(NAME_CURRENT);
         current.setBackgroundUrl(null);
@@ -46,21 +46,21 @@ public class LoginPageConfigInitializer implements CommandLineRunner {
         current.setBoxY(null);
         current.setCaptchaEnabled(false);
         current.setCaptchaType(null);
-        current.setRemark("与当前登录页一致：默认渐变背景、登录框居中、不开启验证（标题：" + APP_NAME + "）");
+        current.setRemark("与当前登录页一致：不开启验证（标题：" + APP_NAME + "）");
         current.setStatus(1);
         repository.disableAllExcept(null);
         repository.save(current);
 
-        // 2) 备选：右侧 + 图形验证码 → 未启用
+        // 2) 备选：图形验证码 → 未启用
         SysLoginPageConfig secure = findOrCreate(NAME_SECURE, LEGACY_RIGHT);
         secure.setName(NAME_SECURE);
         secure.setBackgroundUrl(null);
         secure.setBackgroundFit("COVER");
-        secure.setBoxX(78.0);
-        secure.setBoxY(50.0);
+        secure.setBoxX(null);
+        secure.setBoxY(null);
         secure.setCaptchaEnabled(true);
         secure.setCaptchaType("IMAGE");
-        secure.setRemark("备选方案：登录框靠右，开启图形验证码（默认未启用）");
+        secure.setRemark("备选方案：开启图形验证码（默认未启用）");
         secure.setStatus(0);
         repository.save(secure);
     }

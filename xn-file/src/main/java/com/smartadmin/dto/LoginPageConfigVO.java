@@ -9,10 +9,6 @@ public class LoginPageConfigVO {
 
     private Long id;
     private String name;
-    private String backgroundUrl;
-    private String backgroundFit;
-    private Double boxX;
-    private Double boxY;
     private Boolean captchaEnabled;
     private String captchaType;
     private Integer status;
@@ -24,11 +20,6 @@ public class LoginPageConfigVO {
         LoginPageConfigVO vo = new LoginPageConfigVO();
         vo.setId(entity.getId());
         vo.setName(entity.getName());
-        vo.setBackgroundUrl(entity.getBackgroundUrl());
-        vo.setBackgroundFit(
-                entity.getBackgroundFit() != null ? entity.getBackgroundFit() : "COVER");
-        vo.setBoxX(entity.getBoxX());
-        vo.setBoxY(entity.getBoxY());
         vo.setCaptchaEnabled(entity.getCaptchaEnabled());
         vo.setCaptchaType(entity.getCaptchaType());
         vo.setStatus(entity.getStatus());

@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/login-page-configs")
@@ -87,12 +86,5 @@ public class LoginPageConfigController {
     public ApiResponse<Map<String, Integer>> batchDelete(@Valid @RequestBody IdsRequest request) {
         int count = loginPageConfigService.batchDelete(request.getIds());
         return ApiResponse.success("删除成功", Map.of("count", count));
-    }
-
-    @PostMapping("/upload")
-    @OperLog(title = "登录页设置", businessType = OperBusinessType.OTHER)
-    public ApiResponse<Map<String, String>> upload(@RequestParam("file") MultipartFile file) {
-        String url = loginPageConfigService.uploadBackground(file);
-        return ApiResponse.success("上传成功", Map.of("url", url));
     }
 }

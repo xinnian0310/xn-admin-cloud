@@ -26,10 +26,13 @@ import org.springframework.stereotype.Service;
 public class InfraRestartService {
 
     private static final Set<String> ALLOWED = Set.of("redis", "minio", "nacos", "kkfileview");
+    private static final String RESTART_PERMISSION = "api:POST:/api/monitor/infra/{name}/restart";
 
     private final InfraProperties infraProperties;
+    private final RbacService rbacService;
 
     public Map<String, Object> restart(String rawName) {
+        rbacService.checkPermission(RESTART_PERMISSION);
         if (!infraProperties.isRestartEnabled()) {
             throw new BusinessException("基础设施一键重启已关闭（app.infra.restart-enabled=false）");
         }

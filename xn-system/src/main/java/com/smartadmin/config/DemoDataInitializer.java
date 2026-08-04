@@ -20,12 +20,13 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 演示组织树与账号清理：
+ * 演示组织树与账号清理（仅 dev）：
  *
  * <pre>
  * 心念科技
@@ -37,9 +38,10 @@ import org.springframework.transaction.annotation.Transactional;
  *     └── 运维部门
  * </pre>
  *
- * 仅保留超级管理员（SuperAdmin）/ 管理员（admin）账号，其余用户清掉。
+ * 仅保留超级管理员（SuperAdmin）/ 管理员（admin）账号，其余用户清掉。 生产 / 非 dev 环境不会加载，避免误删业务数据。
  */
 @Component
+@Profile("dev")
 @Order(5)
 @RequiredArgsConstructor
 public class DemoDataInitializer implements CommandLineRunner {

@@ -21,8 +21,8 @@ public class AppConfigVO {
         private String name = "心念后台管理系统";
         private String company = "心念科技";
         private String subtitle = "心念科技";
-        private String favicon = "/favicon.svg";
-        private String logo = "/logo.svg";
+        private String favicon = "/xinnian-tech-logo.png";
+        private String logo = "/xinnian-tech-logo.png";
         private Integer logoWidth = 28;
         private Integer logoHeight;
         private String footer = "心念后台管理系统 · 心念科技 · Copyright © 2026";
