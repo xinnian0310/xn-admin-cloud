@@ -8,14 +8,13 @@ import com.smartadmin.entity.SysJob;
 import com.smartadmin.repository.SysJobRepository;
 import com.smartadmin.scheduler.DynamicJobScheduler;
 import com.smartadmin.scheduler.JobMisfirePolicy;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,11 +26,11 @@ public class JobService {
 
     public PageResult<JobVO> list(int page, int size, String keyword, Integer status) {
         rbacService.checkPermission("job:view");
-        Page<SysJob> result = jobRepository.search(
-                StringUtils.hasText(keyword) ? keyword.trim() : "",
-                status,
-                PageRequest.of(page, size)
-        );
+        Page<SysJob> result =
+                jobRepository.search(
+                        StringUtils.hasText(keyword) ? keyword.trim() : "",
+                        status,
+                        PageRequest.of(page, size));
         List<JobVO> records = result.getContent().stream().map(JobVO::from).toList();
         return new PageResult<>(records, result.getTotalElements(), page, size);
     }
@@ -119,7 +118,6 @@ public class JobService {
     }
 
     private SysJob findJob(Long id) {
-        return jobRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("定时任务不存在"));
+        return jobRepository.findById(id).orElseThrow(() -> new BusinessException("定时任务不存在"));
     }
 }

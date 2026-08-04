@@ -1,9 +1,8 @@
 package com.smartadmin.dto;
 
 import com.smartadmin.entity.SysExceptionLog;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class ExceptionLogVO {

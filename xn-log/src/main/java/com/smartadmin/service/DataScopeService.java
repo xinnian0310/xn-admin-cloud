@@ -7,10 +7,6 @@ import com.smartadmin.entity.SysUnit;
 import com.smartadmin.entity.User;
 import com.smartadmin.repository.SysUnitRepository;
 import com.smartadmin.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -19,10 +15,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-/**
- * 解析当前用户的数据权限范围，供业务列表/详情强制过滤。
- */
+/** 解析当前用户的数据权限范围，供业务列表/详情强制过滤。 */
 @Service
 @RequiredArgsConstructor
 public class DataScopeService {
@@ -31,10 +28,9 @@ public class DataScopeService {
     private final SysUnitRepository unitRepository;
     private final UserRepository userRepository;
 
-    /**
-     * 按「创建人/发布人」过滤：ALL 不过滤；SELF 仅本人；UNIT* 仅单位内用户。
-     */
-    public record OwnerFilter(boolean unrestricted, boolean none, Long selfUserId, List<Long> ownerIds) {
+    /** 按「创建人/发布人」过滤：ALL 不过滤；SELF 仅本人；UNIT* 仅单位内用户。 */
+    public record OwnerFilter(
+            boolean unrestricted, boolean none, Long selfUserId, List<Long> ownerIds) {
         public static OwnerFilter ofUnrestricted() {
             return new OwnerFilter(true, false, null, List.of());
         }
@@ -77,12 +73,7 @@ public class DataScopeService {
     }
 
     public record ResolvedScope(
-            DataScope scope,
-            boolean all,
-            boolean selfOnly,
-            Long selfUserId,
-            List<Long> unitIds
-    ) {
+            DataScope scope, boolean all, boolean selfOnly, Long selfUserId, List<Long> unitIds) {
         public static ResolvedScope ofAll(Long selfUserId) {
             return new ResolvedScope(DataScope.ALL, true, false, selfUserId, List.of());
         }
@@ -92,11 +83,13 @@ public class DataScopeService {
         }
 
         public static ResolvedScope ofUnits(DataScope scope, Long selfUserId, List<Long> unitIds) {
-            return new ResolvedScope(scope, false, false, selfUserId, unitIds == null ? List.of() : unitIds);
+            return new ResolvedScope(
+                    scope, false, false, selfUserId, unitIds == null ? List.of() : unitIds);
         }
     }
 
-    public record UnitFilter(boolean unrestricted, boolean selfOnly, boolean none, List<Long> unitIds) {
+    public record UnitFilter(
+            boolean unrestricted, boolean selfOnly, boolean none, List<Long> unitIds) {
         public static UnitFilter ofUnrestricted() {
             return new UnitFilter(true, false, false, List.of());
         }
@@ -257,7 +250,9 @@ public class DataScopeService {
         }
         List<String> names = new ArrayList<>(userRepository.findUsernamesByUnitIdIn(unitIds));
         User me = rbacService.currentUser();
-        if (me != null && StringUtils.hasText(me.getUsername()) && !names.contains(me.getUsername())) {
+        if (me != null
+                && StringUtils.hasText(me.getUsername())
+                && !names.contains(me.getUsername())) {
             names.add(me.getUsername());
         }
         return UsernameFilter.of(names);
@@ -278,14 +273,14 @@ public class DataScopeService {
         if (filter.unrestricted()) {
             return;
         }
-        if (filter.none() || !StringUtils.hasText(username) || !filter.usernames().contains(username)) {
+        if (filter.none()
+                || !StringUtils.hasText(username)
+                || !filter.usernames().contains(username)) {
             throw new BusinessException(403, "无数据权限");
         }
     }
 
-    /**
-     * 当前数据权限范围内、状态启用的用户（公告下发 / 站内信全员发送等）。
-     */
+    /** 当前数据权限范围内、状态启用的用户（公告下发 / 站内信全员发送等）。 */
     public List<User> listAccessibleActiveUsers() {
         List<User> active = userRepository.findByStatus(1);
         ResolvedScope scope = resolveCurrent();
@@ -353,7 +348,9 @@ public class DataScopeService {
             if (unit.getParentId() == null) {
                 continue;
             }
-            childrenMap.computeIfAbsent(unit.getParentId(), k -> new ArrayList<>()).add(unit.getId());
+            childrenMap
+                    .computeIfAbsent(unit.getParentId(), k -> new ArrayList<>())
+                    .add(unit.getId());
         }
         List<Long> result = new ArrayList<>();
         collectIds(unitId, childrenMap, result);
@@ -373,11 +370,14 @@ public class DataScopeService {
             roles.addAll(user.getRoles());
         }
         if (user.getUnit() != null && user.getUnit().getId() != null) {
-            unitRepository.findByIdWithRoles(user.getUnit().getId()).ifPresent(unit -> {
-                if (unit.getRoles() != null) {
-                    roles.addAll(unit.getRoles());
-                }
-            });
+            unitRepository
+                    .findByIdWithRoles(user.getUnit().getId())
+                    .ifPresent(
+                            unit -> {
+                                if (unit.getRoles() != null) {
+                                    roles.addAll(unit.getRoles());
+                                }
+                            });
         }
         if (roles.isEmpty()) {
             return DataScope.UNIT_AND_CHILDREN;

@@ -9,13 +9,6 @@ import com.smartadmin.repository.PermissionRepository;
 import com.smartadmin.repository.RoleRepository;
 import com.smartadmin.repository.SysRouteRepository;
 import com.smartadmin.service.AppCacheService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -23,6 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Component
 @Order(2)
@@ -31,18 +30,25 @@ public class RouteInitializer implements CommandLineRunner {
 
     /** 组织与账号 */
     public static final String PERM_ORG_GROUP = "menu:system:org";
+
     /** 权限与安全（历史码 menu:system:rbac，保留兼容） */
     public static final String PERM_RBAC_GROUP = "menu:system:rbac";
+
     /** 内容运营 */
     public static final String PERM_CONTENT_GROUP = "menu:system:content";
+
     /** 基础数据（字典等） */
     public static final String PERM_BASE_GROUP = "menu:system:base";
+
     /** 系统设置（登录页、系统配置） */
     public static final String PERM_SETTINGS_GROUP = "menu:system:settings";
+
     /** 系统工具（文件、定时任务、接口文档） */
     public static final String PERM_TOOLS_GROUP = "menu:system:tools";
+
     /** 日志管理（登录日志、操作日志），挂在系统监控下 */
     public static final String PERM_LOGS_GROUP = "menu:monitor:logs";
+
     /** 个人中心（顶级目录） */
     public static final String PERM_PERSONAL_GROUP = "menu:personal";
 
@@ -89,43 +95,41 @@ public class RouteInitializer implements CommandLineRunner {
         appCacheService.evictAllPermissionCaches();
     }
 
-    /**
-     * 首次补齐「权限控制」开关：默认关闭；
-     * 用户管理 / 路由管理 / 角色列表 / 权限内容 / 单位 / 公告 开启。
-     */
+    /** 首次补齐「权限控制」开关：默认关闭； 用户管理 / 路由管理 / 角色列表 / 权限内容 / 单位 / 公告 开启。 */
     private void ensurePermissionControlDefaults() {
         List<SysRoute> all = routeRepository.findAll();
-        boolean alreadyConfigured = all.stream().anyMatch(r -> Boolean.TRUE.equals(r.getPermissionControl()));
+        boolean alreadyConfigured =
+                all.stream().anyMatch(r -> Boolean.TRUE.equals(r.getPermissionControl()));
         if (alreadyConfigured) {
             return;
         }
-        Set<String> controlledPaths = Set.of(
-                "/users",
-                "/system/routes",
-                "/system/roles",
-                "/system/units",
-                "/system/posts",
-                "/system/permissions-content",
-                "/system/notices",
-                "/system/dicts",
-                "/system/dicts/data",
-                "/system/login-settings",
-                "/system/config",
-                "/system/security",
-                "/system/logs/login",
-                "/system/logs/oper",
-                "/system/logs/exception",
-                "/system/messages",
-                "/system/files",
-                "/system/jobs",
-                "/system/jobs/logs",
-                "/system/api-docs",
-                "/system/recycle",
-                "/system/codegen",
-                "/messages/mine",
-                "/monitor/redis",
-                "/monitor/sql"
-        );
+        Set<String> controlledPaths =
+                Set.of(
+                        "/users",
+                        "/system/routes",
+                        "/system/roles",
+                        "/system/units",
+                        "/system/posts",
+                        "/system/permissions-content",
+                        "/system/notices",
+                        "/system/dicts",
+                        "/system/dicts/data",
+                        "/system/login-settings",
+                        "/system/config",
+                        "/system/security",
+                        "/system/logs/login",
+                        "/system/logs/oper",
+                        "/system/logs/exception",
+                        "/system/messages",
+                        "/system/files",
+                        "/system/jobs",
+                        "/system/jobs/logs",
+                        "/system/api-docs",
+                        "/system/recycle",
+                        "/system/codegen",
+                        "/messages/mine",
+                        "/monitor/redis",
+                        "/monitor/sql");
         for (SysRoute route : all) {
             if (route.getType() == RouteType.MENU
                     && route.getPath() != null
@@ -138,17 +142,18 @@ public class RouteInitializer implements CommandLineRunner {
 
     /**
      * 系统管理下按业务分组，个人信息移出到顶级「个人中心」。
+     *
      * <pre>
      * 首页
      * 个人中心 → 个人信息 / 我的消息
      * 系统监控 → 在线用户 / 服务监控 / 缓存监控 / SQL监控 / 日志管理
      * 系统管理
- * ├── 组织与账号（用户、单位、岗位）
- * ├── 权限与安全（角色列表、角色权限、权限内容、路由）
- * ├── 内容运营（公告、站内信）
- * ├── 基础数据（字典）
- * ├── 系统设置（登录页、系统配置）
- * └── 系统工具（文件、定时任务、任务日志、接口文档）
+     * ├── 组织与账号（用户、单位、岗位）
+     * ├── 权限与安全（角色列表、角色权限、权限内容、路由）
+     * ├── 内容运营（公告、站内信）
+     * ├── 基础数据（字典）
+     * ├── 系统设置（登录页、系统配置）
+     * └── 系统工具（文件、定时任务、任务日志、接口文档）
      * </pre>
      */
     private void ensureSystemMenuStructure() {
@@ -190,8 +195,15 @@ public class RouteInitializer implements CommandLineRunner {
         // 基础数据
         moveMenu("/system/dicts", "menu:system:dict", baseGroup, 1);
         // 字典数据为隐藏子路由，始终挂在字典管理菜单下
-        routeRepository.findByPath("/system/dicts")
-                .ifPresent(dictRoute -> moveMenu("/system/dicts/data", "menu:system:dict-data", dictRoute, 1));
+        routeRepository
+                .findByPath("/system/dicts")
+                .ifPresent(
+                        dictRoute ->
+                                moveMenu(
+                                        "/system/dicts/data",
+                                        "menu:system:dict-data",
+                                        dictRoute,
+                                        1));
 
         // 系统设置
         moveMenu("/system/login-settings", "menu:system:login-page", settingsGroup, 1);
@@ -217,20 +229,26 @@ public class RouteInitializer implements CommandLineRunner {
         }
         moveMenu("/profile", "menu:profile", personalGroup, 1);
         moveMenu("/messages/mine", "menu:personal:message", personalGroup, 2);
-        routeRepository.findByPath("/profile").ifPresent(route -> {
-            if (Boolean.TRUE.equals(route.getPermissionControl())) {
-                route.setPermissionControl(false);
-                routeRepository.save(route);
-            }
-        });
+        routeRepository
+                .findByPath("/profile")
+                .ifPresent(
+                        route -> {
+                            if (Boolean.TRUE.equals(route.getPermissionControl())) {
+                                route.setPermissionControl(false);
+                                routeRepository.save(route);
+                            }
+                        });
 
         // 一级菜单排序：首页(1) → 个人中心(2) → 系统监控(3) → 系统管理(4)
-        routeRepository.findByPath("/dashboard").ifPresent(route -> {
-            if (route.getSort() == null || route.getSort() != 1) {
-                route.setSort(1);
-                routeRepository.save(route);
-            }
-        });
+        routeRepository
+                .findByPath("/dashboard")
+                .ifPresent(
+                        route -> {
+                            if (route.getSort() == null || route.getSort() != 1) {
+                                route.setSort(1);
+                                routeRepository.save(route);
+                            }
+                        });
         if (system.getSort() == null || system.getSort() != 4) {
             system.setSort(4);
             routeRepository.save(system);
@@ -261,7 +279,8 @@ public class RouteInitializer implements CommandLineRunner {
         return group;
     }
 
-    private SysRoute ensureDir(String permission, String title, String icon, SysRoute parent, int sort) {
+    private SysRoute ensureDir(
+            String permission, String title, String icon, SysRoute parent, int sort) {
         SysRoute existing = findDirByPermission(permission);
         if (existing != null) {
             boolean dirty = false;
@@ -289,29 +308,37 @@ public class RouteInitializer implements CommandLineRunner {
     }
 
     private void moveMenu(String path, String permission, SysRoute parent, int sort) {
-        routeRepository.findByPath(path).ifPresent(route -> {
-            boolean dirty = false;
-            if (permission != null && !permission.equals(route.getPermission())) {
-                route.setPermission(permission);
-                dirty = true;
-            }
-            if (parent != null && (route.getParent() == null || !Objects.equals(route.getParent().getId(), parent.getId()))) {
-                route.setParent(parent);
-                dirty = true;
-            }
-            if (route.getSort() == null || route.getSort() != sort) {
-                route.setSort(sort);
-                dirty = true;
-            }
-            if (dirty) {
-                routeRepository.save(route);
-            }
-        });
+        routeRepository
+                .findByPath(path)
+                .ifPresent(
+                        route -> {
+                            boolean dirty = false;
+                            if (permission != null && !permission.equals(route.getPermission())) {
+                                route.setPermission(permission);
+                                dirty = true;
+                            }
+                            if (parent != null
+                                    && (route.getParent() == null
+                                            || !Objects.equals(
+                                                    route.getParent().getId(), parent.getId()))) {
+                                route.setParent(parent);
+                                dirty = true;
+                            }
+                            if (route.getSort() == null || route.getSort() != sort) {
+                                route.setSort(sort);
+                                dirty = true;
+                            }
+                            if (dirty) {
+                                routeRepository.save(route);
+                            }
+                        });
     }
 
     private void setParentAndSort(SysRoute route, SysRoute parent, int sort) {
         boolean dirty = false;
-        if (parent != null && (route.getParent() == null || !Objects.equals(route.getParent().getId(), parent.getId()))) {
+        if (parent != null
+                && (route.getParent() == null
+                        || !Objects.equals(route.getParent().getId(), parent.getId()))) {
             route.setParent(parent);
             dirty = true;
         }
@@ -337,15 +364,28 @@ public class RouteInitializer implements CommandLineRunner {
             return byCode;
         }
         return routeRepository.findAll().stream()
-                .filter(r -> r.getType() == RouteType.DIR && "menu:system:role".equals(r.getPermission()))
+                .filter(
+                        r ->
+                                r.getType() == RouteType.DIR
+                                        && "menu:system:role".equals(r.getPermission()))
                 .findFirst()
-                .orElseGet(() -> routeRepository.findAll().stream()
-                        .filter(r -> r.getType() == RouteType.DIR
-                                && ("权限管理".equals(r.getTitle())
-                                || "权限与安全".equals(r.getTitle())
-                                || "角色权限".equals(r.getTitle())))
-                        .findFirst()
-                        .orElse(null));
+                .orElseGet(
+                        () ->
+                                routeRepository.findAll().stream()
+                                        .filter(
+                                                r ->
+                                                        r.getType() == RouteType.DIR
+                                                                && ("权限管理".equals(r.getTitle())
+                                                                        || "权限与安全"
+                                                                                .equals(
+                                                                                        r
+                                                                                                .getTitle())
+                                                                        || "角色权限"
+                                                                                .equals(
+                                                                                        r
+                                                                                                .getTitle())))
+                                        .findFirst()
+                                        .orElse(null));
     }
 
     /** 个人信息：挂到个人中心（由 ensureSystemMenuStructure 最终定位） */
@@ -402,20 +442,23 @@ public class RouteInitializer implements CommandLineRunner {
 
     /** 工作台更名为「首页」并换用 HomeFilled 图标 */
     private void ensureHomeRoute() {
-        routeRepository.findByPath("/dashboard").ifPresent(route -> {
-            boolean dirty = false;
-            if (!"首页".equals(route.getTitle())) {
-                route.setTitle("首页");
-                dirty = true;
-            }
-            if (!"HomeFilled".equals(route.getIcon())) {
-                route.setIcon("HomeFilled");
-                dirty = true;
-            }
-            if (dirty) {
-                routeRepository.save(route);
-            }
-        });
+        routeRepository
+                .findByPath("/dashboard")
+                .ifPresent(
+                        route -> {
+                            boolean dirty = false;
+                            if (!"首页".equals(route.getTitle())) {
+                                route.setTitle("首页");
+                                dirty = true;
+                            }
+                            if (!"HomeFilled".equals(route.getIcon())) {
+                                route.setIcon("HomeFilled");
+                                dirty = true;
+                            }
+                            if (dirty) {
+                                routeRepository.save(route);
+                            }
+                        });
     }
 
     /** 顶级「系统监控」目录 + 在线用户 / 服务监控 两个子菜单 */
@@ -445,10 +488,32 @@ public class RouteInitializer implements CommandLineRunner {
                 routeRepository.save(monitor);
             }
         }
-        ensureMonitorMenu("/monitor/online", "monitor/online", "在线用户", "Connection", "menu:monitor:online", monitor, 1);
-        ensureMonitorMenu("/monitor/server", "monitor/server", "服务监控", "Cpu", "menu:monitor:server", monitor, 2);
-        ensureMonitorMenu("/monitor/redis", "monitor/redis", "缓存监控", "Coin", "menu:monitor:redis", monitor, 3);
-        ensureMonitorMenu("/monitor/sql", "monitor/sql", "SQL监控", "DataLine", "menu:monitor:sql", monitor, 4);
+        ensureMonitorMenu(
+                "/monitor/online",
+                "monitor/online",
+                "在线用户",
+                "Connection",
+                "menu:monitor:online",
+                monitor,
+                1);
+        ensureMonitorMenu(
+                "/monitor/server",
+                "monitor/server",
+                "服务监控",
+                "Cpu",
+                "menu:monitor:server",
+                monitor,
+                2);
+        ensureMonitorMenu(
+                "/monitor/redis",
+                "monitor/redis",
+                "缓存监控",
+                "Coin",
+                "menu:monitor:redis",
+                monitor,
+                3);
+        ensureMonitorMenu(
+                "/monitor/sql", "monitor/sql", "SQL监控", "DataLine", "menu:monitor:sql", monitor, 4);
 
         // 日志管理挂在系统监控末尾（兼容旧权限码 menu:system:logs）
         SysRoute logsGroup = migrateOrEnsureLogsGroup(monitor);
@@ -476,8 +541,14 @@ public class RouteInitializer implements CommandLineRunner {
         return ensureDir(PERM_LOGS_GROUP, "日志管理", "Document", monitor, 5);
     }
 
-    private void ensureMonitorMenu(String path, String viewPath, String title, String icon,
-                                   String permission, SysRoute parent, int sort) {
+    private void ensureMonitorMenu(
+            String path,
+            String viewPath,
+            String title,
+            String icon,
+            String permission,
+            SysRoute parent,
+            int sort) {
         SysRoute existing = routeRepository.findByPath(path).orElse(null);
         if (existing != null) {
             boolean dirty = false;
@@ -497,8 +568,9 @@ public class RouteInitializer implements CommandLineRunner {
                 existing.setViewPath(viewPath);
                 dirty = true;
             }
-            if (parent != null && (existing.getParent() == null
-                    || !Objects.equals(existing.getParent().getId(), parent.getId()))) {
+            if (parent != null
+                    && (existing.getParent() == null
+                            || !Objects.equals(existing.getParent().getId(), parent.getId()))) {
                 existing.setParent(parent);
                 dirty = true;
             }
@@ -542,10 +614,12 @@ public class RouteInitializer implements CommandLineRunner {
         if (parent == null) {
             parent = findDirByPermission("menu:system");
         }
-        int nextSort = routeRepository.findAll().stream()
-                .mapToInt(r -> r.getSort() == null ? 0 : r.getSort())
-                .max()
-                .orElse(0) + 1;
+        int nextSort =
+                routeRepository.findAll().stream()
+                                .mapToInt(r -> r.getSort() == null ? 0 : r.getSort())
+                                .max()
+                                .orElse(0)
+                        + 1;
 
         SysRoute route = new SysRoute();
         route.setTitle("权限内容");
@@ -568,30 +642,108 @@ public class RouteInitializer implements CommandLineRunner {
         Map<String, SysRoute> map = new LinkedHashMap<>();
         int sort = 0;
 
-        SysRoute dashboard = saveMenu(map, "dashboard", "工作台", "/dashboard", "dashboard", "Odometer", "menu:dashboard", null, ++sort);
+        SysRoute dashboard =
+                saveMenu(
+                        map,
+                        "dashboard",
+                        "工作台",
+                        "/dashboard",
+                        "dashboard",
+                        "Odometer",
+                        "menu:dashboard",
+                        null,
+                        ++sort);
         dashboard.setAffix(true);
         routeRepository.save(dashboard);
 
         SysRoute system = saveDir(map, "system", "系统管理", "Setting", "menu:system", null, ++sort);
-        SysRoute orgGroup = saveDir(map, "org-group", "组织与账号", "OfficeBuilding", PERM_ORG_GROUP, system, 1);
-        SysRoute rbacGroup = saveDir(map, "rbac-group", "权限与安全", "Lock", PERM_RBAC_GROUP, system, 2);
-        SysRoute contentGroup = saveDir(map, "content-group", "内容运营", "Notebook", PERM_CONTENT_GROUP, system, 3);
+        SysRoute orgGroup =
+                saveDir(map, "org-group", "组织与账号", "OfficeBuilding", PERM_ORG_GROUP, system, 1);
+        SysRoute rbacGroup =
+                saveDir(map, "rbac-group", "权限与安全", "Lock", PERM_RBAC_GROUP, system, 2);
+        SysRoute contentGroup =
+                saveDir(map, "content-group", "内容运营", "Notebook", PERM_CONTENT_GROUP, system, 3);
         saveDir(map, "base-group", "基础数据", "Collection", PERM_BASE_GROUP, system, 4);
         saveDir(map, "settings-group", "系统设置", "Tools", PERM_SETTINGS_GROUP, system, 5);
         saveDir(map, "tools-group", "系统工具", "Suitcase", PERM_TOOLS_GROUP, system, 6);
 
         saveMenu(map, "users", "用户管理", "/users", "users", "User", "menu:system:user", orgGroup, 1);
-        saveMenu(map, "units", "单位管理", "/system/units", "system/units", "OfficeBuilding", "menu:system:unit", orgGroup, 2);
+        saveMenu(
+                map,
+                "units",
+                "单位管理",
+                "/system/units",
+                "system/units",
+                "OfficeBuilding",
+                "menu:system:unit",
+                orgGroup,
+                2);
 
-        saveMenu(map, "roles", "角色列表", "/system/roles", "system/roles", "Avatar", "menu:system:role", rbacGroup, 1);
-        saveMenu(map, "permissions", "角色权限", "/system/permissions", "system/permissions", "SetUp", "menu:system:permission", rbacGroup, 2);
-        saveMenu(map, "permission-content", "权限内容", "/system/permissions-content", "system/permissions-content", "Key", "menu:system:permission-content", rbacGroup, 3);
-        saveMenu(map, "routes", "路由管理", "/system/routes", "system/routes", "Guide", "menu:system:route", rbacGroup, 4);
+        saveMenu(
+                map,
+                "roles",
+                "角色列表",
+                "/system/roles",
+                "system/roles",
+                "Avatar",
+                "menu:system:role",
+                rbacGroup,
+                1);
+        saveMenu(
+                map,
+                "permissions",
+                "角色权限",
+                "/system/permissions",
+                "system/permissions",
+                "SetUp",
+                "menu:system:permission",
+                rbacGroup,
+                2);
+        saveMenu(
+                map,
+                "permission-content",
+                "权限内容",
+                "/system/permissions-content",
+                "system/permissions-content",
+                "Key",
+                "menu:system:permission-content",
+                rbacGroup,
+                3);
+        saveMenu(
+                map,
+                "routes",
+                "路由管理",
+                "/system/routes",
+                "system/routes",
+                "Guide",
+                "menu:system:route",
+                rbacGroup,
+                4);
 
-        saveMenu(map, "notices", "公告管理", "/system/notices", "system/notices", "Bell", "menu:system:notice", contentGroup, 1);
+        saveMenu(
+                map,
+                "notices",
+                "公告管理",
+                "/system/notices",
+                "system/notices",
+                "Bell",
+                "menu:system:notice",
+                contentGroup,
+                1);
 
-        SysRoute personal = saveDir(map, "personal", "个人中心", "UserFilled", PERM_PERSONAL_GROUP, null, ++sort);
-        SysRoute profile = saveMenu(map, "profile", "个人信息", "/profile", "profile", "UserFilled", "menu:profile", personal, 1);
+        SysRoute personal =
+                saveDir(map, "personal", "个人中心", "UserFilled", PERM_PERSONAL_GROUP, null, ++sort);
+        SysRoute profile =
+                saveMenu(
+                        map,
+                        "profile",
+                        "个人信息",
+                        "/profile",
+                        "profile",
+                        "UserFilled",
+                        "menu:profile",
+                        personal,
+                        1);
         profile.setPermissionControl(false);
         routeRepository.save(profile);
     }
@@ -879,57 +1031,123 @@ public class RouteInitializer implements CommandLineRunner {
     }
 
     private void ensureMessageRoute() {
-        ensureMenuRoute("/system/messages", "system/messages", "站内信",
-                "Message", "menu:system:message", PERM_CONTENT_GROUP, 2);
+        ensureMenuRoute(
+                "/system/messages",
+                "system/messages",
+                "站内信",
+                "Message",
+                "menu:system:message",
+                PERM_CONTENT_GROUP,
+                2);
     }
 
     private void ensureMineMessageRoute() {
-        ensureMenuRoute("/messages/mine", "messages/mine", "我的消息",
-                "ChatDotRound", "menu:personal:message", PERM_PERSONAL_GROUP, 2);
+        ensureMenuRoute(
+                "/messages/mine",
+                "messages/mine",
+                "我的消息",
+                "ChatDotRound",
+                "menu:personal:message",
+                PERM_PERSONAL_GROUP,
+                2);
     }
 
     private void ensureExceptionLogRoute() {
-        ensureMenuRoute("/system/logs/exception", "system/logs/exception", "异常日志",
-                "Warning", "menu:system:exception-log", PERM_LOGS_GROUP, 3);
+        ensureMenuRoute(
+                "/system/logs/exception",
+                "system/logs/exception",
+                "异常日志",
+                "Warning",
+                "menu:system:exception-log",
+                PERM_LOGS_GROUP,
+                3);
     }
 
     private void ensureFileRoute() {
-        ensureMenuRoute("/system/files", "system/files", "文件管理",
-                "FolderOpened", "menu:system:file", PERM_TOOLS_GROUP, 1);
+        ensureMenuRoute(
+                "/system/files",
+                "system/files",
+                "文件管理",
+                "FolderOpened",
+                "menu:system:file",
+                PERM_TOOLS_GROUP,
+                1);
     }
 
     private void ensureJobRoute() {
-        ensureMenuRoute("/system/jobs", "system/jobs", "定时任务",
-                "Timer", "menu:system:job", PERM_TOOLS_GROUP, 2);
+        ensureMenuRoute(
+                "/system/jobs",
+                "system/jobs",
+                "定时任务",
+                "Timer",
+                "menu:system:job",
+                PERM_TOOLS_GROUP,
+                2);
     }
 
     private void ensureJobLogRoute() {
-        ensureMenuRoute("/system/jobs/logs", "system/jobs/logs", "任务日志",
-                "Document", "menu:system:job-log", PERM_TOOLS_GROUP, 3);
+        ensureMenuRoute(
+                "/system/jobs/logs",
+                "system/jobs/logs",
+                "任务日志",
+                "Document",
+                "menu:system:job-log",
+                PERM_TOOLS_GROUP,
+                3);
     }
 
     private void ensurePostRoute() {
-        ensureMenuRoute("/system/posts", "system/posts", "岗位管理",
-                "Postcard", "menu:system:post", PERM_ORG_GROUP, 3);
+        ensureMenuRoute(
+                "/system/posts",
+                "system/posts",
+                "岗位管理",
+                "Postcard",
+                "menu:system:post",
+                PERM_ORG_GROUP,
+                3);
     }
 
     private void ensureApiDocsRoute() {
-        ensureMenuRoute("/system/api-docs", "system/api-docs", "接口文档",
-                "Document", "menu:system:api-docs", PERM_TOOLS_GROUP, 4);
+        ensureMenuRoute(
+                "/system/api-docs",
+                "system/api-docs",
+                "接口文档",
+                "Document",
+                "menu:system:api-docs",
+                PERM_TOOLS_GROUP,
+                4);
     }
 
     private void ensureRecycleRoute() {
-        ensureMenuRoute("/system/recycle", "system/recycle", "回收站",
-                "Delete", "menu:system:recycle", PERM_TOOLS_GROUP, 5);
+        ensureMenuRoute(
+                "/system/recycle",
+                "system/recycle",
+                "回收站",
+                "Delete",
+                "menu:system:recycle",
+                PERM_TOOLS_GROUP,
+                5);
     }
 
     private void ensureCodegenRoute() {
-        ensureMenuRoute("/system/codegen", "system/codegen", "代码生成",
-                "MagicStick", "menu:system:codegen", PERM_TOOLS_GROUP, 6);
+        ensureMenuRoute(
+                "/system/codegen",
+                "system/codegen",
+                "代码生成",
+                "MagicStick",
+                "menu:system:codegen",
+                PERM_TOOLS_GROUP,
+                6);
     }
 
-    private void ensureMenuRoute(String path, String viewPath, String title, String icon,
-                                 String permission, String parentPermission, int sort) {
+    private void ensureMenuRoute(
+            String path,
+            String viewPath,
+            String title,
+            String icon,
+            String permission,
+            String parentPermission,
+            int sort) {
         SysRoute existing = routeRepository.findByPath(path).orElse(null);
         if (existing != null) {
             return;
@@ -956,50 +1174,57 @@ public class RouteInitializer implements CommandLineRunner {
     }
 
     private void setIconByPath(String path, String icon) {
-        routeRepository.findByPath(path).ifPresent(route -> {
-            if (!icon.equals(route.getIcon())) {
-                route.setIcon(icon);
-                routeRepository.save(route);
-            }
-        });
+        routeRepository
+                .findByPath(path)
+                .ifPresent(
+                        route -> {
+                            if (!icon.equals(route.getIcon())) {
+                                route.setIcon(icon);
+                                routeRepository.save(route);
+                            }
+                        });
     }
 
     private void setIconByPermission(String permission, RouteType type, String icon) {
         routeRepository.findAll().stream()
                 .filter(r -> type == r.getType() && permission.equals(r.getPermission()))
                 .findFirst()
-                .ifPresent(route -> {
-                    if (!icon.equals(route.getIcon())) {
-                        route.setIcon(icon);
-                        routeRepository.save(route);
-                    }
-                });
+                .ifPresent(
+                        route -> {
+                            if (!icon.equals(route.getIcon())) {
+                                route.setIcon(icon);
+                                routeRepository.save(route);
+                            }
+                        });
     }
 
     private void ensurePermissionRouteRenamed() {
         routeRepository.findAll().stream()
                 .filter(route -> "/system/permissions".equals(route.getPath()))
                 .findFirst()
-                .ifPresent(route -> {
-                    if (!"角色权限".equals(route.getTitle())) {
-                        route.setTitle("角色权限");
-                        routeRepository.save(route);
-                    }
-                });
+                .ifPresent(
+                        route -> {
+                            if (!"角色权限".equals(route.getTitle())) {
+                                route.setTitle("角色权限");
+                                routeRepository.save(route);
+                            }
+                        });
     }
 
     private void syncMenuPermissionsFromRoutes() {
-        List<SysRoute> routes = routeRepository.findAllWithParent().stream()
-                .filter(r -> StringUtils.hasText(r.getPermission()))
-                .sorted(Comparator
-                        .comparingInt((SysRoute r) -> depth(r))
-                        .thenComparing(r -> r.getSort() == null ? 0 : r.getSort())
-                        .thenComparing(SysRoute::getId))
-                .toList();
+        List<SysRoute> routes =
+                routeRepository.findAllWithParent().stream()
+                        .filter(r -> StringUtils.hasText(r.getPermission()))
+                        .sorted(
+                                Comparator.comparingInt((SysRoute r) -> depth(r))
+                                        .thenComparing(r -> r.getSort() == null ? 0 : r.getSort())
+                                        .thenComparing(SysRoute::getId))
+                        .toList();
 
         Map<String, Permission> byCode = new LinkedHashMap<>();
         for (Permission permission : permissionRepository.findAll()) {
-            if (permission.getType() == PermissionType.MENU && StringUtils.hasText(permission.getCode())) {
+            if (permission.getType() == PermissionType.MENU
+                    && StringUtils.hasText(permission.getCode())) {
                 byCode.put(permission.getCode(), permission);
             }
         }
@@ -1019,10 +1244,14 @@ public class RouteInitializer implements CommandLineRunner {
             permission.setSort(route.getSort() != null ? route.getSort() : 0);
 
             Permission parentPerm = null;
-            if (route.getParent() != null && StringUtils.hasText(route.getParent().getPermission())) {
+            if (route.getParent() != null
+                    && StringUtils.hasText(route.getParent().getPermission())) {
                 parentPerm = byCode.get(route.getParent().getPermission());
                 if (parentPerm == null) {
-                    parentPerm = permissionRepository.findByCode(route.getParent().getPermission()).orElse(null);
+                    parentPerm =
+                            permissionRepository
+                                    .findByCode(route.getParent().getPermission())
+                                    .orElse(null);
                 }
             }
             if (parentPerm != null && parentPerm.getCode().equals(code)) {
@@ -1050,18 +1279,25 @@ public class RouteInitializer implements CommandLineRunner {
 
     private void grantToPrivilegedRoles(Permission permission) {
         for (String roleCode : List.of("SUPER_ADMIN", "ADMIN")) {
-            roleRepository.findByCode(roleCode).ifPresent(role -> {
-                Role managed = roleRepository.findByIdWithPermissions(role.getId()).orElse(role);
-                Set<Permission> perms = new HashSet<>(managed.getPermissions());
-                if (perms.add(permission)) {
-                    managed.setPermissions(perms);
-                    roleRepository.save(managed);
-                }
-            });
+            roleRepository
+                    .findByCode(roleCode)
+                    .ifPresent(
+                            role -> {
+                                Role managed =
+                                        roleRepository
+                                                .findByIdWithPermissions(role.getId())
+                                                .orElse(role);
+                                Set<Permission> perms = new HashSet<>(managed.getPermissions());
+                                if (perms.add(permission)) {
+                                    managed.setPermissions(perms);
+                                    roleRepository.save(managed);
+                                }
+                            });
         }
     }
 
-    private SysRoute saveDirStandalone(String title, String icon, String permission, SysRoute parent, int sort) {
+    private SysRoute saveDirStandalone(
+            String title, String icon, String permission, SysRoute parent, int sort) {
         SysRoute route = new SysRoute();
         route.setTitle(title);
         route.setIcon(icon);
@@ -1077,15 +1313,29 @@ public class RouteInitializer implements CommandLineRunner {
         return routeRepository.save(route);
     }
 
-    private SysRoute saveDir(Map<String, SysRoute> map, String key, String title, String icon, String permission,
-                             SysRoute parent, int sort) {
+    private SysRoute saveDir(
+            Map<String, SysRoute> map,
+            String key,
+            String title,
+            String icon,
+            String permission,
+            SysRoute parent,
+            int sort) {
         SysRoute saved = saveDirStandalone(title, icon, permission, parent, sort);
         map.put(key, saved);
         return saved;
     }
 
-    private SysRoute saveMenu(Map<String, SysRoute> map, String key, String title, String path, String viewPath,
-                              String icon, String permission, SysRoute parent, int sort) {
+    private SysRoute saveMenu(
+            Map<String, SysRoute> map,
+            String key,
+            String title,
+            String path,
+            String viewPath,
+            String icon,
+            String permission,
+            SysRoute parent,
+            int sort) {
         SysRoute route = new SysRoute();
         route.setTitle(title);
         route.setPath(path);

@@ -2,9 +2,8 @@ package com.smartadmin.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class UserRequest {
@@ -37,6 +36,8 @@ public class UserRequest {
     /** 岗位，可空 */
     private Long postId;
 
-    /** @deprecated 兼容旧客户端，优先使用 roleIds */
+    /**
+     * @deprecated 兼容旧客户端，优先使用 roleIds
+     */
     private String role;
 }

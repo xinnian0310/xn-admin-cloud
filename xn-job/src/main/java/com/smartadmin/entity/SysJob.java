@@ -1,12 +1,11 @@
 package com.smartadmin.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -42,6 +41,7 @@ public class SysJob {
 
     /**
      * misfire 策略：0默认 1忽略misfire 2补偿执行一次 3不触发。
+     *
      * @see com.smartadmin.scheduler.JobMisfirePolicy
      */
     @Column(name = "misfire_policy", nullable = false, length = 8)
@@ -59,6 +59,5 @@ public class SysJob {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @UpdateTimestamp private LocalDateTime updatedAt;
 }

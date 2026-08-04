@@ -1,14 +1,13 @@
 package com.smartadmin.config;
 
 import com.smartadmin.security.ApiGuardInterceptor;
+import java.nio.file.Paths;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import java.nio.file.Paths;
 
 @Configuration
 @RequiredArgsConstructor
@@ -30,7 +29,6 @@ public class WebConfig implements WebMvcConfigurer {
         if (!location.endsWith("/")) {
             location = location + "/";
         }
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations(location);
+        registry.addResourceHandler("/uploads/**").addResourceLocations(location);
     }
 }

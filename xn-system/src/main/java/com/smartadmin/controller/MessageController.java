@@ -12,6 +12,8 @@ import com.smartadmin.dto.PageResult;
 import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.MessageService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,9 +24,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/messages")
@@ -55,7 +54,8 @@ public class MessageController {
 
     @PutMapping("/{id}")
     @OperLog(title = "站内信", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<MessageVO> update(@PathVariable Long id, @Valid @RequestBody MessageRequest request) {
+    public ApiResponse<MessageVO> update(
+            @PathVariable Long id, @Valid @RequestBody MessageRequest request) {
         return ApiResponse.success(messageService.update(id, request));
     }
 
@@ -75,8 +75,10 @@ public class MessageController {
 
     @PostMapping("/{id}/send")
     @OperLog(title = "站内信", businessType = OperBusinessType.OTHER)
-    public ApiResponse<MessageVO> send(@PathVariable Long id, @RequestBody MessageSendRequest request) {
-        return ApiResponse.success(messageService.send(id, request != null ? request : new MessageSendRequest()));
+    public ApiResponse<MessageVO> send(
+            @PathVariable Long id, @RequestBody MessageSendRequest request) {
+        return ApiResponse.success(
+                messageService.send(id, request != null ? request : new MessageSendRequest()));
     }
 
     @GetMapping("/{id}/readers")
@@ -107,7 +109,8 @@ public class MessageController {
     }
 
     @PostMapping("/mine/batch-delete")
-    public ApiResponse<Map<String, Integer>> batchDeleteMine(@RequestBody(required = false) IdsRequest request) {
+    public ApiResponse<Map<String, Integer>> batchDeleteMine(
+            @RequestBody(required = false) IdsRequest request) {
         List<Long> ids = request == null || request.getIds() == null ? List.of() : request.getIds();
         int count = messageService.batchDeleteMine(ids);
         return ApiResponse.success("删除成功", Map.of("count", count));

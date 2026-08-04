@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class LockedAccountVO {
 
     private String username;
+
     /** 剩余锁定秒数 */
     private Long remainSeconds;
 }

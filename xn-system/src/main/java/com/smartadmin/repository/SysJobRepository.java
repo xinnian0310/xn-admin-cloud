@@ -1,14 +1,13 @@
 package com.smartadmin.repository;
 
 import com.smartadmin.entity.SysJob;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
-import java.util.Optional;
 
 public interface SysJobRepository extends JpaRepository<SysJob, Long> {
 
@@ -18,7 +17,8 @@ public interface SysJobRepository extends JpaRepository<SysJob, Long> {
 
     List<SysJob> findByStatus(Integer status);
 
-    @Query("""
+    @Query(
+            """
             SELECT j FROM SysJob j
             WHERE (:keyword = ''
                OR j.name LIKE CONCAT('%', :keyword, '%')
@@ -27,7 +27,6 @@ public interface SysJobRepository extends JpaRepository<SysJob, Long> {
               AND (:status IS NULL OR j.status = :status)
             ORDER BY j.id DESC
             """)
-    Page<SysJob> search(@Param("keyword") String keyword,
-                          @Param("status") Integer status,
-                          Pageable pageable);
+    Page<SysJob> search(
+            @Param("keyword") String keyword, @Param("status") Integer status, Pageable pageable);
 }

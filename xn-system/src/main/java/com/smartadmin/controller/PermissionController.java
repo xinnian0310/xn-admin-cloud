@@ -8,6 +8,7 @@ import com.smartadmin.dto.PermissionVO;
 import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.PermissionService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,8 +18,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/permissions")
@@ -45,7 +44,8 @@ public class PermissionController {
 
     @PutMapping("/{id}")
     @OperLog(title = "权限内容", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<PermissionVO> update(@PathVariable Long id, @Valid @RequestBody PermissionRequest request) {
+    public ApiResponse<PermissionVO> update(
+            @PathVariable Long id, @Valid @RequestBody PermissionRequest request) {
         return ApiResponse.success("更新成功", permissionService.update(id, request));
     }
 

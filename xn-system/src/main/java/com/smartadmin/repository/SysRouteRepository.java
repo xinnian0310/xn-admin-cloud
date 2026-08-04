@@ -1,11 +1,10 @@
 package com.smartadmin.repository;
 
 import com.smartadmin.entity.SysRoute;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 public interface SysRouteRepository extends JpaRepository<SysRoute, Long> {
 

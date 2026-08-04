@@ -2,9 +2,8 @@ package com.smartadmin.dto;
 
 import com.smartadmin.entity.MessageStatus;
 import com.smartadmin.entity.SysMessage;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class MessageVO {

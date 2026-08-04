@@ -7,6 +7,7 @@ import com.smartadmin.dto.PageResult;
 import com.smartadmin.entity.SysDictType;
 import com.smartadmin.repository.SysDictDataRepository;
 import com.smartadmin.repository.SysDictTypeRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,8 +15,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,15 +27,18 @@ public class DictTypeService {
     public PageResult<DictTypeVO> list(int page, int size, String keyword, Integer status) {
         rbacService.checkPermission("dict-type:view");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
-        Page<SysDictType> result = dictTypeRepository.search(
-                StringUtils.hasText(keyword) ? keyword.trim() : "", status, pageable);
+        Page<SysDictType> result =
+                dictTypeRepository.search(
+                        StringUtils.hasText(keyword) ? keyword.trim() : "", status, pageable);
         List<DictTypeVO> records = result.getContent().stream().map(DictTypeVO::from).toList();
         return new PageResult<>(records, result.getTotalElements(), page, size);
     }
 
     public List<DictTypeVO> listOptions() {
         rbacService.checkPermission("dict-type:view");
-        return dictTypeRepository.findByStatusOrderByIdAsc(1).stream().map(DictTypeVO::from).toList();
+        return dictTypeRepository.findByStatusOrderByIdAsc(1).stream()
+                .map(DictTypeVO::from)
+                .toList();
     }
 
     public DictTypeVO getById(Long id) {
@@ -67,7 +69,8 @@ public class DictTypeService {
                 type.setStatus(request.getStatus());
             }
         } else {
-            if (!type.getType().equals(request.getType()) && dictTypeRepository.existsByType(request.getType())) {
+            if (!type.getType().equals(request.getType())
+                    && dictTypeRepository.existsByType(request.getType())) {
                 throw new BusinessException("字典类型编码已存在");
             }
             applyRequest(type, request);
@@ -111,7 +114,6 @@ public class DictTypeService {
     }
 
     private SysDictType findType(Long id) {
-        return dictTypeRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("字典类型不存在"));
+        return dictTypeRepository.findById(id).orElseThrow(() -> new BusinessException("字典类型不存在"));
     }
 }

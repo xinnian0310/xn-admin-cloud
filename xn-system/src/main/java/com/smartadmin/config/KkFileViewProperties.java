@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 public class KkFileViewProperties {
 
     private boolean enabled = false;
+
     /** 如 http://127.0.0.1:8012 */
     private String baseUrl = "http://127.0.0.1:8012";
 }

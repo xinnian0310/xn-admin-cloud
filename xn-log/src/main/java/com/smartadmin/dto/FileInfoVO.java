@@ -14,13 +14,18 @@ public class FileInfoVO {
     private long size;
     private boolean directory;
     private String lastModified;
+
     /** local | minio */
     private String storage;
+
     private String bucket;
+
     /** 可直接访问的文件 URL */
     private String url;
+
     /** kkFileView 在线预览地址；未启用或不支持该类型时为空 */
     private String previewUrl;
+
     private String uploader;
     private String prefix;
 }

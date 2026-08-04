@@ -1,19 +1,18 @@
 package com.smartadmin.service;
 
+import com.smartadmin.config.AppNacosProperties;
 import com.smartadmin.config.InfraProperties;
 import com.smartadmin.config.KkFileViewProperties;
 import com.smartadmin.config.MinioProperties;
-import com.smartadmin.config.AppNacosProperties;
 import com.smartadmin.config.RedisProperties;
 import com.smartadmin.config.nacos.NacosConfigRefreshService;
 import com.smartadmin.dto.InfraStatusVO;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -65,7 +64,10 @@ public class InfraStatusService {
             minio.setRestartable(false);
         } else {
             String ping = minioStorageService.pingMessage();
-            minio.setStatus(ping.startsWith("UP") ? "UP" : ping.startsWith("DISABLED") ? "DISABLED" : "DOWN");
+            minio.setStatus(
+                    ping.startsWith("UP")
+                            ? "UP"
+                            : ping.startsWith("DISABLED") ? "DISABLED" : "DOWN");
             minio.setMessage(ping);
         }
 

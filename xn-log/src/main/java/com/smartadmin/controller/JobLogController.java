@@ -9,6 +9,8 @@ import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.JobLogService;
 import com.smartadmin.util.ExcelHttpResponse;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.time.LocalDateTime;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/logs/job")
@@ -38,9 +37,12 @@ public class JobLogController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long jobId,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beginTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
-        return ApiResponse.success(jobLogService.list(page, size, keyword, jobId, status, beginTime, endTime));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime beginTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endTime) {
+        return ApiResponse.success(
+                jobLogService.list(page, size, keyword, jobId, status, beginTime, endTime));
     }
 
     @GetMapping("/export")
@@ -49,8 +51,10 @@ public class JobLogController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long jobId,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beginTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime beginTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endTime) {
         return ExcelHttpResponse.xlsx(
                 jobLogService.exportExcel(keyword, jobId, status, beginTime, endTime),
                 "job-logs.xlsx");
@@ -81,5 +85,4 @@ public class JobLogController {
         jobLogService.clean();
         return ApiResponse.success("清空成功", null);
     }
-
 }

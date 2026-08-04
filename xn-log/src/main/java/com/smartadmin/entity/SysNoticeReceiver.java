@@ -1,19 +1,20 @@
 package com.smartadmin.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
 @Table(
         name = "sys_notice_receiver",
-        uniqueConstraints = @UniqueConstraint(name = "uk_notice_user", columnNames = {"notice_id", "user_id"})
-)
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_notice_user",
+                        columnNames = {"notice_id", "user_id"}))
 public class SysNoticeReceiver {
 
     @Id

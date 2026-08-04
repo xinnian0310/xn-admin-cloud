@@ -3,10 +3,9 @@ package com.smartadmin.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class TableCodegenRequest {
@@ -34,6 +33,7 @@ public class TableCodegenRequest {
 
     private Boolean persistPermissions = true;
     private Boolean generatePageUi = true;
+
     /** 是否创建菜单路由（不存在时） */
     private Boolean createMenu = true;
 
@@ -43,8 +43,7 @@ public class TableCodegenRequest {
 
     @Data
     public static class TableCodegenColumnRequest {
-        @NotBlank
-        private String columnName;
+        @NotBlank private String columnName;
         private String label;
         private String javaType;
         private String javaField;

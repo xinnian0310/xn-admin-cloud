@@ -1,9 +1,8 @@
 package com.smartadmin.repository;
 
 import com.smartadmin.entity.SysPageUiConfig;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SysPageUiConfigRepository extends JpaRepository<SysPageUiConfig, Long> {
 

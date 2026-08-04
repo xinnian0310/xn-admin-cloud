@@ -7,19 +7,16 @@ import com.smartadmin.entity.SysUserPasswordHistory;
 import com.smartadmin.entity.User;
 import com.smartadmin.repository.SysSecurityPolicyRepository;
 import com.smartadmin.repository.SysUserPasswordHistoryRepository;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * 密码策略：复杂度校验、历史复用、过期/强制改密判定、统一写密。
- */
+/** 密码策略：复杂度校验、历史复用、过期/强制改密判定、统一写密。 */
 @Service
 @RequiredArgsConstructor
 public class PasswordPolicyService {
@@ -75,7 +72,8 @@ public class PasswordPolicyService {
      *
      * @param currentEncodedPassword 用户当前密文，可空（新建用户）
      */
-    public void validateNewPassword(String rawPassword, Long userId, String currentEncodedPassword) {
+    public void validateNewPassword(
+            String rawPassword, Long userId, String currentEncodedPassword) {
         SysSecurityPolicy policy = loadPolicy();
         validateComplexity(rawPassword, policy);
 

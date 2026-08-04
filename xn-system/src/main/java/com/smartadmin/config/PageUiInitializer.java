@@ -54,7 +54,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/codegen");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索表名/备注"},
                   {"label":"系统表","prop":"includeSys","type":"select","placeholder":"是否包含","options":[{"label":"是","value":"true"},{"label":"否","value":"false"}]}
@@ -70,7 +71,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/monitor/online");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索用户名/昵称/IP"}
                 ]
@@ -85,7 +87,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/monitor/redis");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索 Key"}
                 ]
@@ -100,7 +103,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/monitor/sql");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索 SQL"}
                 ]
@@ -115,7 +119,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/messages/mine");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索标题/发送人"},
                   {"label":"状态","prop":"read","type":"select","placeholder":"请选择状态","options":[{"label":"未读","value":false},{"label":"已读","value":true}]}
@@ -131,7 +136,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/security");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索用户名"}
                 ]
@@ -146,7 +152,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/permissions-content");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索名称/编码"}
                 ]
@@ -162,7 +169,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/files");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索当前目录"}
                 ]
@@ -178,7 +186,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/login-settings");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索配置名称"},
                   {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"启用","value":1},{"label":"未启用","value":0}]}
@@ -195,7 +204,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/dicts");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索字典名称/编码"},
                   {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"启用","value":1},{"label":"禁用","value":0}]}
@@ -212,7 +222,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/dicts/data");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索字典标签/键值"},
                   {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"启用","value":1},{"label":"禁用","value":0}]}
@@ -229,7 +240,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/logs/login");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索用户名"},
                   {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"成功","value":1},{"label":"失败","value":0}]},
@@ -247,7 +259,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/logs/oper");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索模块标题/操作人"},
                   {"label":"业务类型","prop":"businessType","type":"select","placeholder":"请选择业务类型","options":[{"label":"新增","value":"INSERT"},{"label":"修改","value":"UPDATE"},{"label":"删除","value":"DELETE"},{"label":"授权","value":"GRANT"},{"label":"导入","value":"IMPORT"},{"label":"导出","value":"EXPORT"},{"label":"清空","value":"CLEAN"},{"label":"其他","value":"OTHER"}]},
@@ -266,7 +279,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/units");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索单位名称/编码"},
                   {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"启用","value":1},{"label":"禁用","value":0}]}
@@ -277,19 +291,23 @@ public class PageUiInitializer implements CommandLineRunner {
 
     /** 用户管理搜索区补充角色下拉（左侧树改为单位树） */
     private void ensureUsersSearchHasRole() {
-        pageUiConfigRepository.findByRoutePath("/users").ifPresent(config -> {
-            String search = config.getSearchConfig();
-            if (search != null && search.contains("\"roleId\"")) {
-                return;
-            }
-            config.setSearchConfig("""
+        pageUiConfigRepository
+                .findByRoutePath("/users")
+                .ifPresent(
+                        config -> {
+                            String search = config.getSearchConfig();
+                            if (search != null && search.contains("\"roleId\"")) {
+                                return;
+                            }
+                            config.setSearchConfig(
+                                    """
                     [
                       {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索用户名/昵称/邮箱"},
                       {"label":"角色","prop":"roleId","type":"select","placeholder":"请选择角色","options":[]}
                     ]
                     """);
-            pageUiConfigRepository.save(config);
-        });
+                            pageUiConfigRepository.save(config);
+                        });
     }
 
     /** 公告管理页搜索配置 */
@@ -300,7 +318,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/notices");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索公告标题"},
                   {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"草稿","value":"DRAFT"},{"label":"已下发","value":"PUBLISHED"},{"label":"已撤回","value":"REVOKED"}]}
@@ -316,7 +335,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/logs/exception");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索URL/异常/操作人"},
                   {"label":"发生时间","prop":"operTime","type":"daterange"}
@@ -332,7 +352,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/messages");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索消息标题"},
                   {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"草稿","value":"DRAFT"},{"label":"已发送","value":"SENT"}]}
@@ -348,7 +369,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/jobs");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索任务名称/标识"},
                   {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"启用","value":1},{"label":"停用","value":0}]}
@@ -364,7 +386,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/jobs/logs");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索任务名称/标识"},
                   {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"成功","value":"SUCCESS"},{"label":"失败","value":"FAIL"},{"label":"跳过","value":"SKIP"}]},
@@ -381,7 +404,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/posts");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索岗位名称/编码"},
                   {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"启用","value":1},{"label":"停用","value":0}]}
@@ -397,7 +421,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/recycle");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索标题/摘要/操作人"},
                   {"label":"类型","prop":"bizType","type":"select","placeholder":"请选择类型","options":[{"label":"用户","value":"USER"},{"label":"文件","value":"FILE"}]}
@@ -414,7 +439,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/routes");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索标题/路径"},
                   {"label":"类型","prop":"type","type":"select","placeholder":"请选择类型","options":[{"label":"目录","value":"DIR"},{"label":"菜单","value":"MENU"}]},
@@ -429,7 +455,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/roles");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索角色名称/编码"},
                   {"label":"角色名称","prop":"name","type":"input","placeholder":"请输入角色名称"},
@@ -445,7 +472,8 @@ public class PageUiInitializer implements CommandLineRunner {
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/users");
         config.setBuiltIn(true);
-        config.setSearchConfig("""
+        config.setSearchConfig(
+                """
                 [
                   {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索用户名/昵称/邮箱"}
                 ]

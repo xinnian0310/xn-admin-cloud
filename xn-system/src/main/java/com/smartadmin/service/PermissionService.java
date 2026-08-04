@@ -8,11 +8,10 @@ import com.smartadmin.entity.Permission;
 import com.smartadmin.entity.PermissionType;
 import com.smartadmin.repository.PermissionRepository;
 import com.smartadmin.security.ApiPermissionRegistry;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +22,8 @@ public class PermissionService {
     private final ApiPermissionRegistry apiPermissionRegistry;
 
     public List<PermissionVO> tree() {
-        if (!rbacService.hasPermission("permission:view") && !rbacService.hasPermission("role:assign")) {
+        if (!rbacService.hasPermission("permission:view")
+                && !rbacService.hasPermission("role:assign")) {
             throw new BusinessException(403, "无权限");
         }
         return permissionRepository.findByParentIsNullOrderBySortAsc().stream()
@@ -47,7 +47,7 @@ public class PermissionService {
                 case API -> vo.getApi().add(item);
                 case BUTTON -> vo.getButton().add(item);
                 case TABLE_BUTTON -> vo.getTableButton().add(item);
-                default -> { }
+                default -> {}
             }
         }
         return vo;
@@ -120,7 +120,6 @@ public class PermissionService {
     }
 
     private Permission findPermission(Long id) {
-        return permissionRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("权限不存在"));
+        return permissionRepository.findById(id).orElseThrow(() -> new BusinessException("权限不存在"));
     }
 }

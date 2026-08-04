@@ -1,5 +1,8 @@
 package com.smartadmin.service;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -7,14 +10,7 @@ import org.springframework.util.StringUtils;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.function.Supplier;
-
-/**
- * 业务缓存：基于 {@link AppKvStore}（Redis 优先，内存回落）。
- * 缓存权限码、字典、公开配置、菜单树等高频只读数据。
- */
+/** 业务缓存：基于 {@link AppKvStore}（Redis 优先，内存回落）。 缓存权限码、字典、公开配置、菜单树等高频只读数据。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -68,8 +64,7 @@ public class AppCacheService {
     }
 
     public List<String> getPermissionCodes(Long userId, Supplier<List<String>> loader) {
-        return getOrLoad(PREFIX_PERM + userId, TTL_PERM, new TypeReference<>() {
-        }, loader);
+        return getOrLoad(PREFIX_PERM + userId, TTL_PERM, new TypeReference<>() {}, loader);
     }
 
     public void evictPermissionCodes(Long userId) {
@@ -84,7 +79,8 @@ public class AppCacheService {
         evictByPrefix(PREFIX_MENUS);
     }
 
-    public <T> List<T> getDict(String dictType, TypeReference<List<T>> type, Supplier<List<T>> loader) {
+    public <T> List<T> getDict(
+            String dictType, TypeReference<List<T>> type, Supplier<List<T>> loader) {
         return getOrLoad(PREFIX_DICT + dictType, TTL_DICT, type, loader);
     }
 

@@ -4,6 +4,10 @@ import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.smartadmin.config.AppNacosProperties;
 import jakarta.annotation.PreDestroy;
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,14 +18,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicReference;
-
-/**
- * 运行期监听 Nacos 配置变更并刷新 Environment，发布 {@link NacosConfigRefreshedEvent}。
- */
+/** 运行期监听 Nacos 配置变更并刷新 Environment，发布 {@link NacosConfigRefreshedEvent}。 */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -33,18 +30,12 @@ public class NacosConfigRefreshService {
 
     private final AtomicReference<ConfigService> configServiceRef = new AtomicReference<>();
 
-    @Getter
-    private volatile boolean loaded;
-    @Getter
-    private volatile String dataId;
-    @Getter
-    private volatile String group;
-    @Getter
-    private volatile LocalDateTime lastLoadedAt;
-    @Getter
-    private volatile String lastMessage = "未启用";
-    @Getter
-    private volatile int lastKeyCount;
+    @Getter private volatile boolean loaded;
+    @Getter private volatile String dataId;
+    @Getter private volatile String group;
+    @Getter private volatile LocalDateTime lastLoadedAt;
+    @Getter private volatile String lastMessage = "未启用";
+    @Getter private volatile int lastKeyCount;
 
     @EventListener(ApplicationReadyEvent.class)
     public void onReady() {
@@ -57,29 +48,35 @@ public class NacosConfigRefreshService {
         try {
             ConfigService configService = NacosConfigSupport.createConfigService(environment);
             configServiceRef.set(configService);
-            String content = configService.getConfig(dataId, group, AppNacosProperties.getConfig().getTimeoutMs());
+            String content =
+                    configService.getConfig(
+                            dataId, group, AppNacosProperties.getConfig().getTimeoutMs());
             applyContent(content, false);
             if (AppNacosProperties.getConfig().isRefresh()) {
-                configService.addListener(dataId, group, new Listener() {
-                    @Override
-                    public Executor getExecutor() {
-                        return null;
-                    }
+                configService.addListener(
+                        dataId,
+                        group,
+                        new Listener() {
+                            @Override
+                            public Executor getExecutor() {
+                                return null;
+                            }
 
-                    @Override
-                    public void receiveConfigInfo(String configInfo) {
-                        try {
-                            applyContent(configInfo, true);
-                            log.info("Nacos 配置已热更新: dataId={}, keys={}", dataId, lastKeyCount);
-                        } catch (Exception ex) {
-                            lastMessage = "热更新失败: " + ex.getMessage();
-                            log.warn("Nacos 配置热更新失败: {}", ex.getMessage());
-                        }
-                    }
-                });
-                lastMessage = loaded
-                        ? "已加载并监听热更新: " + dataId
-                        : "已监听热更新（当前内容为空）: " + dataId;
+                            @Override
+                            public void receiveConfigInfo(String configInfo) {
+                                try {
+                                    applyContent(configInfo, true);
+                                    log.info(
+                                            "Nacos 配置已热更新: dataId={}, keys={}",
+                                            dataId,
+                                            lastKeyCount);
+                                } catch (Exception ex) {
+                                    lastMessage = "热更新失败: " + ex.getMessage();
+                                    log.warn("Nacos 配置热更新失败: {}", ex.getMessage());
+                                }
+                            }
+                        });
+                lastMessage = loaded ? "已加载并监听热更新: " + dataId : "已监听热更新（当前内容为空）: " + dataId;
             } else if (loaded) {
                 lastMessage = "已加载（热更新关闭）: " + dataId;
             }
@@ -107,7 +104,8 @@ public class NacosConfigRefreshService {
         lastLoadedAt = LocalDateTime.now();
         lastMessage = "已加载: " + dataId + " (" + lastKeyCount + " keys)";
         if (publishEvent) {
-            eventPublisher.publishEvent(new NacosConfigRefreshedEvent(this, dataId, group, map.keySet()));
+            eventPublisher.publishEvent(
+                    new NacosConfigRefreshedEvent(this, dataId, group, map.keySet()));
         }
     }
 

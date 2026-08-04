@@ -1,19 +1,15 @@
 package com.smartadmin.service;
 
-import com.smartadmin.config.SecurityProperties;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.Duration;
+import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.time.Duration;
-import java.util.HexFormat;
-
-/**
- * JWT 黑名单：踢人 / 登出 / 禁用后立即使令牌失效。
- */
+/** JWT 黑名单：踢人 / 登出 / 禁用后立即使令牌失效。 */
 @Service
 @RequiredArgsConstructor
 public class TokenBlacklistService {
@@ -41,7 +37,10 @@ public class TokenBlacklistService {
             return;
         }
         long ttlSec = Math.max(60, jwtExpirationMs / 1000);
-        kvStore.set(USER_PREFIX + userId, String.valueOf(System.currentTimeMillis()), Duration.ofSeconds(ttlSec));
+        kvStore.set(
+                USER_PREFIX + userId,
+                String.valueOf(System.currentTimeMillis()),
+                Duration.ofSeconds(ttlSec));
     }
 
     public boolean isRevoked(String token, Long userId, long issuedAtMs) {

@@ -1,0 +1,29 @@
+#!/bin/sh
+# Conventional Commits: type(scope)?: subject
+# Examples: feat: xxx | fix(gateway): yyy | chore!: breaking
+
+MSG_FILE="$1"
+MSG=$(head -n 1 "$MSG_FILE" | tr -d '\r')
+
+# allow merge / revert / fixup
+case "$MSG" in
+  Merge\ *|Revert\ *|fixup!\ *|squash!\ *)
+    exit 0
+    ;;
+esac
+
+PATTERN='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9_-]+\))?(!)?: .+'
+
+echo "$MSG" | grep -E "$PATTERN" >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "ERROR: commit message 不符合 Conventional Commits 规范"
+  echo "  当前: $MSG"
+  echo "  格式: <type>(optional-scope): <subject>"
+  echo "  type: feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert"
+  echo "  示例: feat(system): 增加密码策略"
+  echo ""
+  exit 1
+fi
+
+exit 0

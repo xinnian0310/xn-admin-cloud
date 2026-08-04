@@ -2,6 +2,7 @@ package com.smartadmin.config;
 
 import com.smartadmin.entity.SysLoginPageConfig;
 import com.smartadmin.repository.SysLoginPageConfigRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
@@ -9,13 +10,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 /**
  * 按当前前端登录页默认表现填充「登录页设置」数据。
- * <p>
- * 当前登录页：默认渐变背景、登录框居中、不开启验证；
- * 标题/副标题由前端 appConfig（心念后台管理系统 / 心念科技）展示。
+ *
+ * <p>当前登录页：默认渐变背景、登录框居中、不开启验证； 标题/副标题由前端 appConfig（心念后台管理系统 / 心念科技）展示。
  */
 @Component
 @Order(7)
@@ -71,22 +69,29 @@ public class LoginPageConfigInitializer implements CommandLineRunner {
         // 历史表可能是 boxx/boxy（无下划线）或 box_x/box_y
         for (String col : List.of("box_x", "boxx")) {
             if (columnExists(col)) {
-                jdbcTemplate.execute("ALTER TABLE sys_login_page_config MODIFY COLUMN `" + col + "` DOUBLE NULL");
+                jdbcTemplate.execute(
+                        "ALTER TABLE sys_login_page_config MODIFY COLUMN `"
+                                + col
+                                + "` DOUBLE NULL");
             }
         }
         for (String col : List.of("box_y", "boxy")) {
             if (columnExists(col)) {
-                jdbcTemplate.execute("ALTER TABLE sys_login_page_config MODIFY COLUMN `" + col + "` DOUBLE NULL");
+                jdbcTemplate.execute(
+                        "ALTER TABLE sys_login_page_config MODIFY COLUMN `"
+                                + col
+                                + "` DOUBLE NULL");
             }
         }
     }
 
     private boolean columnExists(String column) {
-        Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM information_schema.COLUMNS "
-                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_login_page_config' AND COLUMN_NAME = ?",
-                Integer.class,
-                column);
+        Integer count =
+                jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM information_schema.COLUMNS "
+                                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_login_page_config' AND COLUMN_NAME = ?",
+                        Integer.class,
+                        column);
         return count != null && count > 0;
     }
 

@@ -1,12 +1,11 @@
 package com.smartadmin.monitor;
 
 import com.smartadmin.dto.SqlRecordVO;
-import org.hibernate.resource.jdbc.spi.StatementInspector;
-import org.springframework.stereotype.Component;
-
 import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
+import org.hibernate.resource.jdbc.spi.StatementInspector;
+import org.springframework.stereotype.Component;
 
 @Component
 public class SqlMonitorInspector implements StatementInspector {

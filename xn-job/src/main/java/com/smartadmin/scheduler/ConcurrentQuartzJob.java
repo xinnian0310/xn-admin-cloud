@@ -9,8 +9,7 @@ public class ConcurrentQuartzJob implements Job {
 
     public static final String JOB_ID_KEY = "jobId";
 
-    @Autowired
-    private JobInvokeService jobInvokeService;
+    @Autowired private JobInvokeService jobInvokeService;
 
     @Override
     public void execute(JobExecutionContext context) {

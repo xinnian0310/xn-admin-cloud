@@ -10,6 +10,12 @@ import com.smartadmin.dto.ProfileUpdateRequest;
 import com.smartadmin.entity.User;
 import com.smartadmin.repository.UserRepository;
 import com.smartadmin.security.JwtUtil;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,20 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Set;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    private static final Set<String> ALLOWED_AVATAR_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/gif", "image/webp"
-    );
+    private static final Set<String> ALLOWED_AVATAR_TYPES =
+            Set.of("image/jpeg", "image/png", "image/gif", "image/webp");
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
@@ -57,16 +55,18 @@ public class AuthService {
 
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-            );
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(), request.getPassword()));
         } catch (Exception ex) {
             loginProtectService.onLoginFail(request.getUsername());
             loginLogService.record(request.getUsername(), ip, userAgent, 0, "用户名或密码错误");
             throw new BusinessException("用户名或密码错误");
         }
 
-        User user = userRepository.findByUsernameWithRolesIgnoreCase(request.getUsername())
-                .orElse(null);
+        User user =
+                userRepository
+                        .findByUsernameWithRolesIgnoreCase(request.getUsername())
+                        .orElse(null);
         if (user == null) {
             loginProtectService.onLoginFail(request.getUsername());
             loginLogService.record(request.getUsername(), ip, userAgent, 0, "用户不存在");
@@ -83,7 +83,9 @@ public class AuthService {
         }
 
         loginProtectService.onLoginSuccess(user.getUsername());
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), rbacService.getRoleCodes(user));
+        String token =
+                jwtUtil.generateToken(
+                        user.getId(), user.getUsername(), rbacService.getRoleCodes(user));
         AuthUserVO authUser = buildAuthUser(user);
         loginLogService.record(user.getUsername(), ip, userAgent, 1, "登录成功");
         return new LoginResponse(token, authUser);
@@ -104,7 +106,9 @@ public class AuthService {
         if (user.getStatus() != 1) {
             throw new BusinessException("账号已被禁用");
         }
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), rbacService.getRoleCodes(user));
+        String token =
+                jwtUtil.generateToken(
+                        user.getId(), user.getUsername(), rbacService.getRoleCodes(user));
         return new LoginResponse(token, buildAuthUser(user));
     }
 
@@ -193,7 +197,8 @@ public class AuthService {
 
     private String resolveAvatarExt(String originalFilename, String contentType) {
         if (StringUtils.hasText(originalFilename) && originalFilename.contains(".")) {
-            String ext = originalFilename.substring(originalFilename.lastIndexOf('.')).toLowerCase();
+            String ext =
+                    originalFilename.substring(originalFilename.lastIndexOf('.')).toLowerCase();
             if (ext.matches("\\.(jpg|jpeg|png|gif|webp)")) {
                 return ext.equals(".jpeg") ? ".jpg" : ext;
             }
@@ -211,7 +216,6 @@ public class AuthService {
                 user,
                 rbacService.getRoleCodes(user),
                 rbacService.getPermissionCodes(user),
-                passwordPolicyService.mustChangePassword(user)
-        );
+                passwordPolicyService.mustChangePassword(user));
     }
 }

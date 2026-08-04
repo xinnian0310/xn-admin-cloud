@@ -5,6 +5,8 @@ import com.smartadmin.dto.PageResult;
 import com.smartadmin.entity.SysLoginLog;
 import com.smartadmin.repository.SysLoginLogRepository;
 import com.smartadmin.util.ExcelExportUtil;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,9 +15,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -43,42 +42,63 @@ public class LoginLogService {
         }
     }
 
-    public PageResult<LoginLogVO> list(int page, int size, String keyword, Integer status,
-                                        LocalDateTime begin, LocalDateTime end) {
+    public PageResult<LoginLogVO> list(
+            int page,
+            int size,
+            String keyword,
+            Integer status,
+            LocalDateTime begin,
+            LocalDateTime end) {
         rbacService.checkPermission("menu:system:login-log");
         DataScopeService.UsernameFilter filter = dataScopeService.resolveUsernameFilter();
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
-        Page<SysLoginLog> result = loginLogRepository.search(
-                StringUtils.hasText(keyword) ? keyword.trim() : "",
-                status, begin, end,
-                filter.usernames(), filter.unrestricted(),
-                pageable);
+        Page<SysLoginLog> result =
+                loginLogRepository.search(
+                        StringUtils.hasText(keyword) ? keyword.trim() : "",
+                        status,
+                        begin,
+                        end,
+                        filter.usernames(),
+                        filter.unrestricted(),
+                        pageable);
         List<LoginLogVO> records = result.getContent().stream().map(LoginLogVO::from).toList();
         return new PageResult<>(records, result.getTotalElements(), page, size);
     }
 
-    public byte[] exportExcel(String keyword, Integer status, LocalDateTime begin, LocalDateTime end) {
+    public byte[] exportExcel(
+            String keyword, Integer status, LocalDateTime begin, LocalDateTime end) {
         rbacService.checkPermission("loginlog:export");
         DataScopeService.UsernameFilter filter = dataScopeService.resolveUsernameFilter();
-        List<SysLoginLog> rows = loginLogRepository.searchAll(
-                StringUtils.hasText(keyword) ? keyword.trim() : "",
-                status, begin, end,
-                filter.usernames(), filter.unrestricted());
+        List<SysLoginLog> rows =
+                loginLogRepository.searchAll(
+                        StringUtils.hasText(keyword) ? keyword.trim() : "",
+                        status,
+                        begin,
+                        end,
+                        filter.usernames(),
+                        filter.unrestricted());
         if (rows.size() > EXPORT_LIMIT) {
             rows = rows.subList(0, EXPORT_LIMIT);
         }
         return ExcelExportUtil.toXlsx(
                 "登录日志",
                 List.of("ID", "用户名", "IP", "状态", "提示", "浏览器", "登录时间"),
-                rows.stream().map(r -> List.of(
-                        String.valueOf(r.getId()),
-                        nullToEmpty(r.getUsername()),
-                        nullToEmpty(r.getIp()),
-                        r.getStatus() != null && r.getStatus() == 1 ? "成功" : "失败",
-                        nullToEmpty(r.getMessage()),
-                        nullToEmpty(r.getUserAgent()),
-                        r.getLoginTime() == null ? "" : r.getLoginTime().toString()
-                )).toList());
+                rows.stream()
+                        .map(
+                                r ->
+                                        List.of(
+                                                String.valueOf(r.getId()),
+                                                nullToEmpty(r.getUsername()),
+                                                nullToEmpty(r.getIp()),
+                                                r.getStatus() != null && r.getStatus() == 1
+                                                        ? "成功"
+                                                        : "失败",
+                                                nullToEmpty(r.getMessage()),
+                                                nullToEmpty(r.getUserAgent()),
+                                                r.getLoginTime() == null
+                                                        ? ""
+                                                        : r.getLoginTime().toString()))
+                        .toList());
     }
 
     @Transactional
@@ -115,8 +135,8 @@ public class LoginLogService {
             loginLogRepository.deleteAllInBatch();
             return;
         }
-        List<SysLoginLog> rows = loginLogRepository.searchAll(
-                "", null, null, null, filter.usernames(), false);
+        List<SysLoginLog> rows =
+                loginLogRepository.searchAll("", null, null, null, filter.usernames(), false);
         loginLogRepository.deleteAllInBatch(rows);
     }
 

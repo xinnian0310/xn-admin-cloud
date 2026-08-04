@@ -1,12 +1,11 @@
 package com.smartadmin.repository;
 
 import com.smartadmin.entity.SysMessageReceiver;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
-import java.util.Optional;
 
 public interface SysMessageReceiverRepository extends JpaRepository<SysMessageReceiver, Long> {
 
@@ -20,14 +19,16 @@ public interface SysMessageReceiverRepository extends JpaRepository<SysMessageRe
 
     Optional<SysMessageReceiver> findByMessageIdAndUserId(Long messageId, Long userId);
 
-    @Query("""
+    @Query(
+            """
             SELECT r FROM SysMessageReceiver r
             WHERE r.messageId = :messageId
             ORDER BY r.readAt DESC NULLS LAST, r.id DESC
             """)
     List<SysMessageReceiver> findReaders(@Param("messageId") Long messageId);
 
-    @Query("""
+    @Query(
+            """
             SELECT r FROM SysMessageReceiver r
             WHERE r.userId = :userId
             ORDER BY r.createdAt DESC

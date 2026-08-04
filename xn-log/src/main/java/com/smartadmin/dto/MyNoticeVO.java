@@ -1,9 +1,8 @@
 package com.smartadmin.dto;
 
 import com.smartadmin.entity.SysNotice;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class MyNoticeVO {
@@ -12,18 +11,21 @@ public class MyNoticeVO {
     private String title;
     private String content;
     private LocalDateTime publishedAt;
+
     /** 接收时间（下发时写入接收记录的时间） */
     private LocalDateTime receivedAt;
+
     private boolean read;
     private LocalDateTime readAt;
     private Long publisherId;
     private String publisherName;
 
-    public static MyNoticeVO from(SysNotice notice,
-                                  boolean read,
-                                  LocalDateTime readAt,
-                                  LocalDateTime receivedAt,
-                                  String publisherName) {
+    public static MyNoticeVO from(
+            SysNotice notice,
+            boolean read,
+            LocalDateTime readAt,
+            LocalDateTime receivedAt,
+            String publisherName) {
         MyNoticeVO vo = new MyNoticeVO();
         vo.setId(notice.getId());
         vo.setTitle(notice.getTitle());

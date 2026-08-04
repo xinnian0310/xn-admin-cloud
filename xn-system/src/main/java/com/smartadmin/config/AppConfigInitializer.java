@@ -10,9 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
-/**
- * 系统配置单例种子：仅在空库时写入与前端 app.ts 一致的默认值，不覆盖已有配置。
- */
+/** 系统配置单例种子：仅在空库时写入与前端 app.ts 一致的默认值，不覆盖已有配置。 */
 @Component
 @Order(8)
 @RequiredArgsConstructor

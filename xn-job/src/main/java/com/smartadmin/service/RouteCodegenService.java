@@ -13,11 +13,6 @@ import com.smartadmin.repository.PermissionRepository;
 import com.smartadmin.repository.RoleRepository;
 import com.smartadmin.repository.SysPageUiConfigRepository;
 import com.smartadmin.repository.SysRouteRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,12 +24,17 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
 public class RouteCodegenService {
 
-    private static final String JAVA_BASE = "xn-admin-cloud/xn-system/src/main/java/com/smartadmin/";
+    private static final String JAVA_BASE =
+            "xn-admin-cloud/xn-system/src/main/java/com/smartadmin/";
     private static final String VUE_BASE = "xn-admin-vue3-ts/src/";
 
     private final SysRouteRepository routeRepository;
@@ -47,8 +47,8 @@ public class RouteCodegenService {
     public RouteCodegenVO generate(Long routeId, RouteCodegenRequest request) {
         rbacService.checkPermission("route:generate");
 
-        SysRoute route = routeRepository.findById(routeId)
-                .orElseThrow(() -> new BusinessException("路由不存在"));
+        SysRoute route =
+                routeRepository.findById(routeId).orElseThrow(() -> new BusinessException("路由不存在"));
         if (route.getType() != RouteType.MENU) {
             throw new BusinessException("仅菜单类型可代码生成");
         }
@@ -58,7 +58,8 @@ public class RouteCodegenService {
 
         String prefix = normalizePrefix(request.getModulePrefix());
         String apiBase = normalizeApiBase(request.getApiBasePath());
-        boolean persistPerms = request.getPersistPermissions() == null || request.getPersistPermissions();
+        boolean persistPerms =
+                request.getPersistPermissions() == null || request.getPersistPermissions();
         boolean genPageUi = request.getGeneratePageUi() == null || request.getGeneratePageUi();
 
         Permission menuPerm = resolveMenuPermission(route);
@@ -68,7 +69,11 @@ public class RouteCodegenService {
 
         int persisted = 0;
         StringBuilder sql = new StringBuilder();
-        sql.append("-- 路由代码生成：").append(route.getTitle()).append(" (").append(route.getPath()).append(")\n");
+        sql.append("-- 路由代码生成：")
+                .append(route.getTitle())
+                .append(" (")
+                .append(route.getPath())
+                .append(")\n");
         sql.append("-- 模板=CRUD 前缀=").append(prefix).append(" API=").append(apiBase).append("\n\n");
 
         for (PermSpec spec : specs) {
@@ -114,7 +119,8 @@ public class RouteCodegenService {
         if (!StringUtils.hasText(route.getPermission())) {
             throw new BusinessException("路由尚未同步菜单权限，请先保存路由");
         }
-        return permissionRepository.findByCode(route.getPermission())
+        return permissionRepository
+                .findByCode(route.getPermission())
                 .orElseThrow(() -> new BusinessException("菜单权限不存在: " + route.getPermission()));
     }
 
@@ -130,9 +136,27 @@ public class RouteCodegenService {
         list.add(api("api:GET:" + apiBase, title + "列表接口", "GET", apiBase, 1));
         list.add(api("api:GET:" + apiBase + "/{id}", title + "详情接口", "GET", apiBase + "/{id}", 2));
         list.add(api("api:POST:" + apiBase, "创建" + title + "接口", "POST", apiBase, 3));
-        list.add(api("api:PUT:" + apiBase + "/{id}", "更新" + title + "接口", "PUT", apiBase + "/{id}", 4));
-        list.add(api("api:DELETE:" + apiBase + "/{id}", "删除" + title + "接口", "DELETE", apiBase + "/{id}", 5));
-        list.add(api("api:POST:" + apiBase + "/batch-delete", "批量删除" + title, "POST", apiBase + "/batch-delete", 6));
+        list.add(
+                api(
+                        "api:PUT:" + apiBase + "/{id}",
+                        "更新" + title + "接口",
+                        "PUT",
+                        apiBase + "/{id}",
+                        4));
+        list.add(
+                api(
+                        "api:DELETE:" + apiBase + "/{id}",
+                        "删除" + title + "接口",
+                        "DELETE",
+                        apiBase + "/{id}",
+                        5));
+        list.add(
+                api(
+                        "api:POST:" + apiBase + "/batch-delete",
+                        "批量删除" + title,
+                        "POST",
+                        apiBase + "/batch-delete",
+                        6));
         return list;
     }
 
@@ -184,19 +208,29 @@ public class RouteCodegenService {
 
     private void grantToPrivilegedRoles(Permission permission) {
         for (String roleCode : List.of("SUPER_ADMIN", "ADMIN")) {
-            roleRepository.findByCode(roleCode).ifPresent(role -> {
-                Role managed = roleRepository.findByIdWithPermissions(role.getId()).orElse(role);
-                Set<Permission> perms = new HashSet<>(
-                        managed.getPermissions() == null ? Set.of() : managed.getPermissions());
-                if (perms.add(permission)) {
-                    managed.setPermissions(perms);
-                    roleRepository.save(managed);
-                }
-            });
+            roleRepository
+                    .findByCode(roleCode)
+                    .ifPresent(
+                            role -> {
+                                Role managed =
+                                        roleRepository
+                                                .findByIdWithPermissions(role.getId())
+                                                .orElse(role);
+                                Set<Permission> perms =
+                                        new HashSet<>(
+                                                managed.getPermissions() == null
+                                                        ? Set.of()
+                                                        : managed.getPermissions());
+                                if (perms.add(permission)) {
+                                    managed.setPermissions(perms);
+                                    roleRepository.save(managed);
+                                }
+                            });
         }
     }
 
-    private List<RouteCodegenVO.GeneratedFile> buildFiles(SysRoute route, String prefix, String apiBase) {
+    private List<RouteCodegenVO.GeneratedFile> buildFiles(
+            SysRoute route, String prefix, String apiBase) {
         List<RouteCodegenVO.GeneratedFile> files = new ArrayList<>();
         String viewPath = route.getViewPath();
         String title = route.getTitle();
@@ -207,58 +241,51 @@ public class RouteCodegenService {
         String apiModule = prefix;
         String apiUrl = apiBase.startsWith("/api/") ? apiBase.substring(4) : apiBase;
 
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                JAVA_BASE + "entity/" + pascal + ".java",
-                entityJava(pascal, table, title)
-        ));
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                JAVA_BASE + "repository/" + pascal + "Repository.java",
-                repositoryJava(pascal)
-        ));
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                JAVA_BASE + "dto/" + pascal + "VO.java",
-                voJava(pascal)
-        ));
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                JAVA_BASE + "dto/" + pascal + "Request.java",
-                requestJava(pascal, title)
-        ));
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                JAVA_BASE + "service/" + pascal + "Service.java",
-                serviceJava(pascal, camel, title, prefix)
-        ));
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                JAVA_BASE + "controller/" + pascal + "Controller.java",
-                controllerJava(pascal, camel, apiBase, title)
-        ));
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                VUE_BASE + "views/" + viewPath + "/index.vue",
-                crudIndexVue(title, routePath, apiModule, prefix)
-        ));
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                VUE_BASE + "views/" + viewPath + "/save.vue",
-                crudSaveVue(title, apiModule, pascal)
-        ));
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                VUE_BASE + "api/" + apiModule + ".ts",
-                apiTs(apiModule, apiUrl)
-        ));
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                "README.md",
-                readmeCrud(title, prefix, pascal, table, apiBase, viewPath, routePath)
-        ));
-        files.add(RouteCodegenVO.GeneratedFile.of(
-                "sql/" + prefix + "-schema.sql",
-                schemaSql(table, title)
-        ));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "entity/" + pascal + ".java",
+                        entityJava(pascal, table, title)));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "repository/" + pascal + "Repository.java",
+                        repositoryJava(pascal)));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "dto/" + pascal + "VO.java", voJava(pascal)));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "dto/" + pascal + "Request.java", requestJava(pascal, title)));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "service/" + pascal + "Service.java",
+                        serviceJava(pascal, camel, title, prefix)));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "controller/" + pascal + "Controller.java",
+                        controllerJava(pascal, camel, apiBase, title)));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        VUE_BASE + "views/" + viewPath + "/index.vue",
+                        crudIndexVue(title, routePath, apiModule, prefix)));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        VUE_BASE + "views/" + viewPath + "/save.vue",
+                        crudSaveVue(title, apiModule, pascal)));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        VUE_BASE + "api/" + apiModule + ".ts", apiTs(apiModule, apiUrl)));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        "README.md",
+                        readmeCrud(title, prefix, pascal, table, apiBase, viewPath, routePath)));
+        files.add(
+                RouteCodegenVO.GeneratedFile.of(
+                        "sql/" + prefix + "-schema.sql", schemaSql(table, title)));
         return files;
     }
 
     private String buildZipBase64(
-            List<RouteCodegenVO.GeneratedFile> files,
-            String permissionSql,
-            String prefix
-    ) {
+            List<RouteCodegenVO.GeneratedFile> files, String permissionSql, String prefix) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try (ZipOutputStream zos = new ZipOutputStream(baos)) {
@@ -280,9 +307,11 @@ public class RouteCodegenService {
     // ---------- naming / meta ----------
 
     static String normalizePrefix(String raw) {
-        String v = raw.trim().toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9_-]+", "-")
-                .replaceAll("^-+|-+$", "");
+        String v =
+                raw.trim()
+                        .toLowerCase(Locale.ROOT)
+                        .replaceAll("[^a-z0-9_-]+", "-")
+                        .replaceAll("^-+|-+$", "");
         if (!StringUtils.hasText(v)) {
             throw new BusinessException("模块前缀无效");
         }
@@ -360,9 +389,12 @@ public class RouteCodegenService {
     // ---------- SQL ----------
 
     private String toInsertSql(PermSpec spec, Permission parent) {
-        String parentIdExpr = parent.getId() != null
-                ? String.valueOf(parent.getId())
-                : "(SELECT id FROM sys_permission WHERE code = '" + escapeSql(parent.getCode()) + "' LIMIT 1)";
+        String parentIdExpr =
+                parent.getId() != null
+                        ? String.valueOf(parent.getId())
+                        : "(SELECT id FROM sys_permission WHERE code = '"
+                                + escapeSql(parent.getCode())
+                                + "' LIMIT 1)";
         return String.format(
                 """
                 INSERT INTO sys_permission (code, name, type, parent_id, path, method, action, icon, button_color, sort, built_in)
@@ -380,8 +412,7 @@ public class RouteCodegenService {
                 sqlNullable(iconOf(spec)),
                 sqlNullable(colorOf(spec)),
                 spec.sort(),
-                escapeSql(spec.code())
-        );
+                escapeSql(spec.code()));
     }
 
     private String toPageUiSql(String routePath, String searchJson) {
@@ -392,14 +423,13 @@ public class RouteCodegenService {
                 WHERE NOT EXISTS (SELECT 1 FROM sys_page_ui_config WHERE route_path = '%s');
 
                 """,
-                escapeSql(routePath),
-                escapeSql(searchJson),
-                escapeSql(routePath)
-        );
+                escapeSql(routePath), escapeSql(searchJson), escapeSql(routePath));
     }
 
     private String defaultSearchConfig(String title) {
-        return "[{\"label\":\"综合查询\",\"prop\":\"FuzzyWord\",\"type\":\"input\",\"placeholder\":\"搜索" + title + "\"}]";
+        return "[{\"label\":\"综合查询\",\"prop\":\"FuzzyWord\",\"type\":\"input\",\"placeholder\":\"搜索"
+                + title
+                + "\"}]";
     }
 
     private String schemaSql(String table, String title) {
@@ -418,7 +448,8 @@ public class RouteCodegenService {
                   UNIQUE KEY `uk_%s_code` (`code`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-                """.formatted(title, table, table);
+                """
+                .formatted(title, table, table);
     }
 
     private String actionOf(PermSpec spec) {
@@ -463,9 +494,13 @@ public class RouteCodegenService {
     // ---------- README ----------
 
     private String readmeCrud(
-            String title, String prefix, String pascal, String table,
-            String apiBase, String viewPath, String routePath
-    ) {
+            String title,
+            String prefix,
+            String pascal,
+            String table,
+            String apiBase,
+            String viewPath,
+            String routePath) {
         return """
                 # %s — 路由脚手架（标准 CRUD）
 
@@ -491,11 +526,10 @@ public class RouteCodegenService {
                 | 视图 | `views/%s` |
 
                 权限码示例：`%s:create`、`%s:view`、`%s:update`、`%s:delete`。
-                """.formatted(
-                title, table, prefix, title, routePath,
-                prefix, apiBase, pascal, viewPath,
-                prefix, prefix, prefix, prefix
-        );
+                """
+                .formatted(
+                        title, table, prefix, title, routePath, prefix, apiBase, pascal, viewPath,
+                        prefix, prefix, prefix, prefix);
     }
 
     // ---------- Java templates ----------
@@ -553,7 +587,8 @@ public class RouteCodegenService {
                     @UpdateTimestamp
                     private LocalDateTime updatedAt;
                 }
-                """.formatted(title, table, pascal);
+                """
+                .formatted(title, table, pascal);
     }
 
     private String repositoryJava(String pascal) {
@@ -575,7 +610,8 @@ public class RouteCodegenService {
                             + " AND (:status IS NULL OR e.status = :status)")
                     Page<%s> search(@Param("keyword") String keyword, @Param("status") Integer status, Pageable pageable);
                 }
-                """.formatted(pascal, pascal, pascal, pascal, pascal);
+                """
+                .formatted(pascal, pascal, pascal, pascal, pascal);
     }
 
     private String requestJava(String pascal, String title) {
@@ -606,7 +642,8 @@ public class RouteCodegenService {
                     @Size(max = 200, message = "备注长度不能超过200")
                     private String remark;
                 }
-                """.formatted(pascal);
+                """
+                .formatted(pascal);
     }
 
     private String voJava(String pascal) {
@@ -643,7 +680,8 @@ public class RouteCodegenService {
                         return vo;
                     }
                 }
-                """.formatted(pascal, pascal, pascal, pascal, pascal, pascal);
+                """
+                .formatted(pascal, pascal, pascal, pascal, pascal, pascal);
     }
 
     private String controllerJava(String pascal, String camel, String apiBase, String title) {
@@ -714,16 +752,11 @@ public class RouteCodegenService {
                         return ApiResponse.success("删除成功", Map.of("count", count));
                     }
                 }
-                """.formatted(
-                pascal, pascal, pascal,
-                title, apiBase, pascal, pascal, camel,
-                pascal, camel,
-                pascal, camel,
-                title, pascal, pascal, camel,
-                title, pascal, pascal, camel,
-                title, camel,
-                title, camel
-        );
+                """
+                .formatted(
+                        pascal, pascal, pascal, title, apiBase, pascal, pascal, camel, pascal,
+                        camel, pascal, camel, title, pascal, pascal, camel, title, pascal, pascal,
+                        camel, title, camel, title, camel);
     }
 
     private String serviceJava(String pascal, String camel, String title, String prefix) {
@@ -823,19 +856,13 @@ public class RouteCodegenService {
                                 .orElseThrow(() -> new BusinessException("记录不存在"));
                     }
                 }
-                """.formatted(
-                pascal, pascal, pascal, pascal,
-                title, prefix, pascal,
-                pascal, camel,
-                pascal, prefix, pascal, camel, pascal, pascal,
-                pascal, prefix, pascal,
-                pascal, pascal, prefix, camel, pascal, pascal, pascal, camel,
-                pascal, pascal, prefix, pascal, camel, pascal, camel,
-                prefix, camel,
-                prefix, camel,
-                pascal, pascal,
-                pascal, camel
-        );
+                """
+                .formatted(
+                        pascal, pascal, pascal, pascal, title, prefix, pascal, pascal, camel,
+                        pascal, prefix, pascal, camel, pascal, pascal, pascal, prefix, pascal,
+                        pascal, pascal, prefix, camel, pascal, pascal, pascal, camel, pascal,
+                        pascal, prefix, pascal, camel, pascal, camel, prefix, camel, prefix, camel,
+                        pascal, pascal, pascal, camel);
     }
 
     // ---------- Vue templates ----------
@@ -843,7 +870,7 @@ public class RouteCodegenService {
     private String crudIndexVue(String title, String routePath, String apiModule, String prefix) {
         return """
                 <template>
-                  <PageLayout
+                  <xnPageLayout
                     v-model:view-mode="viewMode"
                     v-model:page="page"
                     v-model:page-size="size"
@@ -890,7 +917,7 @@ public class RouteCodegenService {
                         </template>
                       </xnTable>
                     </template>
-                  </PageLayout>
+                  </xnPageLayout>
 
                   <SaveDialog ref="saveRef" @success="loadData" />
                 </template>
@@ -898,7 +925,7 @@ public class RouteCodegenService {
                 <script setup lang="ts">
                 import { onMounted, ref } from 'vue'
                 import { ElMessage, ElMessageBox } from 'element-plus'
-                import PageLayout from '@/components/PageLayout/PageLayout.vue'
+                import xnPageLayout from '@/components/xnPageLayout/xnPageLayout.vue'
                 import xnSearch from '@/components/xnSearch/xnSearch.vue'
                 import xnButton from '@/components/xnButton/xnButton.vue'
                 import xnTableActions from '@/components/xnButton/xnTableActions.vue'
@@ -1022,13 +1049,13 @@ public class RouteCodegenService {
 
                 onMounted(loadData)
                 </script>
-                """.formatted(
-                routePath.replace('/', ':').replaceAll("^:", ""),
-                title,
-                apiModule,
-                toPascal(prefix) + "Page",
-                routePath
-        );
+                """
+                .formatted(
+                        routePath.replace('/', ':').replaceAll("^:", ""),
+                        title,
+                        apiModule,
+                        toPascal(prefix) + "Page",
+                        routePath);
     }
 
     private String crudSaveVue(String title, String apiModule, String pascal) {
@@ -1168,7 +1195,8 @@ public class RouteCodegenService {
 
                 defineExpose({ open })
                 </script>
-                """.formatted(apiModule, pascal, title);
+                """
+                .formatted(apiModule, pascal, title);
     }
 
     private String apiTs(String apiModule, String apiUrl) {
@@ -1207,19 +1235,14 @@ public class RouteCodegenService {
                 export function batchRemove(ids: number[]) {
                   return request.post<any, ApiResponse<{ count: number }>>('%s/batch-delete', { ids })
                 }
-                """.formatted(apiUrl, apiUrl, apiUrl, apiUrl, apiUrl, apiUrl);
+                """
+                .formatted(apiUrl, apiUrl, apiUrl, apiUrl, apiUrl, apiUrl);
     }
 
     // ---------- specs ----------
 
     private record PermSpec(
-            String code,
-            String name,
-            PermissionType type,
-            String method,
-            String path,
-            int sort
-    ) {}
+            String code, String name, PermissionType type, String method, String path, int sort) {}
 
     private static PermSpec button(String code, String name, int sort) {
         return new PermSpec(code, name, PermissionType.BUTTON, null, null, sort);

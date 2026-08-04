@@ -2,9 +2,8 @@ package com.smartadmin.dto;
 
 import com.smartadmin.entity.MessageStatus;
 import com.smartadmin.entity.SysMessage;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class MyMessageVO {
@@ -19,8 +18,12 @@ public class MyMessageVO {
     private LocalDateTime readAt;
     private LocalDateTime receivedAt;
 
-    public static MyMessageVO from(SysMessage message, boolean read, LocalDateTime readAt,
-                                   LocalDateTime receivedAt, String senderName) {
+    public static MyMessageVO from(
+            SysMessage message,
+            boolean read,
+            LocalDateTime readAt,
+            LocalDateTime receivedAt,
+            String senderName) {
         MyMessageVO vo = new MyMessageVO();
         vo.setId(message.getId());
         vo.setTitle(message.getTitle());

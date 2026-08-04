@@ -5,11 +5,12 @@ import org.springframework.util.StringUtils;
 
 /**
  * 对标若依 misfire 策略。
+ *
  * <ul>
- *   <li>0 - 默认（等同不触发立即执行）</li>
- *   <li>1 - 忽略 misfire，尽快补齐</li>
- *   <li>2 - 触发一次（FireAndProceed）</li>
- *   <li>3 - 不触发立即执行（DoNothing）</li>
+ *   <li>0 - 默认（等同不触发立即执行）
+ *   <li>1 - 忽略 misfire，尽快补齐
+ *   <li>2 - 触发一次（FireAndProceed）
+ *   <li>3 - 不触发立即执行（DoNothing）
  * </ul>
  */
 public final class JobMisfirePolicy {
@@ -19,8 +20,7 @@ public final class JobMisfirePolicy {
     public static final String FIRE_AND_PROCEED = "2";
     public static final String DO_NOTHING = "3";
 
-    private JobMisfirePolicy() {
-    }
+    private JobMisfirePolicy() {}
 
     public static String normalize(String policy) {
         if (!StringUtils.hasText(policy)) {

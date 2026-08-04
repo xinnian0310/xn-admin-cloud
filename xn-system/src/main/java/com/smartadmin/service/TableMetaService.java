@@ -4,11 +4,6 @@ import com.smartadmin.common.BusinessException;
 import com.smartadmin.dto.ColumnMetaVO;
 import com.smartadmin.dto.TableInfoVO;
 import com.smartadmin.util.CodegenNaming;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -18,6 +13,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import javax.sql.DataSource;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +31,7 @@ public class TableMetaService {
         try (Connection conn = dataSource.getConnection()) {
             DatabaseMetaData meta = conn.getMetaData();
             String catalog = conn.getCatalog();
-            try (ResultSet rs = meta.getTables(catalog, null, "%", new String[]{"TABLE"})) {
+            try (ResultSet rs = meta.getTables(catalog, null, "%", new String[] {"TABLE"})) {
                 while (rs.next()) {
                     String name = rs.getString("TABLE_NAME");
                     if (!StringUtils.hasText(name)) continue;
@@ -75,7 +74,8 @@ public class TableMetaService {
             }
             // MySQL 表名大小写：再试一次小写
             if (pks.isEmpty()) {
-                try (ResultSet pkRs = meta.getPrimaryKeys(catalog, null, table.toLowerCase(Locale.ROOT))) {
+                try (ResultSet pkRs =
+                        meta.getPrimaryKeys(catalog, null, table.toLowerCase(Locale.ROOT))) {
                     while (pkRs.next()) {
                         pks.add(pkRs.getString("COLUMN_NAME"));
                     }
@@ -87,7 +87,8 @@ public class TableMetaService {
                 }
             }
             if (columns.isEmpty()) {
-                try (ResultSet rs = meta.getColumns(catalog, null, table.toLowerCase(Locale.ROOT), "%")) {
+                try (ResultSet rs =
+                        meta.getColumns(catalog, null, table.toLowerCase(Locale.ROOT), "%")) {
                     while (rs.next()) {
                         columns.add(mapColumn(rs, pks));
                     }
@@ -126,13 +127,22 @@ public class TableMetaService {
         vo.setFormType(mapping.formType);
 
         String lower = columnName.toLowerCase(Locale.ROOT);
-        boolean audit = lower.equals("created_at") || lower.equals("updated_at")
-                || lower.equals("create_time") || lower.equals("update_time");
+        boolean audit =
+                lower.equals("created_at")
+                        || lower.equals("updated_at")
+                        || lower.equals("create_time")
+                        || lower.equals("update_time");
         boolean builtin = lower.equals("built_in") || lower.equals("builtin");
 
         vo.setListShow(!pk && !builtin);
-        vo.setQueryable(!pk && !audit && !builtin && ("String".equals(mapping.javaType)
-                || lower.contains("name") || lower.contains("code") || lower.equals("status")));
+        vo.setQueryable(
+                !pk
+                        && !audit
+                        && !builtin
+                        && ("String".equals(mapping.javaType)
+                                || lower.contains("name")
+                                || lower.contains("code")
+                                || lower.equals("status")));
         vo.setFormShow(!pk && !audit && !builtin);
         vo.setRequired(!vo.isNullable() && vo.isFormShow());
 
@@ -149,21 +159,26 @@ public class TableMetaService {
         String type = typeName == null ? "" : typeName.toUpperCase(Locale.ROOT);
         String lowerCol = columnName.toLowerCase(Locale.ROOT);
 
-        if ("status".equals(lowerCol) && (type.contains("INT") || type.contains("TINYINT") || type.contains("BIT"))) {
+        if ("status".equals(lowerCol)
+                && (type.contains("INT") || type.contains("TINYINT") || type.contains("BIT"))) {
             return new TypeMapping("Integer", "select");
         }
         if (type.contains("BIGINT")) {
             return new TypeMapping("Long", "number");
         }
         if (type.contains("INT") || type.contains("SMALLINT") || type.contains("TINYINT")) {
-            if ((type.contains("TINYINT") || type.contains("BIT")) && size <= 1
+            if ((type.contains("TINYINT") || type.contains("BIT"))
+                    && size <= 1
                     && !("status".equals(lowerCol))) {
                 return new TypeMapping("Boolean", "select");
             }
             return new TypeMapping("Integer", "number");
         }
-        if (type.contains("DECIMAL") || type.contains("NUMERIC") || type.contains("DOUBLE")
-                || type.contains("FLOAT") || type.contains("REAL")) {
+        if (type.contains("DECIMAL")
+                || type.contains("NUMERIC")
+                || type.contains("DOUBLE")
+                || type.contains("FLOAT")
+                || type.contains("REAL")) {
             return new TypeMapping("BigDecimal", "number");
         }
         if (type.contains("DATETIME") || type.contains("TIMESTAMP")) {

@@ -2,13 +2,12 @@ package com.smartadmin.dto;
 
 import com.smartadmin.entity.Role;
 import com.smartadmin.entity.User;
-import lombok.Data;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Data;
 
 @Data
 public class UserVO {
@@ -19,14 +18,21 @@ public class UserVO {
     private String email;
     private String phone;
     private Integer status;
-    /** @deprecated 冗余，使用 roleList */
+
+    /**
+     * @deprecated 冗余，使用 roleList
+     */
     private String role;
+
     /** 用户直接绑定的角色 */
     private List<RoleVO> roleList;
+
     /** 所属单位默认角色（继承） */
     private List<RoleVO> unitRoleList;
+
     /** 生效角色 = 个人 ∪ 单位 */
     private List<RoleVO> effectiveRoleList;
+
     private Long unitId;
     private String unitName;
     private Long postId;
@@ -67,10 +73,11 @@ public class UserVO {
         if (unitRoles == null || unitRoles.isEmpty()) {
             setUnitRoleList(List.of());
         } else {
-            setUnitRoleList(unitRoles.stream()
-                    .filter(r -> r.getStatus() != null && r.getStatus() == 1)
-                    .map(RoleVO::from)
-                    .toList());
+            setUnitRoleList(
+                    unitRoles.stream()
+                            .filter(r -> r.getStatus() != null && r.getStatus() == 1)
+                            .map(RoleVO::from)
+                            .toList());
         }
         rebuildEffectiveRoles();
     }

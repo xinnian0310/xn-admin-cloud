@@ -6,6 +6,13 @@ import com.smartadmin.dto.LoginPageConfigVO;
 import com.smartadmin.dto.PageResult;
 import com.smartadmin.entity.SysLoginPageConfig;
 import com.smartadmin.repository.SysLoginPageConfigRepository;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -16,21 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class LoginPageConfigService {
 
-    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"
-    );
+    private static final Set<String> ALLOWED_IMAGE_TYPES =
+            Set.of("image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml");
 
     private final SysLoginPageConfigRepository repository;
     private final RbacService rbacService;
@@ -46,9 +44,11 @@ public class LoginPageConfigService {
     public PageResult<LoginPageConfigVO> list(int page, int size, String keyword, Integer status) {
         rbacService.checkPermission("login-page:view");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
-        Page<SysLoginPageConfig> result = repository.search(
-                StringUtils.hasText(keyword) ? keyword.trim() : "", status, pageable);
-        List<LoginPageConfigVO> records = result.getContent().stream().map(LoginPageConfigVO::from).toList();
+        Page<SysLoginPageConfig> result =
+                repository.search(
+                        StringUtils.hasText(keyword) ? keyword.trim() : "", status, pageable);
+        List<LoginPageConfigVO> records =
+                result.getContent().stream().map(LoginPageConfigVO::from).toList();
         return new PageResult<>(records, result.getTotalElements(), page, size);
     }
 
@@ -114,7 +114,8 @@ public class LoginPageConfigService {
 
     /** 上传登录页背景图，返回可公开访问的 URL */
     public String uploadBackground(MultipartFile file) {
-        if (!rbacService.hasPermission("login-page:create") && !rbacService.hasPermission("login-page:update")) {
+        if (!rbacService.hasPermission("login-page:create")
+                && !rbacService.hasPermission("login-page:update")) {
             throw new BusinessException(403, "无权限");
         }
         if (file == null || file.isEmpty()) {
@@ -169,8 +170,10 @@ public class LoginPageConfigService {
 
     private void applyRequest(SysLoginPageConfig config, LoginPageConfigRequest request) {
         config.setName(request.getName().trim());
-        config.setBackgroundUrl(StringUtils.hasText(request.getBackgroundUrl())
-                ? request.getBackgroundUrl().trim() : null);
+        config.setBackgroundUrl(
+                StringUtils.hasText(request.getBackgroundUrl())
+                        ? request.getBackgroundUrl().trim()
+                        : null);
         config.setBackgroundFit(normalizeBackgroundFit(request.getBackgroundFit()));
         // 任一为空则视为默认居中（两端都清空）
         if (request.getBoxX() == null || request.getBoxY() == null) {
@@ -187,13 +190,13 @@ public class LoginPageConfigService {
     }
 
     private SysLoginPageConfig findConfig(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new BusinessException("登录页配置不存在"));
+        return repository.findById(id).orElseThrow(() -> new BusinessException("登录页配置不存在"));
     }
 
     private String resolveExtension(String originalFilename, String contentType) {
         if (StringUtils.hasText(originalFilename) && originalFilename.contains(".")) {
-            String ext = originalFilename.substring(originalFilename.lastIndexOf('.')).toLowerCase();
+            String ext =
+                    originalFilename.substring(originalFilename.lastIndexOf('.')).toLowerCase();
             if (ext.matches("\\.(jpe?g|png|gif|webp|svg)")) {
                 return ext.equals(".jpeg") ? ".jpg" : ext;
             }

@@ -6,6 +6,9 @@ import com.smartadmin.service.OperLogService;
 import com.smartadmin.service.RbacService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -16,14 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.regex.Pattern;
-
-/**
- * 环绕采集标注了 {@link OperLog} 的方法：操作人/耗时/入参/结果状态。
- * 采集失败绝不影响被拦截业务方法的返回值或异常传播。
- */
+/** 环绕采集标注了 {@link OperLog} 的方法：操作人/耗时/入参/结果状态。 采集失败绝不影响被拦截业务方法的返回值或异常传播。 */
 @Slf4j
 @Aspect
 @Component
@@ -49,7 +45,12 @@ public class OperLogAspect {
         }
     }
 
-    private void saveLog(ProceedingJoinPoint joinPoint, OperLog operLog, long start, int status, String errorMsg) {
+    private void saveLog(
+            ProceedingJoinPoint joinPoint,
+            OperLog operLog,
+            long start,
+            int status,
+            String errorMsg) {
         try {
             HttpServletRequest request = WebUtils.getCurrentRequest();
             MethodSignature signature = (MethodSignature) joinPoint.getSignature();
@@ -62,8 +63,17 @@ public class OperLogAspect {
             String params = serializeArgs(joinPoint.getArgs());
             long costTime = System.currentTimeMillis() - start;
             operLogService.record(
-                    operLog.title(), operLog.businessType(), operatorName,
-                    requestMethod, requestUrl, methodName, ip, params, status, errorMsg, costTime);
+                    operLog.title(),
+                    operLog.businessType(),
+                    operatorName,
+                    requestMethod,
+                    requestUrl,
+                    methodName,
+                    ip,
+                    params,
+                    status,
+                    errorMsg,
+                    costTime);
         } catch (Exception e) {
             log.warn("采集操作日志失败：{}", e.getMessage());
         }
@@ -81,11 +91,14 @@ public class OperLogAspect {
         if (args == null || args.length == 0) {
             return null;
         }
-        Object[] filtered = Arrays.stream(args)
-                .filter(arg -> !(arg instanceof HttpServletRequest)
-                        && !(arg instanceof HttpServletResponse)
-                        && !(arg instanceof MultipartFile))
-                .toArray();
+        Object[] filtered =
+                Arrays.stream(args)
+                        .filter(
+                                arg ->
+                                        !(arg instanceof HttpServletRequest)
+                                                && !(arg instanceof HttpServletResponse)
+                                                && !(arg instanceof MultipartFile))
+                        .toArray();
         if (filtered.length == 0) {
             return null;
         }

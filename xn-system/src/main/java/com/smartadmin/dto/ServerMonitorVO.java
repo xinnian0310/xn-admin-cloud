@@ -1,10 +1,9 @@
 package com.smartadmin.dto;
 
-import lombok.Data;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
 
 /** 服务监控：CPU / 内存 / JVM / 服务器信息 / 磁盘 */
 @Data
@@ -20,8 +19,10 @@ public class ServerMonitorVO {
     public static class Cpu {
         /** 逻辑核心数 */
         private int cores;
+
         /** 系统整体 CPU 使用率(%) */
         private double sysUsage;
+
         /** 当前进程 CPU 使用率(%) */
         private double processUsage;
     }
@@ -47,6 +48,7 @@ public class ServerMonitorVO {
         private String vendor;
         private String home;
         private LocalDateTime startTime;
+
         /** 运行时长（秒） */
         private long uptimeSeconds;
     }

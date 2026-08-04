@@ -17,9 +17,7 @@ public class LoginPageConfigRequest {
     @Size(max = 500, message = "背景图地址长度不能超过500")
     private String backgroundUrl;
 
-    /**
-     * COVER 覆盖铺满 / CONTAIN 完整适应 / STRETCH 拉伸填满 / CENTER 居中原图
-     */
+    /** COVER 覆盖铺满 / CONTAIN 完整适应 / STRETCH 拉伸填满 / CENTER 居中原图 */
     @Size(max = 20, message = "背景适应模式长度不能超过20")
     private String backgroundFit = "COVER";
 

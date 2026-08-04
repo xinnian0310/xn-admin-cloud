@@ -12,15 +12,14 @@ import io.minio.Result;
 import io.minio.SetBucketPolicyArgs;
 import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -39,10 +38,11 @@ public class MinioStorageService {
             return;
         }
         try {
-            client = MinioClient.builder()
-                    .endpoint(properties.getEndpoint())
-                    .credentials(properties.getAccessKey(), properties.getSecretKey())
-                    .build();
+            client =
+                    MinioClient.builder()
+                            .endpoint(properties.getEndpoint())
+                            .credentials(properties.getAccessKey(), properties.getSecretKey())
+                            .build();
             ensureBucket();
             ready = true;
             log.info("MinIO 已连接：{} bucket={}", properties.getEndpoint(), properties.getBucket());
@@ -63,7 +63,8 @@ public class MinioStorageService {
             client.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
         }
         // 公开读，便于 kkFileView / 浏览器直接访问对象 URL
-        String policy = """
+        String policy =
+                """
                 {
                   "Version": "2012-10-17",
                   "Statement": [{
@@ -73,41 +74,42 @@ public class MinioStorageService {
                     "Resource": ["arn:aws:s3:::%s/*"]
                   }]
                 }
-                """.formatted(bucket);
+                """
+                        .formatted(bucket);
         try {
-            client.setBucketPolicy(SetBucketPolicyArgs.builder().bucket(bucket).config(policy).build());
+            client.setBucketPolicy(
+                    SetBucketPolicyArgs.builder().bucket(bucket).config(policy).build());
         } catch (Exception e) {
             log.debug("设置 MinIO 桶策略失败（可忽略）：{}", e.getMessage());
         }
     }
 
-    public record ObjectInfo(String key, String name, long size, String lastModified, boolean directory) {
+    public record ObjectInfo(
+            String key, String name, long size, String lastModified, boolean directory) {
         public ObjectInfo(String key, String name, long size, String lastModified) {
             this(key, name, size, lastModified, false);
         }
     }
 
-    public record PrefixListing(List<ObjectInfo> dirs, List<ObjectInfo> files) {
-    }
+    public record PrefixListing(List<ObjectInfo> dirs, List<ObjectInfo> files) {}
 
     public List<ObjectInfo> list(String keyword) {
         PrefixListing listing = listPrefix("", true, keyword);
         return listing.files();
     }
 
-    /**
-     * 按前缀浏览。recursive=false 时使用 delimiter=/，只返回当前层目录与文件。
-     */
+    /** 按前缀浏览。recursive=false 时使用 delimiter=/，只返回当前层目录与文件。 */
     public PrefixListing listPrefix(String prefix, boolean recursive, String keyword) {
         assertReady();
         String normalized = normalizePrefix(prefix);
         List<ObjectInfo> dirs = new ArrayList<>();
         List<ObjectInfo> files = new ArrayList<>();
         try {
-            ListObjectsArgs.Builder builder = ListObjectsArgs.builder()
-                    .bucket(properties.getBucket())
-                    .prefix(normalized)
-                    .recursive(recursive);
+            ListObjectsArgs.Builder builder =
+                    ListObjectsArgs.builder()
+                            .bucket(properties.getBucket())
+                            .prefix(normalized)
+                            .recursive(recursive);
             if (!recursive) {
                 builder.delimiter("/");
             }
@@ -151,10 +153,14 @@ public class MinioStorageService {
                     continue;
                 }
                 long size = item.size();
-                String modified = item.lastModified() != null
-                        ? item.lastModified().toLocalDateTime()
-                        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                        : "";
+                String modified =
+                        item.lastModified() != null
+                                ? item.lastModified()
+                                        .toLocalDateTime()
+                                        .format(
+                                                java.time.format.DateTimeFormatter.ofPattern(
+                                                        "yyyy-MM-dd HH:mm:ss"))
+                                : "";
                 files.add(new ObjectInfo(key, name, size, modified, false));
             }
         } catch (Exception e) {
@@ -166,12 +172,14 @@ public class MinioStorageService {
     public ObjectInfo upload(MultipartFile file, String objectKey) {
         assertReady();
         try (InputStream in = file.getInputStream()) {
-            client.putObject(PutObjectArgs.builder()
-                    .bucket(properties.getBucket())
-                    .object(objectKey)
-                    .stream(in, file.getSize(), -1)
-                    .contentType(file.getContentType() != null ? file.getContentType() : "application/octet-stream")
-                    .build());
+            client.putObject(
+                    PutObjectArgs.builder().bucket(properties.getBucket()).object(objectKey).stream(
+                                    in, file.getSize(), -1)
+                            .contentType(
+                                    file.getContentType() != null
+                                            ? file.getContentType()
+                                            : "application/octet-stream")
+                            .build());
             return new ObjectInfo(objectKey, file.getOriginalFilename(), file.getSize(), "");
         } catch (Exception e) {
             throw new BusinessException("上传到 MinIO 失败：" + e.getMessage());
@@ -188,12 +196,11 @@ public class MinioStorageService {
         String marker = dir + ".keep";
         try {
             byte[] empty = new byte[0];
-            client.putObject(PutObjectArgs.builder()
-                    .bucket(properties.getBucket())
-                    .object(marker)
-                    .stream(new java.io.ByteArrayInputStream(empty), 0, -1)
-                    .contentType("application/octet-stream")
-                    .build());
+            client.putObject(
+                    PutObjectArgs.builder().bucket(properties.getBucket()).object(marker).stream(
+                                    new java.io.ByteArrayInputStream(empty), 0, -1)
+                            .contentType("application/octet-stream")
+                            .build());
         } catch (Exception e) {
             throw new BusinessException("创建 MinIO 目录失败：" + e.getMessage());
         }
@@ -202,10 +209,11 @@ public class MinioStorageService {
     public void delete(String objectKey) {
         assertReady();
         try {
-            client.removeObject(RemoveObjectArgs.builder()
-                    .bucket(properties.getBucket())
-                    .object(objectKey)
-                    .build());
+            client.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(properties.getBucket())
+                            .object(objectKey)
+                            .build());
         } catch (Exception e) {
             throw new BusinessException("删除 MinIO 对象失败：" + e.getMessage());
         }
@@ -260,7 +268,8 @@ public class MinioStorageService {
 
     private void assertReady() {
         if (!isReady()) {
-            throw new BusinessException("MinIO 未就绪，请先启动 tool/minio，或将 app.minio.enabled 设为 false 使用本地存储");
+            throw new BusinessException(
+                    "MinIO 未就绪，请先启动 tool/minio，或将 app.minio.enabled 设为 false 使用本地存储");
         }
     }
 }

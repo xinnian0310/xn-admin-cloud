@@ -2,11 +2,10 @@ package com.smartadmin.dto;
 
 import com.smartadmin.entity.RouteType;
 import com.smartadmin.entity.SysRoute;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class RouteVO {
@@ -49,11 +48,12 @@ public class RouteVO {
     public static RouteVO treeFrom(SysRoute route) {
         RouteVO vo = from(route);
         if (route.getChildren() != null && !route.getChildren().isEmpty()) {
-            vo.setChildren(route.getChildren().stream()
-                    .filter(r -> r.getStatus() == 1 && !Boolean.TRUE.equals(r.getHidden()))
-                    .sorted(Comparator.comparing(SysRoute::getSort))
-                    .map(RouteVO::treeFrom)
-                    .toList());
+            vo.setChildren(
+                    route.getChildren().stream()
+                            .filter(r -> r.getStatus() == 1 && !Boolean.TRUE.equals(r.getHidden()))
+                            .sorted(Comparator.comparing(SysRoute::getSort))
+                            .map(RouteVO::treeFrom)
+                            .toList());
         }
         return vo;
     }

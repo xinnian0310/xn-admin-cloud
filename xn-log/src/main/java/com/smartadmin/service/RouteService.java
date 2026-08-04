@@ -12,17 +12,16 @@ import com.smartadmin.entity.User;
 import com.smartadmin.repository.PermissionRepository;
 import com.smartadmin.repository.RoleRepository;
 import com.smartadmin.repository.SysRouteRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -48,15 +47,20 @@ public class RouteService {
     }
 
     private boolean hasFilter(String keyword, String type, Integer status, Boolean builtIn) {
-        return StringUtils.hasText(keyword) || StringUtils.hasText(type) || status != null || builtIn != null;
+        return StringUtils.hasText(keyword)
+                || StringUtils.hasText(type)
+                || status != null
+                || builtIn != null;
     }
 
-    private List<RouteVO> filterTree(List<RouteVO> nodes, String keyword, String type, Integer status, Boolean builtIn) {
+    private List<RouteVO> filterTree(
+            List<RouteVO> nodes, String keyword, String type, Integer status, Boolean builtIn) {
         List<RouteVO> result = new ArrayList<>();
         for (RouteVO node : nodes) {
-            List<RouteVO> children = node.getChildren() == null || node.getChildren().isEmpty()
-                    ? List.of()
-                    : filterTree(node.getChildren(), keyword, type, status, builtIn);
+            List<RouteVO> children =
+                    node.getChildren() == null || node.getChildren().isEmpty()
+                            ? List.of()
+                            : filterTree(node.getChildren(), keyword, type, status, builtIn);
             if (matchRoute(node, keyword, type, status, builtIn) || !children.isEmpty()) {
                 node.setChildren(new ArrayList<>(children));
                 result.add(node);
@@ -65,20 +69,24 @@ public class RouteService {
         return result;
     }
 
-    private boolean matchRoute(RouteVO node, String keyword, String type, Integer status, Boolean builtIn) {
+    private boolean matchRoute(
+            RouteVO node, String keyword, String type, Integer status, Boolean builtIn) {
         if (StringUtils.hasText(keyword)) {
             String kw = keyword.trim().toLowerCase();
-            String haystack = String.join(" ",
-                    nullToEmpty(node.getTitle()),
-                    nullToEmpty(node.getPath()),
-                    nullToEmpty(node.getPermission()),
-                    nullToEmpty(node.getViewPath())
-            ).toLowerCase();
+            String haystack =
+                    String.join(
+                                    " ",
+                                    nullToEmpty(node.getTitle()),
+                                    nullToEmpty(node.getPath()),
+                                    nullToEmpty(node.getPermission()),
+                                    nullToEmpty(node.getViewPath()))
+                            .toLowerCase();
             if (!haystack.contains(kw)) {
                 return false;
             }
         }
-        if (StringUtils.hasText(type) && (node.getType() == null || !type.equalsIgnoreCase(node.getType().name()))) {
+        if (StringUtils.hasText(type)
+                && (node.getType() == null || !type.equalsIgnoreCase(node.getType().name()))) {
             return false;
         }
         if (status != null && !status.equals(node.getStatus())) {
@@ -94,19 +102,20 @@ public class RouteService {
         return value == null ? "" : value;
     }
 
-    /**
-     * 隐藏路由（如字典数据下钻页）仍需下发给前端以便动态注册 Vue Router 路由，
-     * 只是不出现在侧边栏导航中（前端 filterHiddenMenus 负责侧边栏过滤）。
-     */
+    /** 隐藏路由（如字典数据下钻页）仍需下发给前端以便动态注册 Vue Router 路由， 只是不出现在侧边栏导航中（前端 filterHiddenMenus 负责侧边栏过滤）。 */
     public List<RouteVO> menuTreeForCurrentUser() {
         User user = rbacService.currentUser();
-        return appCacheService.getMenus(user.getId(), new tools.jackson.core.type.TypeReference<>() {
-        }, () -> {
-            List<RouteVO> tree = buildTree(routeRepository.findAllWithParent().stream()
-                    .filter(r -> r.getStatus() == 1)
-                    .toList());
-            return filterByPermission(tree);
-        });
+        return appCacheService.getMenus(
+                user.getId(),
+                new tools.jackson.core.type.TypeReference<>() {},
+                () -> {
+                    List<RouteVO> tree =
+                            buildTree(
+                                    routeRepository.findAllWithParent().stream()
+                                            .filter(r -> r.getStatus() == 1)
+                                            .toList());
+                    return filterByPermission(tree);
+                });
     }
 
     public RouteVO getById(Long id) {
@@ -204,11 +213,14 @@ public class RouteService {
                 throw new BusinessException("菜单路由必须填写访问路径");
             }
             request.setPath(normalizePath(request.getPath()));
-            routeRepository.findByPath(request.getPath()).ifPresent(existing -> {
-                if (excludeId == null || !existing.getId().equals(excludeId)) {
-                    throw new BusinessException("访问路径已存在: " + request.getPath());
-                }
-            });
+            routeRepository
+                    .findByPath(request.getPath())
+                    .ifPresent(
+                            existing -> {
+                                if (excludeId == null || !existing.getId().equals(excludeId)) {
+                                    throw new BusinessException("访问路径已存在: " + request.getPath());
+                                }
+                            });
         }
     }
 
@@ -229,7 +241,8 @@ public class RouteService {
         route.setStatus(request.getStatus() != null ? request.getStatus() : 1);
         route.setHidden(request.getHidden() != null ? request.getHidden() : false);
         route.setAffix(request.getAffix() != null ? request.getAffix() : false);
-        route.setPermissionControl(request.getPermissionControl() != null ? request.getPermissionControl() : false);
+        route.setPermissionControl(
+                request.getPermissionControl() != null ? request.getPermissionControl() : false);
         if (request.getParentId() != null) {
             route.setParent(findRoute(request.getParentId()));
         } else {
@@ -249,10 +262,7 @@ public class RouteService {
         return cleaned.startsWith("/") ? cleaned : "/" + cleaned;
     }
 
-    /**
-     * 菜单：按访问路径生成；目录：按父级权限 + 自身 id 生成。
-     * 已有标识在路径未变时保留，避免破坏已分配的内置权限。
-     */
+    /** 菜单：按访问路径生成；目录：按父级权限 + 自身 id 生成。 已有标识在路径未变时保留，避免破坏已分配的内置权限。 */
     private void ensurePermissionCode(SysRoute route, String oldPath, boolean isNew) {
         if (route.getType() == RouteType.MENU) {
             String generated = pathToPermissionCode(route.getPath());
@@ -260,16 +270,20 @@ public class RouteService {
             String expectedOld = pathToPermissionCode(oldPath);
             if (!StringUtils.hasText(route.getPermission())) {
                 route.setPermission(generated);
-            } else if (pathChanged && expectedOld != null && expectedOld.equals(route.getPermission())) {
+            } else if (pathChanged
+                    && expectedOld != null
+                    && expectedOld.equals(route.getPermission())) {
                 // 原先就是按路径自动生成的，路径变更时同步更新
                 route.setPermission(generated);
             }
             return;
         }
         if (!StringUtils.hasText(route.getPermission())) {
-            String parentCode = route.getParent() != null && StringUtils.hasText(route.getParent().getPermission())
-                    ? route.getParent().getPermission()
-                    : "menu";
+            String parentCode =
+                    route.getParent() != null
+                                    && StringUtils.hasText(route.getParent().getPermission())
+                            ? route.getParent().getPermission()
+                            : "menu";
             route.setPermission(parentCode + ":g" + route.getId());
         }
     }
@@ -290,7 +304,9 @@ public class RouteService {
         permission.setName(route.getTitle());
         permission.setPath(route.getPath());
         if (route.getParent() != null && StringUtils.hasText(route.getParent().getPermission())) {
-            permissionRepository.findByCode(route.getParent().getPermission()).ifPresent(permission::setParent);
+            permissionRepository
+                    .findByCode(route.getParent().getPermission())
+                    .ifPresent(permission::setParent);
         } else {
             permission.setParent(null);
         }
@@ -303,20 +319,25 @@ public class RouteService {
 
     private void grantPermissionToAdminRoles(Permission permission) {
         for (String code : List.of("SUPER_ADMIN", "ADMIN")) {
-            roleRepository.findByCode(code).ifPresent(role -> {
-                Role managed = roleRepository.findByIdWithPermissions(role.getId()).orElse(role);
-                Set<Permission> perms = new HashSet<>(managed.getPermissions());
-                if (perms.add(permission)) {
-                    managed.setPermissions(perms);
-                    roleRepository.save(managed);
-                }
-            });
+            roleRepository
+                    .findByCode(code)
+                    .ifPresent(
+                            role -> {
+                                Role managed =
+                                        roleRepository
+                                                .findByIdWithPermissions(role.getId())
+                                                .orElse(role);
+                                Set<Permission> perms = new HashSet<>(managed.getPermissions());
+                                if (perms.add(permission)) {
+                                    managed.setPermissions(perms);
+                                    roleRepository.save(managed);
+                                }
+                            });
         }
     }
 
     private SysRoute findRoute(Long id) {
-        return routeRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("路由不存在"));
+        return routeRepository.findById(id).orElseThrow(() -> new BusinessException("路由不存在"));
     }
 
     private List<RouteVO> buildTree(List<SysRoute> routes) {
@@ -332,11 +353,15 @@ public class RouteService {
 
     private RouteVO buildNode(SysRoute parent, List<SysRoute> all) {
         RouteVO vo = RouteVO.from(parent);
-        List<RouteVO> children = all.stream()
-                .filter(r -> r.getParent() != null && r.getParent().getId().equals(parent.getId()))
-                .sorted(Comparator.comparing(SysRoute::getSort))
-                .map(r -> buildNode(r, all))
-                .toList();
+        List<RouteVO> children =
+                all.stream()
+                        .filter(
+                                r ->
+                                        r.getParent() != null
+                                                && r.getParent().getId().equals(parent.getId()))
+                        .sorted(Comparator.comparing(SysRoute::getSort))
+                        .map(r -> buildNode(r, all))
+                        .toList();
         vo.setChildren(new ArrayList<>(children));
         return vo;
     }
@@ -347,9 +372,10 @@ public class RouteService {
             List<RouteVO> filteredChildren = filterByPermission(node.getChildren());
             // 未开启权限控制的菜单对所有登录用户可见
             boolean needsControl = Boolean.TRUE.equals(node.getPermissionControl());
-            boolean hasPermission = !needsControl
-                    || !StringUtils.hasText(node.getPermission())
-                    || rbacService.hasPermission(node.getPermission());
+            boolean hasPermission =
+                    !needsControl
+                            || !StringUtils.hasText(node.getPermission())
+                            || rbacService.hasPermission(node.getPermission());
             if (node.getType() == RouteType.DIR) {
                 if (!filteredChildren.isEmpty()) {
                     node.setChildren(filteredChildren);

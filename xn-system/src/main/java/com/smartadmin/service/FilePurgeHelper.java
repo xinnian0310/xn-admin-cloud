@@ -2,17 +2,14 @@ package com.smartadmin.service;
 
 import com.smartadmin.config.MinioProperties;
 import com.smartadmin.entity.SysFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-/**
- * 回收站彻底删除时清理对象存储 / 本地文件，避免与 FileManageService 循环依赖。
- */
+/** 回收站彻底删除时清理对象存储 / 本地文件，避免与 FileManageService 循环依赖。 */
 @Component
 @RequiredArgsConstructor
 public class FilePurgeHelper {
@@ -28,7 +25,9 @@ public class FilePurgeHelper {
             return;
         }
         String key = file.getObjectKey();
-        if ("minio".equalsIgnoreCase(file.getStorage()) && minioStorageService.isReady() && minioProperties.isEnabled()) {
+        if ("minio".equalsIgnoreCase(file.getStorage())
+                && minioStorageService.isReady()
+                && minioProperties.isEnabled()) {
             minioStorageService.delete(key);
             return;
         }

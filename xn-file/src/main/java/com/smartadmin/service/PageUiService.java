@@ -9,16 +9,15 @@ import com.smartadmin.entity.SysRoute;
 import com.smartadmin.repository.PermissionRepository;
 import com.smartadmin.repository.SysPageUiConfigRepository;
 import com.smartadmin.repository.SysRouteRepository;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +35,13 @@ public class PageUiService {
         vo.setRoutePath(routePath);
 
         // 搜索项属于纯 UI 配置，仍来自 sys_page_ui_config
-        pageUiConfigRepository.findByRoutePath(routePath).ifPresent(config ->
-                vo.setSearchItems(filterSearchItems(parseSearchConfig(config.getSearchConfig()))));
+        pageUiConfigRepository
+                .findByRoutePath(routePath)
+                .ifPresent(
+                        config ->
+                                vo.setSearchItems(
+                                        filterSearchItems(
+                                                parseSearchConfig(config.getSearchConfig()))));
 
         // 按钮统一来自「权限内容」：
         // - BUTTON → 工具栏 xnButton（新增/编辑/查看/删除）
@@ -106,7 +110,8 @@ public class PageUiService {
     private List<PageUiSearchItemDTO> filterSearchItems(List<PageUiSearchItemDTO> items) {
         List<PageUiSearchItemDTO> result = new ArrayList<>();
         for (PageUiSearchItemDTO item : items) {
-            if (!StringUtils.hasText(item.getPermission()) || rbacService.hasPermission(item.getPermission())) {
+            if (!StringUtils.hasText(item.getPermission())
+                    || rbacService.hasPermission(item.getPermission())) {
                 result.add(item);
             }
         }

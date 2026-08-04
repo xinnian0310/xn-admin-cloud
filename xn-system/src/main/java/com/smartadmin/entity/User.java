@@ -1,14 +1,13 @@
 package com.smartadmin.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -42,7 +41,9 @@ public class User {
     @Column(nullable = false)
     private Integer status = 1;
 
-    /** @deprecated 冗余字段，v1.3 移除，与 roles 双写 */
+    /**
+     * @deprecated 冗余字段，v1.3 移除，与 roles 双写
+     */
     @Column(nullable = false, length = 20)
     private String role = "USER";
 
@@ -50,8 +51,7 @@ public class User {
     @JoinTable(
             name = "sys_user_role",
             joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
     /** 所属单位 */
@@ -68,8 +68,7 @@ public class User {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @UpdateTimestamp private LocalDateTime updatedAt;
 
     /** 最近修改密码时间；空表示历史账号未记录，过期策略对其豁免 */
     @Column(name = "password_changed_at")

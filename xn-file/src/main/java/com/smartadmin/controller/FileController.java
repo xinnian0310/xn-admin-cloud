@@ -9,6 +9,9 @@ import com.smartadmin.dto.FileTreeNodeVO;
 import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.FileManageService;
 import jakarta.validation.Valid;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,10 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/files")
@@ -52,8 +51,8 @@ public class FileController {
     @PostMapping("/upload")
     @OperLog(title = "文件管理", businessType = OperBusinessType.IMPORT)
     public ApiResponse<FileInfoVO> upload(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(required = false) String prefix) throws IOException {
+            @RequestParam("file") MultipartFile file, @RequestParam(required = false) String prefix)
+            throws IOException {
         return ApiResponse.success(fileManageService.upload(file, prefix));
     }
 
@@ -66,7 +65,8 @@ public class FileController {
 
     @DeleteMapping
     @OperLog(title = "文件管理", businessType = OperBusinessType.DELETE)
-    public ApiResponse<Void> delete(@Valid @RequestBody FileDeleteRequest request) throws IOException {
+    public ApiResponse<Void> delete(@Valid @RequestBody FileDeleteRequest request)
+            throws IOException {
         fileManageService.delete(request.getPath());
         return ApiResponse.success("删除成功", null);
     }

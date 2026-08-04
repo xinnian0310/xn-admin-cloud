@@ -10,6 +10,7 @@ import com.smartadmin.entity.SysPost;
 import com.smartadmin.repository.SysPostRepository;
 import com.smartadmin.repository.UserRepository;
 import com.smartadmin.util.ExcelExportUtil;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,8 +18,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,15 +31,19 @@ public class PostService {
 
     public PageResult<PostVO> list(int page, int size, String keyword, Integer status) {
         rbacService.checkPermission("post:view");
-        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "sort", "id"));
-        Page<SysPost> result = postRepository.search(
-                StringUtils.hasText(keyword) ? keyword.trim() : "", status, pageable);
+        PageRequest pageable =
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "sort", "id"));
+        Page<SysPost> result =
+                postRepository.search(
+                        StringUtils.hasText(keyword) ? keyword.trim() : "", status, pageable);
         List<PostVO> records = result.getContent().stream().map(PostVO::from).toList();
         return new PageResult<>(records, result.getTotalElements(), page, size);
     }
 
     public List<PostVO> listOptions() {
-        return postRepository.findByStatusOrderBySortAscIdAsc(1).stream().map(PostVO::from).toList();
+        return postRepository.findByStatusOrderBySortAscIdAsc(1).stream()
+                .map(PostVO::from)
+                .toList();
     }
 
     public PostVO getById(Long id) {
@@ -133,25 +136,35 @@ public class PostService {
 
     public byte[] exportExcel(String keyword, Integer status) {
         rbacService.checkPermission("post:export");
-        List<SysPost> rows = postRepository.searchAll(
-                StringUtils.hasText(keyword) ? keyword.trim() : "", status);
+        List<SysPost> rows =
+                postRepository.searchAll(
+                        StringUtils.hasText(keyword) ? keyword.trim() : "", status);
         if (rows.size() > EXPORT_LIMIT) {
             rows = rows.subList(0, EXPORT_LIMIT);
         }
         return ExcelExportUtil.toXlsx(
                 "岗位",
                 List.of("岗位编码", "岗位名称", "排序", "状态", "备注"),
-                rows.stream().map(p -> List.of(
-                        nullToEmpty(p.getCode()),
-                        nullToEmpty(p.getName()),
-                        p.getSort() == null ? "0" : String.valueOf(p.getSort()),
-                        p.getStatus() != null && p.getStatus() == 1 ? "启用" : "停用",
-                        nullToEmpty(p.getRemark())
-                )).toList());
+                rows.stream()
+                        .map(
+                                p ->
+                                        List.of(
+                                                nullToEmpty(p.getCode()),
+                                                nullToEmpty(p.getName()),
+                                                p.getSort() == null
+                                                        ? "0"
+                                                        : String.valueOf(p.getSort()),
+                                                p.getStatus() != null && p.getStatus() == 1
+                                                        ? "启用"
+                                                        : "停用",
+                                                nullToEmpty(p.getRemark())))
+                        .toList());
     }
 
     private void importOne(PostImportRow row) {
-        if (row == null || !StringUtils.hasText(row.getCode()) || !StringUtils.hasText(row.getName())) {
+        if (row == null
+                || !StringUtils.hasText(row.getCode())
+                || !StringUtils.hasText(row.getName())) {
             throw new BusinessException("岗位编码和名称不能为空");
         }
         String code = row.getCode().trim();
@@ -189,8 +202,7 @@ public class PostService {
     }
 
     private SysPost findPost(Long id) {
-        return postRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("岗位不存在"));
+        return postRepository.findById(id).orElseThrow(() -> new BusinessException("岗位不存在"));
     }
 
     private static String nullToEmpty(String value) {

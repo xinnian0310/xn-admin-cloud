@@ -8,13 +8,6 @@ import com.smartadmin.dto.FileInfoVO;
 import com.smartadmin.dto.FileTreeNodeVO;
 import com.smartadmin.entity.SysFile;
 import com.smartadmin.repository.SysFileRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +17,6 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -34,6 +26,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -43,33 +41,157 @@ public class FileManageService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
     /** kkFileView 常见可预览扩展名（与官方支持列表对齐的常用子集） */
-    private static final Set<String> KK_PREVIEW_EXTENSIONS = Set.of(
-            // Office / WPS / LibreOffice
-            "doc", "docx", "xls", "xlsx", "xlsm", "ppt", "pptx", "pptm", "csv", "tsv",
-            "dotm", "xlt", "xltm", "dot", "dotx", "xlam", "xla", "pages",
-            "wps", "dps", "et", "ett", "wpt",
-            "odt", "ods", "ots", "odp", "otp", "six", "ott", "fodt", "fods",
-            "vsd", "vsdx",
-            // 文档
-            "pdf", "ofd", "rtf", "epub", "xmind", "bpmn", "eml", "msg", "drawio",
-            // 图片
-            "jpg", "jpeg", "png", "gif", "bmp", "ico", "jfif", "webp", "heic", "heif",
-            "tif", "tiff", "tga", "svg", "wmf", "emf", "psd", "eps",
-            // 文本 / 代码
-            "txt", "xml", "xbrl", "md", "html", "htm", "json", "properties", "log",
-            "java", "php", "py", "js", "ts", "css", "scss", "less", "c", "cpp", "h",
-            "sql", "sh", "bat", "cmd", "yml", "yaml", "ini", "conf", "vue",
-            // 压缩包
-            "zip", "rar", "jar", "tar", "gzip", "gz", "7z",
-            // 音视频
-            // 注：视频容器 ts 与 TypeScript 扩展名冲突，预览扩展名保留代码侧 "ts"
-            "mp3", "wav", "mp4", "flv", "avi", "mov", "rm", "webm", "mkv",
-            "mpeg", "ogg", "mpg", "rmvb", "wmv", "3gp", "swf",
-            // CAD / 3D / 医疗
-            "dwg", "dxf", "dwf", "iges", "igs", "dwt", "dng", "dwfx", "cf2", "plt",
-            "obj", "3ds", "stl", "ply", "gltf", "glb", "off", "3dm", "fbx", "dae",
-            "wrl", "3mf", "ifc", "brep", "step", "fcstd", "bim", "dcm"
-    );
+    private static final Set<String> KK_PREVIEW_EXTENSIONS =
+            Set.of(
+                    // Office / WPS / LibreOffice
+                    "doc",
+                    "docx",
+                    "xls",
+                    "xlsx",
+                    "xlsm",
+                    "ppt",
+                    "pptx",
+                    "pptm",
+                    "csv",
+                    "tsv",
+                    "dotm",
+                    "xlt",
+                    "xltm",
+                    "dot",
+                    "dotx",
+                    "xlam",
+                    "xla",
+                    "pages",
+                    "wps",
+                    "dps",
+                    "et",
+                    "ett",
+                    "wpt",
+                    "odt",
+                    "ods",
+                    "ots",
+                    "odp",
+                    "otp",
+                    "six",
+                    "ott",
+                    "fodt",
+                    "fods",
+                    "vsd",
+                    "vsdx",
+                    // 文档
+                    "pdf",
+                    "ofd",
+                    "rtf",
+                    "epub",
+                    "xmind",
+                    "bpmn",
+                    "eml",
+                    "msg",
+                    "drawio",
+                    // 图片
+                    "jpg",
+                    "jpeg",
+                    "png",
+                    "gif",
+                    "bmp",
+                    "ico",
+                    "jfif",
+                    "webp",
+                    "heic",
+                    "heif",
+                    "tif",
+                    "tiff",
+                    "tga",
+                    "svg",
+                    "wmf",
+                    "emf",
+                    "psd",
+                    "eps",
+                    // 文本 / 代码
+                    "txt",
+                    "xml",
+                    "xbrl",
+                    "md",
+                    "html",
+                    "htm",
+                    "json",
+                    "properties",
+                    "log",
+                    "java",
+                    "php",
+                    "py",
+                    "js",
+                    "ts",
+                    "css",
+                    "scss",
+                    "less",
+                    "c",
+                    "cpp",
+                    "h",
+                    "sql",
+                    "sh",
+                    "bat",
+                    "cmd",
+                    "yml",
+                    "yaml",
+                    "ini",
+                    "conf",
+                    "vue",
+                    // 压缩包
+                    "zip",
+                    "rar",
+                    "jar",
+                    "tar",
+                    "gzip",
+                    "gz",
+                    "7z",
+                    // 音视频
+                    // 注：视频容器 ts 与 TypeScript 扩展名冲突，预览扩展名保留代码侧 "ts"
+                    "mp3",
+                    "wav",
+                    "mp4",
+                    "flv",
+                    "avi",
+                    "mov",
+                    "rm",
+                    "webm",
+                    "mkv",
+                    "mpeg",
+                    "ogg",
+                    "mpg",
+                    "rmvb",
+                    "wmv",
+                    "3gp",
+                    "swf",
+                    // CAD / 3D / 医疗
+                    "dwg",
+                    "dxf",
+                    "dwf",
+                    "iges",
+                    "igs",
+                    "dwt",
+                    "dng",
+                    "dwfx",
+                    "cf2",
+                    "plt",
+                    "obj",
+                    "3ds",
+                    "stl",
+                    "ply",
+                    "gltf",
+                    "glb",
+                    "off",
+                    "3dm",
+                    "fbx",
+                    "dae",
+                    "wrl",
+                    "3mf",
+                    "ifc",
+                    "brep",
+                    "step",
+                    "fcstd",
+                    "bim",
+                    "dcm");
 
     private final RbacService rbacService;
     private final DataScopeService dataScopeService;
@@ -105,7 +227,8 @@ public class FileManageService {
         if (minioStorageService.isReady()) {
             vo.setStorage("minio");
             MinioStorageService.PrefixListing listing =
-                    minioStorageService.listPrefix(normalized, recursiveFiles, kw.isEmpty() ? null : kw);
+                    minioStorageService.listPrefix(
+                            normalized, recursiveFiles, kw.isEmpty() ? null : kw);
             for (MinioStorageService.ObjectInfo dir : listing.dirs()) {
                 vo.getDirs().add(toMinioVO(dir));
             }
@@ -128,10 +251,12 @@ public class FileManageService {
             return;
         }
         Set<String> allowed = new HashSet<>(filter.usernames());
-        vo.getFiles().removeIf(f -> {
-            String uploader = f.getUploader();
-            return !StringUtils.hasText(uploader) || !allowed.contains(uploader);
-        });
+        vo.getFiles()
+                .removeIf(
+                        f -> {
+                            String uploader = f.getUploader();
+                            return !StringUtils.hasText(uploader) || !allowed.contains(uploader);
+                        });
     }
 
     public FileTreeNodeVO tree() {
@@ -156,7 +281,8 @@ public class FileManageService {
     }
 
     private void collectMinioDirs(FileTreeNodeVO parent, String prefix) {
-        MinioStorageService.PrefixListing listing = minioStorageService.listPrefix(prefix, false, null);
+        MinioStorageService.PrefixListing listing =
+                minioStorageService.listPrefix(prefix, false, null);
         for (MinioStorageService.ObjectInfo dir : listing.dirs()) {
             FileTreeNodeVO child = new FileTreeNodeVO();
             child.setId(dir.key());
@@ -182,24 +308,33 @@ public class FileManageService {
         String storedName = UUID.randomUUID().toString().replace("-", "") + ext;
         // 严格按当前目录上传；根路径 prefix 为空，不再默认落到 files/
         String dir = MinioStorageService.normalizePrefix(prefix);
-        String contentType = StringUtils.hasText(file.getContentType())
-                ? file.getContentType()
-                : "application/octet-stream";
+        String contentType =
+                StringUtils.hasText(file.getContentType())
+                        ? file.getContentType()
+                        : "application/octet-stream";
         String displayName = StringUtils.hasText(original) ? original : storedName;
 
         if (minioStorageService.isReady()) {
             String objectKey = dir + storedName;
             minioStorageService.upload(file, objectKey);
             String url = minioStorageService.publicUrl(objectKey);
-            SysFile saved = saveMeta(
-                    objectKey, dir, displayName, storedName, ext, contentType,
-                    file.getSize(), "minio", minioProperties.getBucket(), url);
+            SysFile saved =
+                    saveMeta(
+                            objectKey,
+                            dir,
+                            displayName,
+                            storedName,
+                            ext,
+                            contentType,
+                            file.getSize(),
+                            "minio",
+                            minioProperties.getBucket(),
+                            url);
             return toDbVO(saved);
         }
 
-        Path targetDir = dir.isEmpty()
-                ? resolveRoot()
-                : resolveSafePath(dir.substring(0, dir.length() - 1));
+        Path targetDir =
+                dir.isEmpty() ? resolveRoot() : resolveSafePath(dir.substring(0, dir.length() - 1));
         if (!Files.isDirectory(targetDir)) {
             Files.createDirectories(targetDir);
         }
@@ -207,9 +342,18 @@ public class FileManageService {
         file.transferTo(target.toFile());
         String relative = resolveRoot().relativize(target).toString().replace('\\', '/');
         String url = "http://127.0.0.1:" + serverPort + "/uploads/" + relative;
-        SysFile saved = saveMeta(
-                relative, dir, displayName, storedName, ext, contentType,
-                file.getSize(), "local", null, url);
+        SysFile saved =
+                saveMeta(
+                        relative,
+                        dir,
+                        displayName,
+                        storedName,
+                        ext,
+                        contentType,
+                        file.getSize(),
+                        "local",
+                        null,
+                        url);
         return toDbVO(saved);
     }
 
@@ -284,9 +428,10 @@ public class FileManageService {
             String prefix,
             String keyword,
             boolean recursive) {
-        List<SysFile> dbFiles = recursive
-                ? sysFileRepository.searchAll(keyword)
-                : sysFileRepository.findByPrefix(prefix, keyword);
+        List<SysFile> dbFiles =
+                recursive
+                        ? sysFileRepository.searchAll(keyword)
+                        : sysFileRepository.findByPrefix(prefix, keyword);
         Map<String, SysFile> byKey = new HashMap<>();
         for (SysFile f : dbFiles) {
             byKey.put(f.getObjectKey(), f);
@@ -316,10 +461,15 @@ public class FileManageService {
     }
 
     private void mergeDbOnlyFiles(
-            FileBrowseVO vo, String prefix, String keyword, boolean recursive, String expectedStorage) {
-        List<SysFile> dbFiles = recursive
-                ? sysFileRepository.searchAll(keyword)
-                : sysFileRepository.findByPrefix(prefix, keyword);
+            FileBrowseVO vo,
+            String prefix,
+            String keyword,
+            boolean recursive,
+            String expectedStorage) {
+        List<SysFile> dbFiles =
+                recursive
+                        ? sysFileRepository.searchAll(keyword)
+                        : sysFileRepository.findByPrefix(prefix, keyword);
         Set<String> existing = new HashSet<>();
         for (FileInfoVO f : vo.getFiles()) {
             existing.add(f.getPath());
@@ -354,8 +504,11 @@ public class FileManageService {
         vo.setUploader(f.getUploader());
         vo.setPrefix(f.getPrefix());
         if (f.getCreatedAt() != null) {
-            vo.setLastModified(f.getCreatedAt().format(
-                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            vo.setLastModified(
+                    f.getCreatedAt()
+                            .format(
+                                    java.time.format.DateTimeFormatter.ofPattern(
+                                            "yyyy-MM-dd HH:mm:ss")));
         }
         return vo;
     }
@@ -387,7 +540,10 @@ public class FileManageService {
         } catch (IOException ex) {
             throw new BusinessException("创建上传目录失败：" + root);
         }
-        Path current = normalized.isEmpty() ? root : resolveSafePath(normalized.substring(0, normalized.length() - 1));
+        Path current =
+                normalized.isEmpty()
+                        ? root
+                        : resolveSafePath(normalized.substring(0, normalized.length() - 1));
         if (!Files.isDirectory(current)) {
             return vo;
         }
@@ -401,7 +557,10 @@ public class FileManageService {
                 if (Files.isDirectory(path)) {
                     FileInfoVO dirVo = toLocalVO(path, root);
                     dirVo.setDirectory(true);
-                    dirVo.setPath(dirVo.getPath().endsWith("/") ? dirVo.getPath() : dirVo.getPath() + "/");
+                    dirVo.setPath(
+                            dirVo.getPath().endsWith("/")
+                                    ? dirVo.getPath()
+                                    : dirVo.getPath() + "/");
                     if (!StringUtils.hasText(keyword)
                             || dirVo.getPath().contains(keyword.trim())
                             || dirVo.getName().contains(keyword.trim())) {
@@ -486,7 +645,9 @@ public class FileManageService {
         }
         try {
             vo.setSize(Files.isDirectory(path) ? 0 : Files.size(path));
-            vo.setLastModified(FORMATTER.format(Instant.ofEpochMilli(Files.getLastModifiedTime(path).toMillis())));
+            vo.setLastModified(
+                    FORMATTER.format(
+                            Instant.ofEpochMilli(Files.getLastModifiedTime(path).toMillis())));
         } catch (IOException ignored) {
             vo.setSize(0);
         }
@@ -494,7 +655,8 @@ public class FileManageService {
     }
 
     private String buildPreviewUrl(String fileUrl, String fileName, String extension) {
-        if (!kkFileViewProperties.isEnabled() || !StringUtils.hasText(kkFileViewProperties.getBaseUrl())) {
+        if (!kkFileViewProperties.isEnabled()
+                || !StringUtils.hasText(kkFileViewProperties.getBaseUrl())) {
             return null;
         }
         if (!StringUtils.hasText(fileUrl)) {
@@ -505,7 +667,8 @@ public class FileManageService {
             return null;
         }
         String base = kkFileViewProperties.getBaseUrl().replaceAll("/+$", "");
-        String encoded = Base64.getEncoder().encodeToString(fileUrl.getBytes(StandardCharsets.UTF_8));
+        String encoded =
+                Base64.getEncoder().encodeToString(fileUrl.getBytes(StandardCharsets.UTF_8));
         return base + "/onlinePreview?url=" + URLEncoder.encode(encoded, StandardCharsets.UTF_8);
     }
 

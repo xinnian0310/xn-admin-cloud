@@ -3,9 +3,7 @@ package com.smartadmin.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * 与前端 {@code app.ts} 的 appConfig 同构，供系统配置读写与公开下发。
- */
+/** 与前端 {@code app.ts} 的 appConfig 同构，供系统配置读写与公开下发。 */
 @Getter
 @Setter
 public class AppConfigVO {
@@ -134,14 +132,12 @@ public class AppConfigVO {
         private Integer jobDays = 90;
     }
 
-    /**
-     * 用户敏感字段脱敏：无 {@code user:sensitive:view} 时对勾选字段打码。
-     * fields 仅支持 phone / email。
-     */
+    /** 用户敏感字段脱敏：无 {@code user:sensitive:view} 时对勾选字段打码。 fields 仅支持 phone / email。 */
     @Getter
     @Setter
     public static class SensitiveDataConfig {
         private Boolean enabled = true;
-        private java.util.List<String> fields = new java.util.ArrayList<>(java.util.List.of("phone", "email"));
+        private java.util.List<String> fields =
+                new java.util.ArrayList<>(java.util.List.of("phone", "email"));
     }
 }

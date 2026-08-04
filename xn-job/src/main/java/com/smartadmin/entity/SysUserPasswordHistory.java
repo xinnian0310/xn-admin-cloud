@@ -1,15 +1,12 @@
 package com.smartadmin.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
-
-/**
- * 用户历史密码（BCrypt），用于禁止近期复用。
- */
+/** 用户历史密码（BCrypt），用于禁止近期复用。 */
 @Getter
 @Setter
 @Entity

@@ -1,27 +1,23 @@
 package com.smartadmin.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
-
-/**
- * 上传文件元数据（对象本体在 MinIO / 本地 uploads，本表存索引信息）。
- */
+/** 上传文件元数据（对象本体在 MinIO / 本地 uploads，本表存索引信息）。 */
 @Getter
 @Setter
 @Entity
 @Table(
         name = "sys_file",
         indexes = {
-                @Index(name = "idx_sys_file_object_key", columnList = "objectKey", unique = true),
-                @Index(name = "idx_sys_file_prefix", columnList = "prefix"),
-                @Index(name = "idx_sys_file_created", columnList = "createdAt")
-        }
-)
+            @Index(name = "idx_sys_file_object_key", columnList = "objectKey", unique = true),
+            @Index(name = "idx_sys_file_prefix", columnList = "prefix"),
+            @Index(name = "idx_sys_file_created", columnList = "createdAt")
+        })
 public class SysFile {
 
     @Id
@@ -79,8 +75,7 @@ public class SysFile {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @UpdateTimestamp private LocalDateTime updatedAt;
 
     /** 软删除时间；非空表示已在回收站 */
     private LocalDateTime deletedAt;

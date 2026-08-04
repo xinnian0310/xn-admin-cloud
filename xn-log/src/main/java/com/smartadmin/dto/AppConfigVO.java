@@ -3,9 +3,7 @@ package com.smartadmin.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * 与前端 {@code app.ts} 的 appConfig 同构，供系统配置读写与公开下发。
- */
+/** 与前端 {@code app.ts} 的 appConfig 同构，供系统配置读写与公开下发。 */
 @Getter
 @Setter
 public class AppConfigVO {

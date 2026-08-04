@@ -9,6 +9,7 @@ import com.smartadmin.dto.PageResult;
 import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.JobService;
 import jakarta.validation.Valid;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,8 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -51,7 +50,8 @@ public class JobController {
 
     @PutMapping("/{id}")
     @OperLog(title = "定时任务", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<JobVO> update(@PathVariable Long id, @Valid @RequestBody JobRequest request) {
+    public ApiResponse<JobVO> update(
+            @PathVariable Long id, @Valid @RequestBody JobRequest request) {
         return ApiResponse.success(jobService.update(id, request));
     }
 

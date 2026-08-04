@@ -6,10 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-/**
- * 单位默认数据已由 {@link DemoDataInitializer} 统一维护。
- * 保留本类空实现，避免旧文档引用失效。
- */
+/** 单位默认数据已由 {@link DemoDataInitializer} 统一维护。 保留本类空实现，避免旧文档引用失效。 */
 @Component
 @Order(4)
 @RequiredArgsConstructor

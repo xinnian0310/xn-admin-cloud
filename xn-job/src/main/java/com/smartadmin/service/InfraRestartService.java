@@ -2,10 +2,6 @@ package com.smartadmin.service;
 
 import com.smartadmin.common.BusinessException;
 import com.smartadmin.config.InfraProperties;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -20,6 +16,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -66,11 +65,7 @@ public class InfraRestartService {
 
         sleepQuiet(800);
         startComponent(root, name);
-        return Map.of(
-                "name", name,
-                "projectRoot", root.toString(),
-                "message", "已发送重启指令，请稍后刷新状态"
-        );
+        return Map.of("name", name, "projectRoot", root.toString(), "message", "已发送重启指令，请稍后刷新状态");
     }
 
     public Path resolveProjectRoot() {
@@ -104,10 +99,13 @@ public class InfraRestartService {
 
     private void killPort(int port) {
         try {
-            Process p = new ProcessBuilder("cmd.exe", "/c",
-                    "netstat -ano | findstr \":" + port + " \" | findstr LISTENING")
-                    .redirectErrorStream(true)
-                    .start();
+            Process p =
+                    new ProcessBuilder(
+                                    "cmd.exe",
+                                    "/c",
+                                    "netstat -ano | findstr \":" + port + " \" | findstr LISTENING")
+                            .redirectErrorStream(true)
+                            .start();
             List<String> lines = readLines(p);
             p.waitFor(5, TimeUnit.SECONDS);
             for (String line : lines) {
@@ -139,7 +137,8 @@ public class InfraRestartService {
 
     private void killKkResiduals() {
         try {
-            String ps = """
+            String ps =
+                    """
                     Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
                     Where-Object {
                       ($_.Name -match '^(java|javaw)\\.exe$' -and $_.CommandLine -match 'kkFileView') -or
@@ -149,7 +148,12 @@ public class InfraRestartService {
                     } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
                     """;
             new ProcessBuilder(
-                    "powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps)
+                            "powershell.exe",
+                            "-NoProfile",
+                            "-ExecutionPolicy",
+                            "Bypass",
+                            "-Command",
+                            ps)
                     .redirectErrorStream(true)
                     .start()
                     .waitFor(15, TimeUnit.SECONDS);
@@ -186,7 +190,10 @@ public class InfraRestartService {
                 }
                 launcher = logs.resolve("run-redis.cmd");
                 lines.add("cd /d \"" + dir + "\"");
-                lines.add("redis-server.exe redis.windows.conf >> \"" + logs.resolve("redis.log") + "\" 2>&1");
+                lines.add(
+                        "redis-server.exe redis.windows.conf >> \""
+                                + logs.resolve("redis.log")
+                                + "\" 2>&1");
             }
             case "minio" -> {
                 Path dir = tool.resolve("minio");
@@ -202,8 +209,10 @@ public class InfraRestartService {
                 lines.add("cd /d \"" + dir + "\"");
                 lines.add("set MINIO_ROOT_USER=minioadmin");
                 lines.add("set MINIO_ROOT_PASSWORD=minioadmin");
-                lines.add("minio.exe server data --address :9000 --console-address :9001 >> \""
-                        + logs.resolve("minio.log") + "\" 2>&1");
+                lines.add(
+                        "minio.exe server data --address :9000 --console-address :9001 >> \""
+                                + logs.resolve("minio.log")
+                                + "\" 2>&1");
             }
             case "nacos" -> {
                 Path bin = tool.resolve("nacos3/bin");
@@ -217,7 +226,10 @@ public class InfraRestartService {
                 lines.add("set \"JAVA_HOME=" + javaHome + "\"");
                 lines.add("set \"PATH=%JAVA_HOME%\\bin;%PATH%\"");
                 lines.add("cd /d \"" + bin + "\"");
-                lines.add("call startup.cmd -m standalone > \"" + logs.resolve("nacos.log") + "\" 2>&1");
+                lines.add(
+                        "call startup.cmd -m standalone > \""
+                                + logs.resolve("nacos.log")
+                                + "\" 2>&1");
             }
             case "kkfileview" -> {
                 Path bin = tool.resolve("kkFileView-5.0.0/bin");
@@ -237,7 +249,8 @@ public class InfraRestartService {
         }
 
         try {
-            Files.writeString(launcher, String.join("\r\n", lines) + "\r\n", StandardCharsets.UTF_8);
+            Files.writeString(
+                    launcher, String.join("\r\n", lines) + "\r\n", StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new BusinessException("写入启动脚本失败: " + e.getMessage());
         }
@@ -247,16 +260,21 @@ public class InfraRestartService {
             if (ps == null || ps.isBlank()) {
                 ps = "C:\\Windows";
             }
-            Path powershell = Path.of(ps, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
-            String psExe = Files.isRegularFile(powershell) ? powershell.toString() : "powershell.exe";
+            Path powershell =
+                    Path.of(ps, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+            String psExe =
+                    Files.isRegularFile(powershell) ? powershell.toString() : "powershell.exe";
             new ProcessBuilder(
-                    psExe,
-                    "-NoProfile",
-                    "-ExecutionPolicy",
-                    "Bypass",
-                    "-Command",
-                    "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','\"" + launcher + "\"' -WindowStyle Hidden"
-            ).redirectErrorStream(true).start();
+                            psExe,
+                            "-NoProfile",
+                            "-ExecutionPolicy",
+                            "Bypass",
+                            "-Command",
+                            "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','\""
+                                    + launcher
+                                    + "\"' -WindowStyle Hidden")
+                    .redirectErrorStream(true)
+                    .start();
             log.info("已后台启动 {} via {}", name, launcher);
         } catch (IOException e) {
             throw new BusinessException("启动失败: " + e.getMessage());
@@ -266,7 +284,8 @@ public class InfraRestartService {
     private List<String> readLines(Process p) throws IOException {
         List<String> lines = new ArrayList<>();
         Charset cs = Charset.forName("GBK");
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), cs))) {
+        try (BufferedReader br =
+                new BufferedReader(new InputStreamReader(p.getInputStream(), cs))) {
             String line;
             while ((line = br.readLine()) != null) {
                 lines.add(line);

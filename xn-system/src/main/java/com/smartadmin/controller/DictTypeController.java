@@ -9,6 +9,8 @@ import com.smartadmin.dto.PageResult;
 import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.DictTypeService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,9 +21,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dict-types")
@@ -57,7 +56,8 @@ public class DictTypeController {
 
     @PutMapping("/{id}")
     @OperLog(title = "字典类型", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<DictTypeVO> update(@PathVariable Long id, @Valid @RequestBody DictTypeRequest request) {
+    public ApiResponse<DictTypeVO> update(
+            @PathVariable Long id, @Valid @RequestBody DictTypeRequest request) {
         return ApiResponse.success("更新成功", dictTypeService.update(id, request));
     }
 

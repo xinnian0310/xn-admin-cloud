@@ -2,13 +2,10 @@ package com.smartadmin.util;
 
 import org.springframework.util.StringUtils;
 
-/**
- * 手机号 / 邮箱脱敏。有 {@code user:sensitive:view} 权限时不调用本工具。
- */
+/** 手机号 / 邮箱脱敏。有 {@code user:sensitive:view} 权限时不调用本工具。 */
 public final class SensitiveDataUtil {
 
-    private SensitiveDataUtil() {
-    }
+    private SensitiveDataUtil() {}
 
     /** 是否为脱敏后的占位值（含 *），用于更新时跳过，避免掩码写回库 */
     public static boolean isMasked(String value) {

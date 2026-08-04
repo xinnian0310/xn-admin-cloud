@@ -10,8 +10,10 @@ public class ColumnMetaVO {
     private String jdbcType;
     private String javaType;
     private String javaField;
+
     /** input / number / select / datetime / textarea */
     private String formType;
+
     private boolean pk;
     private boolean nullable;
     private Integer columnSize;

@@ -10,8 +10,10 @@ import lombok.NoArgsConstructor;
 public class CaptchaVO {
 
     private String captchaId;
+
     /** IMAGE / SLIDER */
     private String captchaType;
+
     /** IMAGE 时返回 PNG data URL；SLIDER 为空 */
     private String imageBase64;
 }

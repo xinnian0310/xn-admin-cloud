@@ -4,6 +4,12 @@ import com.smartadmin.common.BusinessException;
 import com.smartadmin.dto.AppConfigVO;
 import com.smartadmin.entity.SysAppConfig;
 import com.smartadmin.repository.SysAppConfigRepository;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -12,20 +18,20 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Set;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class AppConfigService {
 
     private static final long SINGLETON_ID = 1L;
-    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
-            "image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon");
+    private static final Set<String> ALLOWED_IMAGE_TYPES =
+            Set.of(
+                    "image/png",
+                    "image/jpeg",
+                    "image/jpg",
+                    "image/webp",
+                    "image/svg+xml",
+                    "image/x-icon",
+                    "image/vnd.microsoft.icon");
 
     private final SysAppConfigRepository repository;
     private final RbacService rbacService;
@@ -37,8 +43,8 @@ public class AppConfigService {
 
     /** 公开读取（登录页品牌等），无需鉴权 */
     public AppConfigVO getPublic() {
-        return appCacheService.getAppConfig(new tools.jackson.core.type.TypeReference<>() {
-        }, this::loadOrDefault);
+        return appCacheService.getAppConfig(
+                new tools.jackson.core.type.TypeReference<>() {}, this::loadOrDefault);
     }
 
     public AppConfigVO getForAdmin() {
@@ -53,11 +59,15 @@ public class AppConfigService {
             throw new BusinessException("配置不能为空");
         }
         validate(request);
-        SysAppConfig entity = repository.findById(SINGLETON_ID).orElseGet(() -> {
-            SysAppConfig created = new SysAppConfig();
-            created.setId(SINGLETON_ID);
-            return created;
-        });
+        SysAppConfig entity =
+                repository
+                        .findById(SINGLETON_ID)
+                        .orElseGet(
+                                () -> {
+                                    SysAppConfig created = new SysAppConfig();
+                                    created.setId(SINGLETON_ID);
+                                    return created;
+                                });
         try {
             entity.setConfigJson(objectMapper.writeValueAsString(request));
         } catch (Exception e) {
@@ -106,9 +116,8 @@ public class AppConfigService {
     }
 
     private AppConfigVO loadOrDefault() {
-        return normalize(repository.findById(SINGLETON_ID)
-                .map(this::parse)
-                .orElseGet(AppConfigVO::new));
+        return normalize(
+                repository.findById(SINGLETON_ID).map(this::parse).orElseGet(AppConfigVO::new));
     }
 
     private AppConfigVO parse(SysAppConfig entity) {
@@ -136,7 +145,8 @@ public class AppConfigService {
         return normalize(getPublic()).getSensitiveData();
     }
 
-    private AppConfigVO.SensitiveDataConfig normalizeSensitiveData(AppConfigVO.SensitiveDataConfig cfg) {
+    private AppConfigVO.SensitiveDataConfig normalizeSensitiveData(
+            AppConfigVO.SensitiveDataConfig cfg) {
         if (cfg == null) {
             cfg = new AppConfigVO.SensitiveDataConfig();
         }
@@ -146,20 +156,22 @@ public class AppConfigService {
         if (cfg.getFields() == null || cfg.getFields().isEmpty()) {
             cfg.setFields(new java.util.ArrayList<>(java.util.List.of("phone", "email")));
         } else {
-            java.util.List<String> cleaned = cfg.getFields().stream()
-                    .filter(f -> f != null && !f.isBlank())
-                    .map(f -> f.trim().toLowerCase())
-                    .filter(ALLOWED_SENSITIVE_FIELDS::contains)
-                    .distinct()
-                    .toList();
-            cfg.setFields(new java.util.ArrayList<>(cleaned.isEmpty()
-                    ? java.util.List.of("phone", "email")
-                    : cleaned));
+            java.util.List<String> cleaned =
+                    cfg.getFields().stream()
+                            .filter(f -> f != null && !f.isBlank())
+                            .map(f -> f.trim().toLowerCase())
+                            .filter(ALLOWED_SENSITIVE_FIELDS::contains)
+                            .distinct()
+                            .toList();
+            cfg.setFields(
+                    new java.util.ArrayList<>(
+                            cleaned.isEmpty() ? java.util.List.of("phone", "email") : cleaned));
         }
         return cfg;
     }
 
-    private static final java.util.Set<String> ALLOWED_SENSITIVE_FIELDS = java.util.Set.of("phone", "email");
+    private static final java.util.Set<String> ALLOWED_SENSITIVE_FIELDS =
+            java.util.Set.of("phone", "email");
 
     private void validate(AppConfigVO vo) {
         if (vo.getApp() == null || !StringUtils.hasText(vo.getApp().getName())) {

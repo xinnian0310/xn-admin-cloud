@@ -1,12 +1,11 @@
 package com.smartadmin.repository;
 
 import com.smartadmin.entity.SysFile;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
-import java.util.Optional;
 
 public interface SysFileRepository extends JpaRepository<SysFile, Long> {
 
@@ -14,7 +13,8 @@ public interface SysFileRepository extends JpaRepository<SysFile, Long> {
 
     void deleteByObjectKey(String objectKey);
 
-    @Query("""
+    @Query(
+            """
             SELECT f FROM SysFile f
             WHERE f.deletedAt IS NULL
               AND f.prefix = :prefix
@@ -26,7 +26,8 @@ public interface SysFileRepository extends JpaRepository<SysFile, Long> {
             """)
     List<SysFile> findByPrefix(@Param("prefix") String prefix, @Param("keyword") String keyword);
 
-    @Query("""
+    @Query(
+            """
             SELECT f FROM SysFile f
             WHERE f.deletedAt IS NULL
               AND (:keyword = ''

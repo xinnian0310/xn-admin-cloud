@@ -21,12 +21,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex) {
-        HttpStatus status = switch (ex.getCode()) {
-            case 403 -> HttpStatus.FORBIDDEN;
-            case 423 -> HttpStatus.LOCKED;
-            case 429 -> HttpStatus.TOO_MANY_REQUESTS;
-            default -> HttpStatus.BAD_REQUEST;
-        };
+        HttpStatus status =
+                switch (ex.getCode()) {
+                    case 403 -> HttpStatus.FORBIDDEN;
+                    case 423 -> HttpStatus.LOCKED;
+                    case 429 -> HttpStatus.TOO_MANY_REQUESTS;
+                    default -> HttpStatus.BAD_REQUEST;
+                };
         return ResponseEntity.status(status).body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 

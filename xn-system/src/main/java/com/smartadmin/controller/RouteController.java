@@ -11,7 +11,10 @@ import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.RouteCodegenService;
 import com.smartadmin.service.RouteService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,10 +24,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.util.StringUtils;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/routes")
@@ -42,12 +41,12 @@ public class RouteController {
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "builtIn", required = false) String builtIn) {
         String kw = StringUtils.hasText(keyword) ? keyword.trim() : fuzzyWord;
-        return ApiResponse.success(routeService.tree(
-                StringUtils.hasText(kw) ? kw.trim() : null,
-                StringUtils.hasText(type) ? type.trim() : null,
-                parseInteger(status),
-                parseBoolean(builtIn)
-        ));
+        return ApiResponse.success(
+                routeService.tree(
+                        StringUtils.hasText(kw) ? kw.trim() : null,
+                        StringUtils.hasText(type) ? type.trim() : null,
+                        parseInteger(status),
+                        parseBoolean(builtIn)));
     }
 
     private Integer parseInteger(String value) {
@@ -95,7 +94,8 @@ public class RouteController {
 
     @PutMapping("/{id}")
     @OperLog(title = "路由管理", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<RouteVO> update(@PathVariable Long id, @Valid @RequestBody RouteRequest request) {
+    public ApiResponse<RouteVO> update(
+            @PathVariable Long id, @Valid @RequestBody RouteRequest request) {
         return ApiResponse.success("更新成功", routeService.update(id, request));
     }
 
@@ -110,8 +110,7 @@ public class RouteController {
     @PostMapping("/{id}/generate")
     @OperLog(title = "路由管理", businessType = OperBusinessType.OTHER)
     public ApiResponse<RouteCodegenVO> generate(
-            @PathVariable Long id,
-            @Valid @RequestBody RouteCodegenRequest request) {
+            @PathVariable Long id, @Valid @RequestBody RouteCodegenRequest request) {
         return ApiResponse.success("生成成功", routeCodegenService.generate(id, request));
     }
 }

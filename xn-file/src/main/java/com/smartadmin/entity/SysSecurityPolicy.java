@@ -4,23 +4,19 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
-
-/**
- * 登录安全策略（单例）。管理员可在「安全策略」页调整，覆盖 yml 默认值。
- */
+/** 登录安全策略（单例）。管理员可在「安全策略」页调整，覆盖 yml 默认值。 */
 @Getter
 @Setter
 @Entity
 @Table(name = "sys_security_policy")
 public class SysSecurityPolicy {
 
-    @Id
-    private Long id = 1L;
+    @Id private Long id = 1L;
 
     /** 连续失败次数阈值 */
     @Column(nullable = false)
@@ -70,6 +66,5 @@ public class SysSecurityPolicy {
     @Column(name = "pwd_history_count", nullable = false)
     private Integer pwdHistoryCount = 0;
 
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @UpdateTimestamp private LocalDateTime updatedAt;
 }

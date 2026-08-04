@@ -16,10 +16,7 @@ import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 import org.springframework.stereotype.Component;
 
-/**
- * 基于 Quartz 的动态任务调度（支持 misfire / 并发策略）。
- * 对外仍保持原有 reschedule / cancel / runOnce API。
- */
+/** 基于 Quartz 的动态任务调度（支持 misfire / 并发策略）。 对外仍保持原有 reschedule / cancel / runOnce API。 */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -33,13 +30,16 @@ public class DynamicJobScheduler {
 
     @PostConstruct
     public void init() {
-        jobRepository.findByStatus(1).forEach(job -> {
-            try {
-                schedule(job);
-            } catch (Exception ex) {
-                log.warn("启动时调度任务失败 {}: {}", job.getJobKey(), ex.getMessage());
-            }
-        });
+        jobRepository
+                .findByStatus(1)
+                .forEach(
+                        job -> {
+                            try {
+                                schedule(job);
+                            } catch (Exception ex) {
+                                log.warn("启动时调度任务失败 {}: {}", job.getJobKey(), ex.getMessage());
+                            }
+                        });
     }
 
     public void reschedule(SysJob job) {
@@ -67,7 +67,9 @@ public class DynamicJobScheduler {
         }
     }
 
-    /** @deprecated 使用 {@link #cancel(Long)}，保留兼容旧调用 */
+    /**
+     * @deprecated 使用 {@link #cancel(Long)}，保留兼容旧调用
+     */
     @Deprecated
     public void cancel(String jobKey) {
         jobRepository.findAll().stream()
@@ -82,31 +84,36 @@ public class DynamicJobScheduler {
 
     private void schedule(SysJob job) throws SchedulerException {
         JobKey key = jobKey(job.getId());
-        Class<? extends org.quartz.Job> jobClass = Boolean.TRUE.equals(job.getConcurrent())
-                ? ConcurrentQuartzJob.class
-                : NonConcurrentQuartzJob.class;
+        Class<? extends org.quartz.Job> jobClass =
+                Boolean.TRUE.equals(job.getConcurrent())
+                        ? ConcurrentQuartzJob.class
+                        : NonConcurrentQuartzJob.class;
 
-        JobDetail detail = JobBuilder.newJob(jobClass)
-                .withIdentity(key)
-                .usingJobData(ConcurrentQuartzJob.JOB_ID_KEY, job.getId())
-                .storeDurably(false)
-                .build();
+        JobDetail detail =
+                JobBuilder.newJob(jobClass)
+                        .withIdentity(key)
+                        .usingJobData(ConcurrentQuartzJob.JOB_ID_KEY, job.getId())
+                        .storeDurably(false)
+                        .build();
 
-        CronScheduleBuilder scheduleBuilder = JobMisfirePolicy.apply(
-                CronScheduleBuilder.cronSchedule(job.getCron()),
-                job.getMisfirePolicy());
+        CronScheduleBuilder scheduleBuilder =
+                JobMisfirePolicy.apply(
+                        CronScheduleBuilder.cronSchedule(job.getCron()), job.getMisfirePolicy());
 
-        CronTrigger trigger = TriggerBuilder.newTrigger()
-                .withIdentity(triggerKey(job.getId()))
-                .withSchedule(scheduleBuilder)
-                .build();
+        CronTrigger trigger =
+                TriggerBuilder.newTrigger()
+                        .withIdentity(triggerKey(job.getId()))
+                        .withSchedule(scheduleBuilder)
+                        .build();
 
         if (scheduler.checkExists(key)) {
             scheduler.deleteJob(key);
         }
         scheduler.scheduleJob(detail, trigger);
-        log.debug("已调度任务 {} cron={} misfire={} concurrent={}",
-                job.getJobKey(), job.getCron(),
+        log.debug(
+                "已调度任务 {} cron={} misfire={} concurrent={}",
+                job.getJobKey(),
+                job.getCron(),
                 JobMisfirePolicy.normalize(job.getMisfirePolicy()),
                 job.getConcurrent());
     }

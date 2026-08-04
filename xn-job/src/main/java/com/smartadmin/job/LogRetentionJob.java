@@ -6,16 +6,13 @@ import com.smartadmin.service.ExceptionLogService;
 import com.smartadmin.service.JobLogService;
 import com.smartadmin.service.LoginLogService;
 import com.smartadmin.service.OperLogService;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
-/**
- * 按系统配置的保留天数清理过期日志（登录 / 操作 / 异常 / 任务）。
- */
+/** 按系统配置的保留天数清理过期日志（登录 / 操作 / 异常 / 任务）。 */
 @Slf4j
 @Component("logRetentionJob")
 @RequiredArgsConstructor
@@ -34,19 +31,36 @@ public class LogRetentionJob {
             cfg = new AppConfigVO.LogRetentionConfig();
         }
         LocalDateTime now = LocalDateTime.now();
-        int loginDeleted = cleanOne("login", cfg.getLoginDays(),
-                days -> loginLogService.deleteBefore(now.minusDays(days)));
-        int operDeleted = cleanOne("oper", cfg.getOperDays(),
-                days -> operLogService.deleteBefore(now.minusDays(days)));
-        int exDeleted = cleanOne("exception", cfg.getExceptionDays(),
-                days -> exceptionLogService.deleteBefore(now.minusDays(days)));
-        int jobDeleted = cleanOne("job", cfg.getJobDays(),
-                days -> jobLogService.deleteBefore(now.minusDays(days)));
-        log.info("[LogRetentionJob] cleaned login={}, oper={}, exception={}, job={}",
-                loginDeleted, operDeleted, exDeleted, jobDeleted);
+        int loginDeleted =
+                cleanOne(
+                        "login",
+                        cfg.getLoginDays(),
+                        days -> loginLogService.deleteBefore(now.minusDays(days)));
+        int operDeleted =
+                cleanOne(
+                        "oper",
+                        cfg.getOperDays(),
+                        days -> operLogService.deleteBefore(now.minusDays(days)));
+        int exDeleted =
+                cleanOne(
+                        "exception",
+                        cfg.getExceptionDays(),
+                        days -> exceptionLogService.deleteBefore(now.minusDays(days)));
+        int jobDeleted =
+                cleanOne(
+                        "job",
+                        cfg.getJobDays(),
+                        days -> jobLogService.deleteBefore(now.minusDays(days)));
+        log.info(
+                "[LogRetentionJob] cleaned login={}, oper={}, exception={}, job={}",
+                loginDeleted,
+                operDeleted,
+                exDeleted,
+                jobDeleted);
     }
 
-    private int cleanOne(String name, Integer days, java.util.function.IntFunction<Integer> cleaner) {
+    private int cleanOne(
+            String name, Integer days, java.util.function.IntFunction<Integer> cleaner) {
         if (days == null || days <= 0) {
             log.debug("[LogRetentionJob] skip {} (days={})", name, days);
             return 0;

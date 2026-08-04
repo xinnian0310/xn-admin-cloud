@@ -11,7 +11,7 @@ public class HibernateMonitorConfig {
 
     @Bean
     public HibernatePropertiesCustomizer sqlMonitorCustomizer(SqlMonitorInspector inspector) {
-        return hibernateProperties -> hibernateProperties.put(
-                AvailableSettings.STATEMENT_INSPECTOR, inspector);
+        return hibernateProperties ->
+                hibernateProperties.put(AvailableSettings.STATEMENT_INSPECTOR, inspector);
     }
 }

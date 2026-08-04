@@ -1,7 +1,6 @@
 package com.smartadmin.util;
 
 import com.alibaba.excel.EasyExcel;
-
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,8 +9,7 @@ import java.util.List;
 /** EasyExcel xlsx 导出（表头 + 字符串行列）。 */
 public final class ExcelExportUtil {
 
-    private ExcelExportUtil() {
-    }
+    private ExcelExportUtil() {}
 
     public static byte[] toXlsx(String sheetName, List<String> headers, List<List<String>> rows) {
         List<List<String>> head = new ArrayList<>();

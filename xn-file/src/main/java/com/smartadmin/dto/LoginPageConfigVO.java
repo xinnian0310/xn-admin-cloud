@@ -1,9 +1,8 @@
 package com.smartadmin.dto;
 
 import com.smartadmin.entity.SysLoginPageConfig;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class LoginPageConfigVO {
@@ -26,7 +25,8 @@ public class LoginPageConfigVO {
         vo.setId(entity.getId());
         vo.setName(entity.getName());
         vo.setBackgroundUrl(entity.getBackgroundUrl());
-        vo.setBackgroundFit(entity.getBackgroundFit() != null ? entity.getBackgroundFit() : "COVER");
+        vo.setBackgroundFit(
+                entity.getBackgroundFit() != null ? entity.getBackgroundFit() : "COVER");
         vo.setBoxX(entity.getBoxX());
         vo.setBoxY(entity.getBoxY());
         vo.setCaptchaEnabled(entity.getCaptchaEnabled());

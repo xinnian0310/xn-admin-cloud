@@ -10,6 +10,8 @@ import com.smartadmin.dto.RoleVO;
 import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.RoleService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,9 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/roles")
@@ -64,7 +63,8 @@ public class RoleController {
 
     @PutMapping("/{id}")
     @OperLog(title = "角色管理", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<RoleVO> update(@PathVariable Long id, @Valid @RequestBody RoleRequest request) {
+    public ApiResponse<RoleVO> update(
+            @PathVariable Long id, @Valid @RequestBody RoleRequest request) {
         return ApiResponse.success("更新成功", roleService.update(id, request));
     }
 
@@ -77,7 +77,8 @@ public class RoleController {
 
     @PutMapping("/{id}/status")
     @OperLog(title = "角色管理", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+    public ApiResponse<Void> updateStatus(
+            @PathVariable Long id, @RequestBody Map<String, Integer> body) {
         Integer status = body.get("status");
         if (status == null) {
             return ApiResponse.error(400, "状态不能为空");
@@ -88,7 +89,8 @@ public class RoleController {
 
     @PutMapping("/{id}/permissions")
     @OperLog(title = "角色管理", businessType = OperBusinessType.GRANT)
-    public ApiResponse<Void> assignPermissions(@PathVariable Long id, @RequestBody Map<String, List<Long>> body) {
+    public ApiResponse<Void> assignPermissions(
+            @PathVariable Long id, @RequestBody Map<String, List<Long>> body) {
         List<Long> permissionIds = body.get("permissionIds");
         if (permissionIds == null) {
             return ApiResponse.error(400, "permissionIds 不能为空");

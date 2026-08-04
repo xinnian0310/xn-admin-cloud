@@ -1,0 +1,27 @@
+#!/bin/sh
+# 提交前做格式检查（仅检查暂存的 Java/pom，失败则阻止提交）
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+cd "$ROOT" || exit 1
+
+if [ -x "./mvnw" ]; then
+  MVN="./mvnw"
+elif command -v mvn >/dev/null 2>&1; then
+  MVN="mvn"
+else
+  echo "WARN: 未找到 mvnw/mvn，跳过 spotless 预检"
+  exit 0
+fi
+
+echo ">> pre-commit: spotless:check"
+$MVN -q -B spotless:check
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "ERROR: 代码格式未通过 Spotless 检查"
+  echo "  请执行: ./mvnw -B spotless:apply"
+  echo "  然后重新 git add & commit"
+  echo ""
+  exit 1
+fi
+
+exit 0

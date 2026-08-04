@@ -10,6 +10,9 @@ import com.smartadmin.entity.User;
 import com.smartadmin.repository.SysFileRepository;
 import com.smartadmin.repository.SysRecycleBinRepository;
 import com.smartadmin.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -18,10 +21,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -42,10 +41,11 @@ public class RecycleService {
     public PageResult<RecycleBinVO> list(int page, int size, String keyword, String bizType) {
         rbacService.checkPermission("menu:system:recycle");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
-        Page<SysRecycleBin> result = recycleBinRepository.search(
-                StringUtils.hasText(keyword) ? keyword.trim() : "",
-                StringUtils.hasText(bizType) ? bizType.trim() : null,
-                pageable);
+        Page<SysRecycleBin> result =
+                recycleBinRepository.search(
+                        StringUtils.hasText(keyword) ? keyword.trim() : "",
+                        StringUtils.hasText(bizType) ? bizType.trim() : null,
+                        pageable);
         List<RecycleBinVO> records = result.getContent().stream().map(RecycleBinVO::from).toList();
         return new PageResult<>(records, result.getTotalElements(), page, size);
     }
@@ -58,16 +58,18 @@ public class RecycleService {
         }
         user.setDeletedAt(LocalDateTime.now());
         userRepository.save(user);
-        upsertBin(BIZ_USER, user.getId(),
+        upsertBin(
+                BIZ_USER,
+                user.getId(),
                 StringUtils.hasText(user.getNickname()) ? user.getNickname() : user.getUsername(),
                 "用户名: " + user.getUsername(),
-                snapshotOf(Map.of(
-                        "id", user.getId(),
-                        "username", user.getUsername(),
-                        "nickname", user.getNickname(),
-                        "email", user.getEmail(),
-                        "phone", user.getPhone()
-                )));
+                snapshotOf(
+                        Map.of(
+                                "id", user.getId(),
+                                "username", user.getUsername(),
+                                "nickname", user.getNickname(),
+                                "email", user.getEmail(),
+                                "phone", user.getPhone())));
         appCacheService.evictPermissionCodes(user.getId());
     }
 
@@ -79,16 +81,18 @@ public class RecycleService {
         }
         file.setDeletedAt(LocalDateTime.now());
         sysFileRepository.save(file);
-        upsertBin(BIZ_FILE, file.getId(),
+        upsertBin(
+                BIZ_FILE,
+                file.getId(),
                 file.getOriginalName(),
                 file.getObjectKey(),
-                snapshotOf(Map.of(
-                        "id", file.getId(),
-                        "objectKey", file.getObjectKey(),
-                        "originalName", file.getOriginalName(),
-                        "storage", file.getStorage(),
-                        "sizeBytes", file.getSizeBytes()
-                )));
+                snapshotOf(
+                        Map.of(
+                                "id", file.getId(),
+                                "objectKey", file.getObjectKey(),
+                                "originalName", file.getOriginalName(),
+                                "storage", file.getStorage(),
+                                "sizeBytes", file.getSizeBytes())));
     }
 
     @Transactional
@@ -96,13 +100,17 @@ public class RecycleService {
         rbacService.checkPermission("recycle:restore");
         SysRecycleBin bin = findBin(id);
         if (BIZ_USER.equals(bin.getBizType())) {
-            User user = userRepository.findById(bin.getBizId())
-                    .orElseThrow(() -> new BusinessException("原用户记录不存在，无法恢复"));
+            User user =
+                    userRepository
+                            .findById(bin.getBizId())
+                            .orElseThrow(() -> new BusinessException("原用户记录不存在，无法恢复"));
             user.setDeletedAt(null);
             userRepository.save(user);
         } else if (BIZ_FILE.equals(bin.getBizType())) {
-            SysFile file = sysFileRepository.findById(bin.getBizId())
-                    .orElseThrow(() -> new BusinessException("原文件记录不存在，无法恢复"));
+            SysFile file =
+                    sysFileRepository
+                            .findById(bin.getBizId())
+                            .orElseThrow(() -> new BusinessException("原文件记录不存在，无法恢复"));
             file.setDeletedAt(null);
             sysFileRepository.save(file);
         } else {
@@ -122,9 +130,12 @@ public class RecycleService {
         rbacService.checkPermission("recycle:purge");
         int count = 0;
         for (Long id : ids) {
-            recycleBinRepository.findById(id).ifPresent(bin -> {
-                purgeInternal(bin);
-            });
+            recycleBinRepository
+                    .findById(id)
+                    .ifPresent(
+                            bin -> {
+                                purgeInternal(bin);
+                            });
             count++;
         }
         return count;
@@ -141,31 +152,44 @@ public class RecycleService {
     private void purgeInternal(SysRecycleBin bin) {
         try {
             if (BIZ_USER.equals(bin.getBizType())) {
-                userRepository.findById(bin.getBizId()).ifPresent(user -> {
-                    if (user.getDeletedAt() != null) {
-                        userRepository.delete(user);
-                        appCacheService.evictPermissionCodes(user.getId());
-                    }
-                });
+                userRepository
+                        .findById(bin.getBizId())
+                        .ifPresent(
+                                user -> {
+                                    if (user.getDeletedAt() != null) {
+                                        userRepository.delete(user);
+                                        appCacheService.evictPermissionCodes(user.getId());
+                                    }
+                                });
             } else if (BIZ_FILE.equals(bin.getBizType())) {
-                sysFileRepository.findById(bin.getBizId()).ifPresent(file -> {
-                    if (file.getDeletedAt() != null) {
-                        try {
-                            filePurgeHelper.purgeStorage(file);
-                        } catch (Exception ex) {
-                            log.warn("彻底删除文件存储失败 {}: {}", file.getObjectKey(), ex.getMessage());
-                        }
-                        sysFileRepository.delete(file);
-                    }
-                });
+                sysFileRepository
+                        .findById(bin.getBizId())
+                        .ifPresent(
+                                file -> {
+                                    if (file.getDeletedAt() != null) {
+                                        try {
+                                            filePurgeHelper.purgeStorage(file);
+                                        } catch (Exception ex) {
+                                            log.warn(
+                                                    "彻底删除文件存储失败 {}: {}",
+                                                    file.getObjectKey(),
+                                                    ex.getMessage());
+                                        }
+                                        sysFileRepository.delete(file);
+                                    }
+                                });
             }
         } finally {
             recycleBinRepository.delete(bin);
         }
     }
 
-    private void upsertBin(String bizType, Long bizId, String title, String summary, String snapshot) {
-        SysRecycleBin bin = recycleBinRepository.findByBizTypeAndBizId(bizType, bizId).orElseGet(SysRecycleBin::new);
+    private void upsertBin(
+            String bizType, Long bizId, String title, String summary, String snapshot) {
+        SysRecycleBin bin =
+                recycleBinRepository
+                        .findByBizTypeAndBizId(bizType, bizId)
+                        .orElseGet(SysRecycleBin::new);
         bin.setBizType(bizType);
         bin.setBizId(bizId);
         bin.setTitle(title);
@@ -176,7 +200,8 @@ public class RecycleService {
     }
 
     private SysRecycleBin findBin(Long id) {
-        return recycleBinRepository.findById(id)
+        return recycleBinRepository
+                .findById(id)
                 .orElseThrow(() -> new BusinessException("回收站记录不存在"));
     }
 

@@ -9,6 +9,8 @@ import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.OperLogService;
 import com.smartadmin.util.ExcelHttpResponse;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.time.LocalDateTime;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/logs/oper")
@@ -38,9 +37,12 @@ public class OperLogController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String businessType,
             @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beginTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
-        return ApiResponse.success(operLogService.list(page, size, keyword, businessType, status, beginTime, endTime));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime beginTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endTime) {
+        return ApiResponse.success(
+                operLogService.list(page, size, keyword, businessType, status, beginTime, endTime));
     }
 
     @GetMapping("/export")
@@ -49,8 +51,10 @@ public class OperLogController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String businessType,
             @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beginTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime beginTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endTime) {
         return ExcelHttpResponse.xlsx(
                 operLogService.exportExcel(keyword, businessType, status, beginTime, endTime),
                 "oper-logs.xlsx");

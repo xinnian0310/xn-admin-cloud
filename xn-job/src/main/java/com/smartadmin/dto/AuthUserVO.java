@@ -1,10 +1,9 @@
 package com.smartadmin.dto;
 
 import com.smartadmin.entity.User;
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -12,6 +11,7 @@ public class AuthUserVO extends UserVO {
 
     private List<String> roles;
     private List<String> permissions;
+
     /** 需强制修改密码（首次/管理员重置/已过期） */
     private Boolean mustChangePassword;
 
@@ -23,8 +23,7 @@ public class AuthUserVO extends UserVO {
             User user,
             List<String> roleCodes,
             List<String> permissionCodes,
-            boolean mustChangePassword
-    ) {
+            boolean mustChangePassword) {
         AuthUserVO vo = new AuthUserVO();
         UserVO base = UserVO.from(user);
         vo.setId(base.getId());

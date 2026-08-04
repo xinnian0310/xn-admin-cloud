@@ -7,16 +7,15 @@ import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -94,10 +93,11 @@ public class RedisMonitorService {
     }
 
     private RedisClient createClient() {
-        RedisURI.Builder builder = RedisURI.builder()
-                .withHost(redisProperties.getHost())
-                .withPort(redisProperties.getPort())
-                .withDatabase(redisProperties.getDatabase());
+        RedisURI.Builder builder =
+                RedisURI.builder()
+                        .withHost(redisProperties.getHost())
+                        .withPort(redisProperties.getPort())
+                        .withDatabase(redisProperties.getDatabase());
         if (StringUtils.hasText(redisProperties.getPassword())) {
             builder.withPassword(redisProperties.getPassword().toCharArray());
         }
@@ -130,12 +130,16 @@ public class RedisMonitorService {
 
     private List<String> sampleKeys(RedisCommands<String, String> commands) {
         List<String> keys = new ArrayList<>();
-        io.lettuce.core.KeyScanCursor<String> cursor = commands.scan(
-                io.lettuce.core.ScanArgs.Builder.limit(SAMPLE_KEY_LIMIT));
+        io.lettuce.core.KeyScanCursor<String> cursor =
+                commands.scan(io.lettuce.core.ScanArgs.Builder.limit(SAMPLE_KEY_LIMIT));
         while (keys.size() < SAMPLE_KEY_LIMIT) {
             keys.addAll(cursor.getKeys());
             if (!cursor.isFinished() && keys.size() < SAMPLE_KEY_LIMIT) {
-                cursor = commands.scan(cursor, io.lettuce.core.ScanArgs.Builder.limit(SAMPLE_KEY_LIMIT - keys.size()));
+                cursor =
+                        commands.scan(
+                                cursor,
+                                io.lettuce.core.ScanArgs.Builder.limit(
+                                        SAMPLE_KEY_LIMIT - keys.size()));
             } else {
                 break;
             }

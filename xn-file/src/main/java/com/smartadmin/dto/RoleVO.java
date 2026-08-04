@@ -13,6 +13,7 @@ public class RoleVO {
     private String description;
     private Integer status;
     private Boolean builtIn;
+
     /** ALL | UNIT_AND_CHILDREN | UNIT | SELF */
     private String dataScope;
 
@@ -24,7 +25,8 @@ public class RoleVO {
         vo.setDescription(role.getDescription());
         vo.setStatus(role.getStatus());
         vo.setBuiltIn(role.getBuiltIn());
-        DataScope scope = role.getDataScope() != null ? role.getDataScope() : DataScope.UNIT_AND_CHILDREN;
+        DataScope scope =
+                role.getDataScope() != null ? role.getDataScope() : DataScope.UNIT_AND_CHILDREN;
         vo.setDataScope(scope.name());
         return vo;
     }

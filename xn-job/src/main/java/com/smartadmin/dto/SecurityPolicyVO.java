@@ -38,17 +38,13 @@ public class SecurityPolicyVO {
     @Max(50)
     private Integer pwdMaxLength;
 
-    @NotNull
-    private Boolean pwdRequireUpper;
+    @NotNull private Boolean pwdRequireUpper;
 
-    @NotNull
-    private Boolean pwdRequireLower;
+    @NotNull private Boolean pwdRequireLower;
 
-    @NotNull
-    private Boolean pwdRequireDigit;
+    @NotNull private Boolean pwdRequireDigit;
 
-    @NotNull
-    private Boolean pwdRequireSpecial;
+    @NotNull private Boolean pwdRequireSpecial;
 
     /** 0 = 不过期 */
     @NotNull
@@ -56,8 +52,7 @@ public class SecurityPolicyVO {
     @Max(3650)
     private Integer pwdExpireDays;
 
-    @NotNull
-    private Boolean pwdForceChangeFirst;
+    @NotNull private Boolean pwdForceChangeFirst;
 
     /** 0 = 不校验历史 */
     @NotNull

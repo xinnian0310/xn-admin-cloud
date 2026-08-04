@@ -1,14 +1,5 @@
 package com.smartadmin.websocket;
 
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import org.springframework.web.socket.CloseStatus;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
-import tools.jackson.databind.ObjectMapper;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -17,6 +8,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
@@ -71,8 +70,12 @@ public class NoticeSessionHub {
             if (count == 0) {
                 continue;
             }
-            list.add(new OnlineUserMeta(entry.getKey(), count,
-                    earliest == Long.MAX_VALUE ? 0 : earliest, ip == null ? "-" : ip));
+            list.add(
+                    new OnlineUserMeta(
+                            entry.getKey(),
+                            count,
+                            earliest == Long.MAX_VALUE ? 0 : earliest,
+                            ip == null ? "-" : ip));
         }
         return list;
     }

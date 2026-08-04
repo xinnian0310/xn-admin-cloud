@@ -13,6 +13,8 @@ import com.smartadmin.service.InfraStatusService;
 import com.smartadmin.service.MonitorService;
 import com.smartadmin.service.RedisMonitorService;
 import com.smartadmin.service.SqlMonitorService;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,9 +23,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/monitor")

@@ -2,9 +2,8 @@ package com.smartadmin.dto;
 
 import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.entity.SysOperLog;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class OperLogVO {

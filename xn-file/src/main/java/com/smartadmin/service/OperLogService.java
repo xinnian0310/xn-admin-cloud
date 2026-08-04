@@ -7,6 +7,8 @@ import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.entity.SysOperLog;
 import com.smartadmin.repository.SysOperLogRepository;
 import com.smartadmin.util.ExcelExportUtil;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,9 +17,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -32,9 +31,18 @@ public class OperLogService {
     private final DataScopeService dataScopeService;
 
     /** 保存一条操作日志；任何异常都不应影响被拦截业务方法的正常返回/抛出 */
-    public void record(String title, OperBusinessType businessType, String operatorName,
-                        String requestMethod, String requestUrl, String method, String ip,
-                        String params, int status, String errorMsg, long costTime) {
+    public void record(
+            String title,
+            OperBusinessType businessType,
+            String operatorName,
+            String requestMethod,
+            String requestUrl,
+            String method,
+            String ip,
+            String params,
+            int status,
+            String errorMsg,
+            long costTime) {
         try {
             SysOperLog entity = new SysOperLog();
             entity.setTitle(title);
@@ -54,56 +62,87 @@ public class OperLogService {
         }
     }
 
-    public PageResult<OperLogVO> list(int page, int size, String keyword, String businessType,
-                                       Integer status, LocalDateTime begin, LocalDateTime end) {
+    public PageResult<OperLogVO> list(
+            int page,
+            int size,
+            String keyword,
+            String businessType,
+            Integer status,
+            LocalDateTime begin,
+            LocalDateTime end) {
         rbacService.checkPermission("menu:system:oper-log");
         DataScopeService.UsernameFilter filter = dataScopeService.resolveUsernameFilter();
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         OperBusinessType type = parseBusinessType(businessType);
-        Page<SysOperLog> result = operLogRepository.search(
-                StringUtils.hasText(keyword) ? keyword.trim() : "",
-                type, status, begin, end,
-                filter.usernames(), filter.unrestricted(),
-                pageable);
+        Page<SysOperLog> result =
+                operLogRepository.search(
+                        StringUtils.hasText(keyword) ? keyword.trim() : "",
+                        type,
+                        status,
+                        begin,
+                        end,
+                        filter.usernames(),
+                        filter.unrestricted(),
+                        pageable);
         List<OperLogVO> records = result.getContent().stream().map(OperLogVO::from).toList();
         return new PageResult<>(records, result.getTotalElements(), page, size);
     }
 
     public OperLogVO getById(Long id) {
         rbacService.checkPermission("menu:system:oper-log");
-        SysOperLog entity = operLogRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("操作日志不存在"));
+        SysOperLog entity =
+                operLogRepository.findById(id).orElseThrow(() -> new BusinessException("操作日志不存在"));
         dataScopeService.assertUsernameAccessible(entity.getOperatorName());
         return OperLogVO.from(entity);
     }
 
-    public byte[] exportExcel(String keyword, String businessType, Integer status,
-                            LocalDateTime begin, LocalDateTime end) {
+    public byte[] exportExcel(
+            String keyword,
+            String businessType,
+            Integer status,
+            LocalDateTime begin,
+            LocalDateTime end) {
         rbacService.checkPermission("operlog:export");
         DataScopeService.UsernameFilter filter = dataScopeService.resolveUsernameFilter();
         OperBusinessType type = parseBusinessType(businessType);
-        List<SysOperLog> rows = operLogRepository.searchAll(
-                StringUtils.hasText(keyword) ? keyword.trim() : "",
-                type, status, begin, end,
-                filter.usernames(), filter.unrestricted());
+        List<SysOperLog> rows =
+                operLogRepository.searchAll(
+                        StringUtils.hasText(keyword) ? keyword.trim() : "",
+                        type,
+                        status,
+                        begin,
+                        end,
+                        filter.usernames(),
+                        filter.unrestricted());
         if (rows.size() > EXPORT_LIMIT) {
             rows = rows.subList(0, EXPORT_LIMIT);
         }
         return ExcelExportUtil.toXlsx(
                 "操作日志",
                 List.of("ID", "模块", "业务类型", "操作人", "请求方式", "请求地址", "IP", "状态", "耗时(ms)", "操作时间"),
-                rows.stream().map(r -> List.of(
-                        String.valueOf(r.getId()),
-                        nullToEmpty(r.getTitle()),
-                        r.getBusinessType() == null ? "" : r.getBusinessType().name(),
-                        nullToEmpty(r.getOperatorName()),
-                        nullToEmpty(r.getRequestMethod()),
-                        nullToEmpty(r.getRequestUrl()),
-                        nullToEmpty(r.getIp()),
-                        r.getStatus() != null && r.getStatus() == 1 ? "成功" : "失败",
-                        r.getCostTime() == null ? "" : String.valueOf(r.getCostTime()),
-                        r.getOperTime() == null ? "" : r.getOperTime().toString()
-                )).toList());
+                rows.stream()
+                        .map(
+                                r ->
+                                        List.of(
+                                                String.valueOf(r.getId()),
+                                                nullToEmpty(r.getTitle()),
+                                                r.getBusinessType() == null
+                                                        ? ""
+                                                        : r.getBusinessType().name(),
+                                                nullToEmpty(r.getOperatorName()),
+                                                nullToEmpty(r.getRequestMethod()),
+                                                nullToEmpty(r.getRequestUrl()),
+                                                nullToEmpty(r.getIp()),
+                                                r.getStatus() != null && r.getStatus() == 1
+                                                        ? "成功"
+                                                        : "失败",
+                                                r.getCostTime() == null
+                                                        ? ""
+                                                        : String.valueOf(r.getCostTime()),
+                                                r.getOperTime() == null
+                                                        ? ""
+                                                        : r.getOperTime().toString()))
+                        .toList());
     }
 
     @Transactional
@@ -140,8 +179,8 @@ public class OperLogService {
             operLogRepository.deleteAllInBatch();
             return;
         }
-        List<SysOperLog> rows = operLogRepository.searchAll(
-                "", null, null, null, null, filter.usernames(), false);
+        List<SysOperLog> rows =
+                operLogRepository.searchAll("", null, null, null, null, filter.usernames(), false);
         operLogRepository.deleteAllInBatch(rows);
     }
 

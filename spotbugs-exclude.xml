@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Lombok / DTO / Entity 常见误报 -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2,CT_CONSTRUCTOR_THROW"/>
+    </Match>
+    <!-- Spring 配置与启动类 -->
+    <Match>
+        <Class name="~.*Application"/>
+        <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+    </Match>
+</FindBugsFilter>

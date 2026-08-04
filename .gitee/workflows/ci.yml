@@ -1,0 +1,44 @@
+# Gitee Go（流水线）——与 GitHub Actions 同目标：mvn verify
+# 若控制台已绑定流水线，可直接选用本文件；也可在 Web 里手工配置等价步骤。
+
+name: CI
+displayName: Maven verify
+triggers:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pr:
+    branches:
+      - main
+      - master
+      - develop
+
+stages:
+  - name: verify
+    displayName: verify
+    strategy: naturally
+    jobs:
+      - name: maven-verify
+        displayName: mvn verify
+        runsOn:
+          group: public-cloud
+          labels:
+            - ubuntu-latest
+        steps:
+          - name: checkout
+            displayName: Checkout
+            uses: checkout@v1.0.0
+
+          - name: setup-java
+            displayName: Setup JDK 21
+            uses: setup-java@v1.0.0
+            with:
+              jdkVersion: "21"
+
+          - name: verify
+            displayName: Maven verify
+            script: |
+              chmod +x mvnw
+              ./mvnw -B -ntp verify

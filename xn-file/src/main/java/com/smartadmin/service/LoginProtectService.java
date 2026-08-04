@@ -2,16 +2,12 @@ package com.smartadmin.service;
 
 import com.smartadmin.common.BusinessException;
 import com.smartadmin.repository.UserRepository;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.time.Duration;
-
-/**
- * 登录失败锁定（账号级）+ IP 限流。策略读自 {@link SecurityPolicyService}（可管理端配置）。
- * 超级管理员（SUPER_ADMIN 角色）不受登录失败锁定。
- */
+/** 登录失败锁定（账号级）+ IP 限流。策略读自 {@link SecurityPolicyService}（可管理端配置）。 超级管理员（SUPER_ADMIN 角色）不受登录失败锁定。 */
 @Service
 @RequiredArgsConstructor
 public class LoginProtectService {
@@ -30,9 +26,10 @@ public class LoginProtectService {
             String lockKey = SecurityPolicyService.LOCK_PREFIX + userKey;
             if (kvStore.exists(lockKey)) {
                 Long ttl = kvStore.ttlSeconds(lockKey);
-                String tip = ttl != null && ttl > 0
-                        ? "账号已锁定，请 " + formatRemain(ttl) + " 后再试"
-                        : "账号已锁定，请稍后再试";
+                String tip =
+                        ttl != null && ttl > 0
+                                ? "账号已锁定，请 " + formatRemain(ttl) + " 后再试"
+                                : "账号已锁定，请稍后再试";
                 throw new BusinessException(423, tip);
             }
         }
@@ -75,9 +72,16 @@ public class LoginProtectService {
         if (!StringUtils.hasText(username)) {
             return false;
         }
-        return userRepository.findByUsernameWithRolesIgnoreCase(username.trim())
-                .map(user -> user.getRoles() != null && user.getRoles().stream()
-                        .anyMatch(r -> RbacService.SUPER_ADMIN_CODE.equals(r.getCode())))
+        return userRepository
+                .findByUsernameWithRolesIgnoreCase(username.trim())
+                .map(
+                        user ->
+                                user.getRoles() != null
+                                        && user.getRoles().stream()
+                                                .anyMatch(
+                                                        r ->
+                                                                RbacService.SUPER_ADMIN_CODE.equals(
+                                                                        r.getCode())))
                 .orElse(false);
     }
 

@@ -1,16 +1,13 @@
 package com.smartadmin.config;
 
+import java.util.Arrays;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.Arrays;
-
-/**
- * 生产环境启动强校验：关键密钥缺失则直接失败，避免默默使用空值。
- */
+/** 生产环境启动强校验：关键密钥缺失则直接失败，避免默默使用空值。 */
 @Component
 public class SecurityStartupValidator implements ApplicationRunner {
 
@@ -22,8 +19,9 @@ public class SecurityStartupValidator implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        boolean prod = Arrays.stream(environment.getActiveProfiles())
-                .anyMatch(p -> "prod".equalsIgnoreCase(p));
+        boolean prod =
+                Arrays.stream(environment.getActiveProfiles())
+                        .anyMatch(p -> "prod".equalsIgnoreCase(p));
         if (!prod) {
             return;
         }

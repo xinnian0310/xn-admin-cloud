@@ -8,10 +8,6 @@ import com.smartadmin.repository.RoleRepository;
 import com.smartadmin.repository.SysNoticeRepository;
 import com.smartadmin.repository.SysUnitRepository;
 import com.smartadmin.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -20,8 +16,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -62,10 +60,11 @@ public class DashboardService {
         // 分布
         vo.setRoleDistribution(toNameValues(userRepository.countGroupByRole(), Integer.MAX_VALUE));
         vo.setUnitDistribution(toNameValues(userRepository.countGroupByUnit(), MAX_UNIT_SLICES));
-        vo.setStatusDistribution(List.of(
-                new DashboardStatsVO.NameValue("启用", activeUsers),
-                new DashboardStatsVO.NameValue("禁用", Math.max(0, totalUsers - activeUsers))
-        ));
+        vo.setStatusDistribution(
+                List.of(
+                        new DashboardStatsVO.NameValue("启用", activeUsers),
+                        new DashboardStatsVO.NameValue(
+                                "禁用", Math.max(0, totalUsers - activeUsers))));
 
         // 近 30 天注册趋势
         vo.setRegisterTrend(buildRegisterTrend(today));
@@ -95,7 +94,8 @@ public class DashboardService {
         for (int i = 0; i < TREND_DAYS; i++) {
             counts.put(startDate.plusDays(i).format(DAY), 0L);
         }
-        List<LocalDateTime> createdAts = userRepository.findCreatedAtAfter(startDate.atStartOfDay());
+        List<LocalDateTime> createdAts =
+                userRepository.findCreatedAtAfter(startDate.atStartOfDay());
         for (LocalDateTime createdAt : createdAts) {
             if (createdAt == null) {
                 continue;
@@ -109,35 +109,44 @@ public class DashboardService {
     }
 
     private List<DashboardStatsVO.RecentNotice> buildRecentNotices() {
-        List<SysNotice> notices = noticeRepository.findTop5ByStatusOrderByPublishedAtDesc(NoticeStatus.PUBLISHED);
+        List<SysNotice> notices =
+                noticeRepository.findTop5ByStatusOrderByPublishedAtDesc(NoticeStatus.PUBLISHED);
         if (notices.isEmpty()) {
             return List.of();
         }
         Map<Long, String> publisherNames = loadPublisherNames(notices);
-        return notices.stream().map(n -> {
-            DashboardStatsVO.RecentNotice item = new DashboardStatsVO.RecentNotice();
-            item.setId(n.getId());
-            item.setTitle(n.getTitle());
-            item.setStatus(n.getStatus() != null ? n.getStatus().name() : null);
-            item.setPublishedAt(n.getPublishedAt());
-            item.setPublisherName(publisherNames.get(n.getPublisherId()));
-            return item;
-        }).toList();
+        return notices.stream()
+                .map(
+                        n -> {
+                            DashboardStatsVO.RecentNotice item =
+                                    new DashboardStatsVO.RecentNotice();
+                            item.setId(n.getId());
+                            item.setTitle(n.getTitle());
+                            item.setStatus(n.getStatus() != null ? n.getStatus().name() : null);
+                            item.setPublishedAt(n.getPublishedAt());
+                            item.setPublisherName(publisherNames.get(n.getPublisherId()));
+                            return item;
+                        })
+                .toList();
     }
 
     private Map<Long, String> loadPublisherNames(List<SysNotice> notices) {
-        List<Long> ids = notices.stream()
-                .map(SysNotice::getPublisherId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
+        List<Long> ids =
+                notices.stream()
+                        .map(SysNotice::getPublisherId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList();
         if (ids.isEmpty()) {
             return Map.of();
         }
         return userRepository.findAllById(ids).stream()
-                .collect(Collectors.toMap(
-                        User::getId,
-                        u -> StringUtils.hasText(u.getNickname()) ? u.getNickname() : u.getUsername()
-                ));
+                .collect(
+                        Collectors.toMap(
+                                User::getId,
+                                u ->
+                                        StringUtils.hasText(u.getNickname())
+                                                ? u.getNickname()
+                                                : u.getUsername()));
     }
 }

@@ -9,6 +9,7 @@ import com.smartadmin.dto.PageResult;
 import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.LoginPageConfigService;
 import jakarta.validation.Valid;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,8 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/login-page-configs")
@@ -52,7 +51,8 @@ public class LoginPageConfigController {
 
     @PostMapping
     @OperLog(title = "登录页设置", businessType = OperBusinessType.INSERT)
-    public ApiResponse<LoginPageConfigVO> create(@Valid @RequestBody LoginPageConfigRequest request) {
+    public ApiResponse<LoginPageConfigVO> create(
+            @Valid @RequestBody LoginPageConfigRequest request) {
         return ApiResponse.success("创建成功", loginPageConfigService.create(request));
     }
 
@@ -65,7 +65,8 @@ public class LoginPageConfigController {
 
     @PutMapping("/{id}/status")
     @OperLog(title = "登录页设置", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+    public ApiResponse<Void> updateStatus(
+            @PathVariable Long id, @RequestBody Map<String, Integer> body) {
         Integer status = body.get("status");
         if (status == null) {
             return ApiResponse.error(400, "状态不能为空");

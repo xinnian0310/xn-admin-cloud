@@ -7,6 +7,7 @@ import com.smartadmin.dto.PageResult;
 import com.smartadmin.entity.SysDictData;
 import com.smartadmin.repository.SysDictDataRepository;
 import com.smartadmin.repository.SysDictTypeRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,8 +15,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,24 +25,34 @@ public class DictDataService {
     private final RbacService rbacService;
     private final AppCacheService appCacheService;
 
-    public PageResult<DictDataVO> list(String dictType, int page, int size, String keyword, Integer status) {
+    public PageResult<DictDataVO> list(
+            String dictType, int page, int size, String keyword, Integer status) {
         rbacService.checkPermission("dict-data:view");
         if (!StringUtils.hasText(dictType)) {
             throw new BusinessException("字典类型不能为空");
         }
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "sort"));
-        Page<SysDictData> result = dictDataRepository.search(
-                dictType, StringUtils.hasText(keyword) ? keyword.trim() : "", status, pageable);
+        Page<SysDictData> result =
+                dictDataRepository.search(
+                        dictType,
+                        StringUtils.hasText(keyword) ? keyword.trim() : "",
+                        status,
+                        pageable);
         List<DictDataVO> records = result.getContent().stream().map(DictDataVO::from).toList();
         return new PageResult<>(records, result.getTotalElements(), page, size);
     }
 
     /** 供业务页面动态取某字典类型下的启用项（下拉/标签渲染） */
     public List<DictDataVO> listByType(String dictType) {
-        return appCacheService.getDict(dictType, new tools.jackson.core.type.TypeReference<>() {
-        }, () -> dictDataRepository.findByDictTypeAndStatusOrderBySortAscIdAsc(dictType, 1).stream()
-                .map(DictDataVO::from)
-                .toList());
+        return appCacheService.getDict(
+                dictType,
+                new tools.jackson.core.type.TypeReference<>() {},
+                () ->
+                        dictDataRepository
+                                .findByDictTypeAndStatusOrderBySortAscIdAsc(dictType, 1)
+                                .stream()
+                                .map(DictDataVO::from)
+                                .toList());
     }
 
     public DictDataVO getById(Long id) {
@@ -55,7 +64,8 @@ public class DictDataService {
     public DictDataVO create(DictDataRequest request) {
         rbacService.checkPermission("dict-data:create");
         validateDictType(request.getDictType());
-        if (dictDataRepository.existsByDictTypeAndValue(request.getDictType(), request.getValue())) {
+        if (dictDataRepository.existsByDictTypeAndValue(
+                request.getDictType(), request.getValue())) {
             throw new BusinessException("该字典下键值已存在");
         }
         SysDictData data = new SysDictData();
@@ -74,8 +84,10 @@ public class DictDataService {
         SysDictData data = findData(id);
         String oldType = data.getDictType();
         validateDictType(request.getDictType());
-        if ((!data.getDictType().equals(request.getDictType()) || !data.getValue().equals(request.getValue()))
-                && dictDataRepository.existsByDictTypeAndValueAndIdNot(request.getDictType(), request.getValue(), id)) {
+        if ((!data.getDictType().equals(request.getDictType())
+                        || !data.getValue().equals(request.getValue()))
+                && dictDataRepository.existsByDictTypeAndValueAndIdNot(
+                        request.getDictType(), request.getValue(), id)) {
             throw new BusinessException("该字典下键值已存在");
         }
         applyRequest(data, request);
@@ -112,7 +124,8 @@ public class DictDataService {
     }
 
     private void clearOtherDefaults(SysDictData current) {
-        List<SysDictData> others = dictDataRepository.findByDictTypeAndIdNot(current.getDictType(), current.getId());
+        List<SysDictData> others =
+                dictDataRepository.findByDictTypeAndIdNot(current.getDictType(), current.getId());
         for (SysDictData other : others) {
             if (Boolean.TRUE.equals(other.getIsDefault())) {
                 other.setIsDefault(false);
@@ -122,8 +135,7 @@ public class DictDataService {
     }
 
     private void validateDictType(String dictType) {
-        dictTypeRepository.findByType(dictType)
-                .orElseThrow(() -> new BusinessException("字典类型不存在"));
+        dictTypeRepository.findByType(dictType).orElseThrow(() -> new BusinessException("字典类型不存在"));
     }
 
     private void applyRequest(SysDictData data, DictDataRequest request) {
@@ -138,7 +150,6 @@ public class DictDataService {
     }
 
     private SysDictData findData(Long id) {
-        return dictDataRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("字典数据不存在"));
+        return dictDataRepository.findById(id).orElseThrow(() -> new BusinessException("字典数据不存在"));
     }
 }

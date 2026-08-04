@@ -14,11 +14,6 @@ import com.smartadmin.repository.RoleRepository;
 import com.smartadmin.repository.SysPageUiConfigRepository;
 import com.smartadmin.repository.SysRouteRepository;
 import com.smartadmin.util.CodegenNaming;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,12 +25,17 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
 public class TableCodegenService {
 
-    private static final String JAVA_BASE = "xn-admin-cloud/xn-system/src/main/java/com/smartadmin/";
+    private static final String JAVA_BASE =
+            "xn-admin-cloud/xn-system/src/main/java/com/smartadmin/";
     private static final String VUE_BASE = "xn-admin-vue3-ts/src/";
 
     private final PermissionRepository permissionRepository;
@@ -51,9 +51,10 @@ public class TableCodegenService {
         String tableName = request.getTableName().trim();
         String prefix = CodegenNaming.normalizePrefix(request.getModulePrefix());
         String apiBase = CodegenNaming.normalizeApiBase(request.getApiBasePath());
-        String pascal = StringUtils.hasText(request.getClassName())
-                ? request.getClassName().trim()
-                : CodegenNaming.toPascal(prefix);
+        String pascal =
+                StringUtils.hasText(request.getClassName())
+                        ? request.getClassName().trim()
+                        : CodegenNaming.toPascal(prefix);
         if (!pascal.matches("^[A-Z][A-Za-z0-9]*$")) {
             throw new BusinessException("类名需以大写字母开头，仅含字母数字");
         }
@@ -68,14 +69,17 @@ public class TableCodegenService {
         }
         Col pk = cols.stream().filter(Col::pk).findFirst().orElseThrow();
 
-        boolean persistPerms = request.getPersistPermissions() == null || request.getPersistPermissions();
+        boolean persistPerms =
+                request.getPersistPermissions() == null || request.getPersistPermissions();
         boolean genPageUi = request.getGeneratePageUi() == null || request.getGeneratePageUi();
         boolean createMenu = request.getCreateMenu() == null || request.getCreateMenu();
 
         boolean menuCreated = false;
         SysRoute menuRoute = null;
         if (createMenu) {
-            menuCreated = ensureMenuRoute(menuTitle, menuPath, viewPath, "menu:" + prefix.replace('-', ':'));
+            menuCreated =
+                    ensureMenuRoute(
+                            menuTitle, menuPath, viewPath, "menu:" + prefix.replace('-', ':'));
             menuRoute = routeRepository.findByPath(menuPath).orElse(null);
         }
 
@@ -108,8 +112,10 @@ public class TableCodegenService {
             }
         }
 
-        List<TableCodegenVO.GeneratedFile> files = buildFiles(
-                tableName, prefix, pascal, camel, apiBase, menuTitle, menuPath, viewPath, cols, pk);
+        List<TableCodegenVO.GeneratedFile> files =
+                buildFiles(
+                        tableName, prefix, pascal, camel, apiBase, menuTitle, menuPath, viewPath,
+                        cols, pk);
 
         TableCodegenVO vo = new TableCodegenVO();
         vo.setTableName(tableName);
@@ -129,9 +135,10 @@ public class TableCodegenService {
     }
 
     private Col toCol(TableCodegenRequest.TableCodegenColumnRequest c) {
-        String field = StringUtils.hasText(c.getJavaField())
-                ? c.getJavaField().trim()
-                : CodegenNaming.columnToCamel(c.getColumnName());
+        String field =
+                StringUtils.hasText(c.getJavaField())
+                        ? c.getJavaField().trim()
+                        : CodegenNaming.columnToCamel(c.getColumnName());
         String javaType = StringUtils.hasText(c.getJavaType()) ? c.getJavaType().trim() : "String";
         String formType = StringUtils.hasText(c.getFormType()) ? c.getFormType().trim() : "input";
         String label = StringUtils.hasText(c.getLabel()) ? c.getLabel().trim() : c.getColumnName();
@@ -147,8 +154,7 @@ public class TableCodegenService {
                 c.isListShow(),
                 c.isQueryable(),
                 c.isFormShow(),
-                c.isRequired()
-        );
+                c.isRequired());
     }
 
     private String normalizePath(String raw) {
@@ -162,13 +168,25 @@ public class TableCodegenService {
         if (routeRepository.findByPath(path).isPresent()) {
             return false;
         }
-        SysRoute parent = routeRepository.findAll().stream()
-                .filter(r -> r.getType() == RouteType.DIR && "menu:system:tools".equals(r.getPermission()))
-                .findFirst()
-                .or(() -> routeRepository.findAll().stream()
-                        .filter(r -> r.getType() == RouteType.DIR && "menu:system".equals(r.getPermission()))
-                        .findFirst())
-                .orElse(null);
+        SysRoute parent =
+                routeRepository.findAll().stream()
+                        .filter(
+                                r ->
+                                        r.getType() == RouteType.DIR
+                                                && "menu:system:tools".equals(r.getPermission()))
+                        .findFirst()
+                        .or(
+                                () ->
+                                        routeRepository.findAll().stream()
+                                                .filter(
+                                                        r ->
+                                                                r.getType() == RouteType.DIR
+                                                                        && "menu:system"
+                                                                                .equals(
+                                                                                        r
+                                                                                                .getPermission()))
+                                                .findFirst())
+                        .orElse(null);
         SysRoute route = new SysRoute();
         route.setTitle(title);
         route.setPath(path);
@@ -187,17 +205,21 @@ public class TableCodegenService {
         return true;
     }
 
-    private Permission resolveOrCreateMenuPermission(SysRoute menuRoute, String title, String path, String prefix) {
-        String code = menuRoute != null && StringUtils.hasText(menuRoute.getPermission())
-                ? menuRoute.getPermission()
-                : "menu:" + prefix.replace('-', ':');
+    private Permission resolveOrCreateMenuPermission(
+            SysRoute menuRoute, String title, String path, String prefix) {
+        String code =
+                menuRoute != null && StringUtils.hasText(menuRoute.getPermission())
+                        ? menuRoute.getPermission()
+                        : "menu:" + prefix.replace('-', ':');
         Permission existing = permissionRepository.findByCode(code).orElse(null);
         if (existing != null) {
             return existing;
         }
-        Permission parent = permissionRepository.findByCode("menu:system:tools")
-                .or(() -> permissionRepository.findByCode("menu:system"))
-                .orElse(null);
+        Permission parent =
+                permissionRepository
+                        .findByCode("menu:system:tools")
+                        .or(() -> permissionRepository.findByCode("menu:system"))
+                        .orElse(null);
         Permission created = new Permission();
         created.setCode(code);
         created.setName(title);
@@ -222,9 +244,27 @@ public class TableCodegenService {
         list.add(api("api:GET:" + apiBase, title + "列表接口", "GET", apiBase, 1));
         list.add(api("api:GET:" + apiBase + "/{id}", title + "详情接口", "GET", apiBase + "/{id}", 2));
         list.add(api("api:POST:" + apiBase, "创建" + title + "接口", "POST", apiBase, 3));
-        list.add(api("api:PUT:" + apiBase + "/{id}", "更新" + title + "接口", "PUT", apiBase + "/{id}", 4));
-        list.add(api("api:DELETE:" + apiBase + "/{id}", "删除" + title + "接口", "DELETE", apiBase + "/{id}", 5));
-        list.add(api("api:POST:" + apiBase + "/batch-delete", "批量删除" + title, "POST", apiBase + "/batch-delete", 6));
+        list.add(
+                api(
+                        "api:PUT:" + apiBase + "/{id}",
+                        "更新" + title + "接口",
+                        "PUT",
+                        apiBase + "/{id}",
+                        4));
+        list.add(
+                api(
+                        "api:DELETE:" + apiBase + "/{id}",
+                        "删除" + title + "接口",
+                        "DELETE",
+                        apiBase + "/{id}",
+                        5));
+        list.add(
+                api(
+                        "api:POST:" + apiBase + "/batch-delete",
+                        "批量删除" + title,
+                        "POST",
+                        apiBase + "/batch-delete",
+                        6));
         return list;
     }
 
@@ -259,13 +299,41 @@ public class TableCodegenService {
     private void applyButtonMeta(Permission p, String code) {
         String suffix = code.contains(":") ? code.substring(code.lastIndexOf(':') + 1) : code;
         switch (suffix) {
-            case "create" -> { p.setAction("add"); p.setIcon("Plus"); p.setButtonColor("primary"); }
-            case "update" -> { p.setAction("edit"); p.setIcon("Edit"); p.setButtonColor("primary"); }
-            case "view" -> { p.setAction("view"); p.setIcon("View"); p.setButtonColor("primary"); }
-            case "delete" -> { p.setAction("delete"); p.setIcon("Delete"); p.setButtonColor("danger"); }
-            case "table-edit" -> { p.setAction("edit"); p.setIcon(null); p.setButtonColor("primary"); }
-            case "table-delete" -> { p.setAction("delete"); p.setIcon(null); p.setButtonColor("danger"); }
-            default -> { p.setAction(suffix); p.setIcon(null); p.setButtonColor("primary"); }
+            case "create" -> {
+                p.setAction("add");
+                p.setIcon("Plus");
+                p.setButtonColor("primary");
+            }
+            case "update" -> {
+                p.setAction("edit");
+                p.setIcon("Edit");
+                p.setButtonColor("primary");
+            }
+            case "view" -> {
+                p.setAction("view");
+                p.setIcon("View");
+                p.setButtonColor("primary");
+            }
+            case "delete" -> {
+                p.setAction("delete");
+                p.setIcon("Delete");
+                p.setButtonColor("danger");
+            }
+            case "table-edit" -> {
+                p.setAction("edit");
+                p.setIcon(null);
+                p.setButtonColor("primary");
+            }
+            case "table-delete" -> {
+                p.setAction("delete");
+                p.setIcon(null);
+                p.setButtonColor("danger");
+            }
+            default -> {
+                p.setAction(suffix);
+                p.setIcon(null);
+                p.setButtonColor("primary");
+            }
         }
     }
 
@@ -289,78 +357,127 @@ public class TableCodegenService {
 
     private void grantToPrivilegedRoles(Permission permission) {
         for (String roleCode : List.of("SUPER_ADMIN", "ADMIN")) {
-            roleRepository.findByCode(roleCode).ifPresent(role -> {
-                Role managed = roleRepository.findByIdWithPermissions(role.getId()).orElse(role);
-                Set<Permission> perms = new HashSet<>(
-                        managed.getPermissions() == null ? Set.of() : managed.getPermissions());
-                if (perms.add(permission)) {
-                    managed.setPermissions(perms);
-                    roleRepository.save(managed);
-                }
-            });
+            roleRepository
+                    .findByCode(roleCode)
+                    .ifPresent(
+                            role -> {
+                                Role managed =
+                                        roleRepository
+                                                .findByIdWithPermissions(role.getId())
+                                                .orElse(role);
+                                Set<Permission> perms =
+                                        new HashSet<>(
+                                                managed.getPermissions() == null
+                                                        ? Set.of()
+                                                        : managed.getPermissions());
+                                if (perms.add(permission)) {
+                                    managed.setPermissions(perms);
+                                    roleRepository.save(managed);
+                                }
+                            });
         }
     }
 
     private String buildSearchConfig(List<Col> cols, String title) {
         List<Col> queryCols = cols.stream().filter(Col::queryable).limit(3).toList();
         if (queryCols.isEmpty()) {
-            return "[{\"label\":\"综合查询\",\"prop\":\"FuzzyWord\",\"type\":\"input\",\"placeholder\":\"搜索" + escapeJson(title) + "\"}]";
+            return "[{\"label\":\"综合查询\",\"prop\":\"FuzzyWord\",\"type\":\"input\",\"placeholder\":\"搜索"
+                    + escapeJson(title)
+                    + "\"}]";
         }
         StringBuilder sb = new StringBuilder("[");
         boolean first = true;
         for (Col c : queryCols) {
             if (!first) sb.append(',');
             first = false;
-            String type = "select".equals(c.formType()) && "status".equalsIgnoreCase(c.columnName())
-                    ? "select" : "input";
-            sb.append("{\"label\":\"").append(escapeJson(c.label())).append("\",\"prop\":\"")
-                    .append(escapeJson(c.javaField())).append("\",\"type\":\"").append(type)
-                    .append("\",\"placeholder\":\"搜索").append(escapeJson(c.label())).append("\"}");
+            String type =
+                    "select".equals(c.formType()) && "status".equalsIgnoreCase(c.columnName())
+                            ? "select"
+                            : "input";
+            sb.append("{\"label\":\"")
+                    .append(escapeJson(c.label()))
+                    .append("\",\"prop\":\"")
+                    .append(escapeJson(c.javaField()))
+                    .append("\",\"type\":\"")
+                    .append(type)
+                    .append("\",\"placeholder\":\"搜索")
+                    .append(escapeJson(c.label()))
+                    .append("\"}");
         }
         // 始终带综合查询
-        sb.append(",{\"label\":\"综合查询\",\"prop\":\"FuzzyWord\",\"type\":\"input\",\"placeholder\":\"关键词\"}");
+        sb.append(
+                ",{\"label\":\"综合查询\",\"prop\":\"FuzzyWord\",\"type\":\"input\",\"placeholder\":\"关键词\"}");
         sb.append(']');
         return sb.toString();
     }
 
     private List<TableCodegenVO.GeneratedFile> buildFiles(
-            String tableName, String prefix, String pascal, String camel, String apiBase,
-            String title, String menuPath, String viewPath, List<Col> cols, Col pk
-    ) {
+            String tableName,
+            String prefix,
+            String pascal,
+            String camel,
+            String apiBase,
+            String title,
+            String menuPath,
+            String viewPath,
+            List<Col> cols,
+            Col pk) {
         String apiUrl = apiBase.startsWith("/api/") ? apiBase.substring(4) : apiBase;
         List<TableCodegenVO.GeneratedFile> files = new ArrayList<>();
-        files.add(TableCodegenVO.GeneratedFile.of(JAVA_BASE + "entity/" + pascal + ".java",
-                entityJava(pascal, tableName, title, cols, pk)));
-        files.add(TableCodegenVO.GeneratedFile.of(JAVA_BASE + "repository/" + pascal + "Repository.java",
-                repositoryJava(pascal, cols)));
-        files.add(TableCodegenVO.GeneratedFile.of(JAVA_BASE + "dto/" + pascal + "Request.java",
-                requestJava(pascal, cols)));
-        files.add(TableCodegenVO.GeneratedFile.of(JAVA_BASE + "dto/" + pascal + "VO.java",
-                voJava(pascal, cols)));
-        files.add(TableCodegenVO.GeneratedFile.of(JAVA_BASE + "service/" + pascal + "Service.java",
-                serviceJava(pascal, camel, title, prefix, cols, pk)));
-        files.add(TableCodegenVO.GeneratedFile.of(JAVA_BASE + "controller/" + pascal + "Controller.java",
-                controllerJava(pascal, camel, apiBase, title)));
-        files.add(TableCodegenVO.GeneratedFile.of(VUE_BASE + "views/" + viewPath + "/index.vue",
-                indexVue(title, menuPath, prefix, cols, pk)));
-        files.add(TableCodegenVO.GeneratedFile.of(VUE_BASE + "views/" + viewPath + "/save.vue",
-                saveVue(title, prefix, pascal, cols)));
-        files.add(TableCodegenVO.GeneratedFile.of(VUE_BASE + "api/" + prefix + ".ts",
-                apiTs(apiUrl)));
-        files.add(TableCodegenVO.GeneratedFile.of("README.md",
-                readme(title, tableName, prefix, pascal, apiBase, viewPath, menuPath)));
+        files.add(
+                TableCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "entity/" + pascal + ".java",
+                        entityJava(pascal, tableName, title, cols, pk)));
+        files.add(
+                TableCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "repository/" + pascal + "Repository.java",
+                        repositoryJava(pascal, cols)));
+        files.add(
+                TableCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "dto/" + pascal + "Request.java", requestJava(pascal, cols)));
+        files.add(
+                TableCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "dto/" + pascal + "VO.java", voJava(pascal, cols)));
+        files.add(
+                TableCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "service/" + pascal + "Service.java",
+                        serviceJava(pascal, camel, title, prefix, cols, pk)));
+        files.add(
+                TableCodegenVO.GeneratedFile.of(
+                        JAVA_BASE + "controller/" + pascal + "Controller.java",
+                        controllerJava(pascal, camel, apiBase, title)));
+        files.add(
+                TableCodegenVO.GeneratedFile.of(
+                        VUE_BASE + "views/" + viewPath + "/index.vue",
+                        indexVue(title, menuPath, prefix, cols, pk)));
+        files.add(
+                TableCodegenVO.GeneratedFile.of(
+                        VUE_BASE + "views/" + viewPath + "/save.vue",
+                        saveVue(title, prefix, pascal, cols)));
+        files.add(
+                TableCodegenVO.GeneratedFile.of(VUE_BASE + "api/" + prefix + ".ts", apiTs(apiUrl)));
+        files.add(
+                TableCodegenVO.GeneratedFile.of(
+                        "README.md",
+                        readme(title, tableName, prefix, pascal, apiBase, viewPath, menuPath)));
         return files;
     }
 
     private String entityJava(String pascal, String table, String title, List<Col> cols, Col pk) {
         boolean needBigDecimal = cols.stream().anyMatch(c -> "BigDecimal".equals(c.javaType()));
         boolean needLocalDate = cols.stream().anyMatch(c -> "LocalDate".equals(c.javaType()));
-        boolean needLocalDateTime = cols.stream().anyMatch(c -> "LocalDateTime".equals(c.javaType()));
-        boolean needAuditAnno = cols.stream().anyMatch(c -> {
-            String l = c.columnName().toLowerCase(Locale.ROOT);
-            return l.equals("created_at") || l.equals("updated_at")
-                    || l.equals("create_time") || l.equals("update_time");
-        });
+        boolean needLocalDateTime =
+                cols.stream().anyMatch(c -> "LocalDateTime".equals(c.javaType()));
+        boolean needAuditAnno =
+                cols.stream()
+                        .anyMatch(
+                                c -> {
+                                    String l = c.columnName().toLowerCase(Locale.ROOT);
+                                    return l.equals("created_at")
+                                            || l.equals("updated_at")
+                                            || l.equals("create_time")
+                                            || l.equals("update_time");
+                                });
         // pk 用于校验调用方已识别主键（字段循环内按 c.pk() 处理）
         if (pk == null) {
             throw new BusinessException("缺少主键列");
@@ -368,37 +485,67 @@ public class TableCodegenService {
         StringBuilder fields = new StringBuilder();
         for (Col c : cols) {
             if (c.pk()) {
-                fields.append("""
-                        
+                fields.append(
+                        """
+
                             @Id
                             @GeneratedValue(strategy = GenerationType.IDENTITY)
                             @Column(name = "%s")
                             private %s %s;
-                        """.formatted(c.columnName(), c.javaType(), c.javaField()));
+                        """
+                                .formatted(c.columnName(), c.javaType(), c.javaField()));
                 continue;
             }
             String nullable = c.nullable() ? "" : ", nullable = false";
-            String length = "String".equals(c.javaType()) && c.columnSize() != null && c.columnSize() > 0 && c.columnSize() <= 4000
-                    ? ", length = " + c.columnSize()
-                    : "";
+            String length =
+                    "String".equals(c.javaType())
+                                    && c.columnSize() != null
+                                    && c.columnSize() > 0
+                                    && c.columnSize() <= 4000
+                            ? ", length = " + c.columnSize()
+                            : "";
             String extraAnno = "";
             String lower = c.columnName().toLowerCase(Locale.ROOT);
             if (lower.equals("created_at") || lower.equals("create_time")) {
-                extraAnno = "\n    @CreationTimestamp\n    @Column(name = \"" + c.columnName() + "\", updatable = false)\n";
-                fields.append(extraAnno).append("    private ").append(c.javaType()).append(' ').append(c.javaField()).append(";\n");
+                extraAnno =
+                        "\n    @CreationTimestamp\n    @Column(name = \""
+                                + c.columnName()
+                                + "\", updatable = false)\n";
+                fields.append(extraAnno)
+                        .append("    private ")
+                        .append(c.javaType())
+                        .append(' ')
+                        .append(c.javaField())
+                        .append(";\n");
                 continue;
             }
             if (lower.equals("updated_at") || lower.equals("update_time")) {
-                extraAnno = "\n    @UpdateTimestamp\n    @Column(name = \"" + c.columnName() + "\")\n";
-                fields.append(extraAnno).append("    private ").append(c.javaType()).append(' ').append(c.javaField()).append(";\n");
+                extraAnno =
+                        "\n    @UpdateTimestamp\n    @Column(name = \"" + c.columnName() + "\")\n";
+                fields.append(extraAnno)
+                        .append("    private ")
+                        .append(c.javaType())
+                        .append(' ')
+                        .append(c.javaField())
+                        .append(";\n");
                 continue;
             }
-            fields.append("\n    @Column(name = \"").append(c.columnName()).append('"')
-                    .append(nullable).append(length).append(")\n");
-            fields.append("    private ").append(c.javaType()).append(' ').append(c.javaField()).append(";\n");
+            fields.append("\n    @Column(name = \"")
+                    .append(c.columnName())
+                    .append('"')
+                    .append(nullable)
+                    .append(length)
+                    .append(")\n");
+            fields.append("    private ")
+                    .append(c.javaType())
+                    .append(' ')
+                    .append(c.javaField())
+                    .append(";\n");
         }
 
-        StringBuilder imports = new StringBuilder("""
+        StringBuilder imports =
+                new StringBuilder(
+                        """
                 package com.smartadmin.entity;
 
                 import jakarta.persistence.Column;
@@ -420,7 +567,8 @@ public class TableCodegenService {
             imports.append("import java.time.LocalDateTime;\n");
         }
 
-        return imports + """
+        return imports
+                + """
 
                 /**
                  * %s — 表驱动代码生成（表 %s）。
@@ -431,20 +579,26 @@ public class TableCodegenService {
                 @Table(name = "%s")
                 public class %s {
                 %s}
-                """.formatted(title, table, table, pascal, fields);
+                """
+                        .formatted(title, table, table, pascal, fields);
     }
 
     private String repositoryJava(String pascal, List<Col> cols) {
-        List<Col> stringCols = cols.stream()
-                .filter(c -> !c.pk() && "String".equals(c.javaType()))
-                .limit(3)
-                .toList();
+        List<Col> stringCols =
+                cols.stream()
+                        .filter(c -> !c.pk() && "String".equals(c.javaType()))
+                        .limit(3)
+                        .toList();
         StringBuilder like = new StringBuilder("(:keyword = ''");
         if (stringCols.isEmpty()) {
-            like.append(" OR CAST(e.").append(cols.get(0).javaField()).append(" AS string) LIKE CONCAT('%', :keyword, '%')");
+            like.append(" OR CAST(e.")
+                    .append(cols.get(0).javaField())
+                    .append(" AS string) LIKE CONCAT('%', :keyword, '%')");
         } else {
             for (Col c : stringCols) {
-                like.append(" OR e.").append(c.javaField()).append(" LIKE CONCAT('%', :keyword, '%')");
+                like.append(" OR e.")
+                        .append(c.javaField())
+                        .append(" LIKE CONCAT('%', :keyword, '%')");
             }
         }
         like.append(')');
@@ -464,13 +618,17 @@ public class TableCodegenService {
                     @Query("SELECT e FROM %s e WHERE %s")
                     Page<%s> search(@Param("keyword") String keyword, Pageable pageable);
                 }
-                """.formatted(pascal, pascal, pascal, pascal, like.toString().replace("%", "%%"), pascal);
+                """
+                .formatted(
+                        pascal, pascal, pascal, pascal, like.toString().replace("%", "%%"), pascal);
     }
 
     private String requestJava(String pascal, List<Col> cols) {
         List<Col> formCols = cols.stream().filter(Col::formShow).toList();
         StringBuilder fields = new StringBuilder();
-        StringBuilder imports = new StringBuilder("""
+        StringBuilder imports =
+                new StringBuilder(
+                        """
                 package com.smartadmin.dto;
 
                 import jakarta.validation.constraints.NotBlank;
@@ -480,7 +638,8 @@ public class TableCodegenService {
                 """);
         boolean needBigDecimal = formCols.stream().anyMatch(c -> "BigDecimal".equals(c.javaType()));
         boolean needLocalDate = formCols.stream().anyMatch(c -> "LocalDate".equals(c.javaType()));
-        boolean needLocalDateTime = formCols.stream().anyMatch(c -> "LocalDateTime".equals(c.javaType()));
+        boolean needLocalDateTime =
+                formCols.stream().anyMatch(c -> "LocalDateTime".equals(c.javaType()));
         if (needBigDecimal) imports.append("import java.math.BigDecimal;\n");
         if (needLocalDate) imports.append("import java.time.LocalDate;\n");
         if (needLocalDateTime) imports.append("import java.time.LocalDateTime;\n");
@@ -488,25 +647,38 @@ public class TableCodegenService {
         for (Col c : formCols) {
             if ("String".equals(c.javaType())) {
                 if (c.required()) {
-                    fields.append("\n    @NotBlank(message = \"").append(c.label()).append("不能为空\")\n");
+                    fields.append("\n    @NotBlank(message = \"")
+                            .append(c.label())
+                            .append("不能为空\")\n");
                 }
                 if (c.columnSize() != null && c.columnSize() > 0) {
-                    fields.append("    @Size(max = ").append(c.columnSize()).append(", message = \"")
-                            .append(c.label()).append("长度不能超过").append(c.columnSize()).append("\")\n");
+                    fields.append("    @Size(max = ")
+                            .append(c.columnSize())
+                            .append(", message = \"")
+                            .append(c.label())
+                            .append("长度不能超过")
+                            .append(c.columnSize())
+                            .append("\")\n");
                 }
             } else if (c.required()) {
                 fields.append("\n    @NotNull(message = \"").append(c.label()).append("不能为空\")\n");
             } else {
                 fields.append('\n');
             }
-            fields.append("    private ").append(c.javaType()).append(' ').append(c.javaField()).append(";\n");
+            fields.append("    private ")
+                    .append(c.javaType())
+                    .append(' ')
+                    .append(c.javaField())
+                    .append(";\n");
         }
-        return imports + """
+        return imports
+                + """
 
                 @Data
                 public class %sRequest {
                 %s}
-                """.formatted(pascal, fields);
+                """
+                        .formatted(pascal, fields);
     }
 
     private String voJava(String pascal, List<Col> cols) {
@@ -514,23 +686,37 @@ public class TableCodegenService {
         StringBuilder assigns = new StringBuilder();
         boolean needBigDecimal = cols.stream().anyMatch(c -> "BigDecimal".equals(c.javaType()));
         boolean needLocalDate = cols.stream().anyMatch(c -> "LocalDate".equals(c.javaType()));
-        boolean needLocalDateTime = cols.stream().anyMatch(c -> "LocalDateTime".equals(c.javaType()));
-        StringBuilder imports = new StringBuilder("""
+        boolean needLocalDateTime =
+                cols.stream().anyMatch(c -> "LocalDateTime".equals(c.javaType()));
+        StringBuilder imports =
+                new StringBuilder(
+                        """
                 package com.smartadmin.dto;
 
                 import com.smartadmin.entity.%s;
                 import lombok.Data;
-                """.formatted(pascal));
+                """
+                                .formatted(pascal));
         if (needBigDecimal) imports.append("import java.math.BigDecimal;\n");
         if (needLocalDate) imports.append("import java.time.LocalDate;\n");
         if (needLocalDateTime) imports.append("import java.time.LocalDateTime;\n");
 
         for (Col c : cols) {
-            fields.append("    private ").append(c.javaType()).append(' ').append(c.javaField()).append(";\n");
-            String cap = Character.toUpperCase(c.javaField().charAt(0)) + c.javaField().substring(1);
-            assigns.append("        vo.set").append(cap).append("(entity.get").append(cap).append("());\n");
+            fields.append("    private ")
+                    .append(c.javaType())
+                    .append(' ')
+                    .append(c.javaField())
+                    .append(";\n");
+            String cap =
+                    Character.toUpperCase(c.javaField().charAt(0)) + c.javaField().substring(1);
+            assigns.append("        vo.set")
+                    .append(cap)
+                    .append("(entity.get")
+                    .append(cap)
+                    .append("());\n");
         }
-        return imports + """
+        return imports
+                + """
 
                 @Data
                 public class %sVO {
@@ -540,7 +726,8 @@ public class TableCodegenService {
                 %s        return vo;
                     }
                 }
-                """.formatted(pascal, fields, pascal, pascal, pascal, pascal, assigns);
+                """
+                        .formatted(pascal, fields, pascal, pascal, pascal, pascal, assigns);
     }
 
     private String controllerJava(String pascal, String camel, String apiBase, String title) {
@@ -607,31 +794,39 @@ public class TableCodegenService {
                         return ApiResponse.success("删除成功", Map.of("count", count));
                     }
                 }
-                """.formatted(
-                pascal, pascal, pascal, apiBase, pascal, pascal, camel,
-                pascal, camel,
-                pascal, camel,
-                title, pascal, pascal, camel,
-                title, pascal, pascal, camel,
-                title, camel,
-                title, camel
-        );
+                """
+                .formatted(
+                        pascal, pascal, pascal, apiBase, pascal, pascal, camel, pascal, camel,
+                        pascal, camel, title, pascal, pascal, camel, title, pascal, pascal, camel,
+                        title, camel, title, camel);
     }
 
-    private String serviceJava(String pascal, String camel, String title, String prefix, List<Col> cols, Col pk) {
+    private String serviceJava(
+            String pascal, String camel, String title, String prefix, List<Col> cols, Col pk) {
         List<Col> formCols = cols.stream().filter(Col::formShow).toList();
         StringBuilder apply = new StringBuilder();
         for (Col c : formCols) {
-            String cap = Character.toUpperCase(c.javaField().charAt(0)) + c.javaField().substring(1);
+            String cap =
+                    Character.toUpperCase(c.javaField().charAt(0)) + c.javaField().substring(1);
             if ("String".equals(c.javaType())) {
-                apply.append("        entity.set").append(cap).append("(request.get").append(cap)
-                        .append("() == null ? null : request.get").append(cap).append("().trim());\n");
+                apply.append("        entity.set")
+                        .append(cap)
+                        .append("(request.get")
+                        .append(cap)
+                        .append("() == null ? null : request.get")
+                        .append(cap)
+                        .append("().trim());\n");
             } else {
-                apply.append("        entity.set").append(cap).append("(request.get").append(cap).append("());\n");
+                apply.append("        entity.set")
+                        .append(cap)
+                        .append("(request.get")
+                        .append(cap)
+                        .append("());\n");
             }
         }
         String pkType = pk.javaType();
-        String pkCap = Character.toUpperCase(pk.javaField().charAt(0)) + pk.javaField().substring(1);
+        String pkCap =
+                Character.toUpperCase(pk.javaField().charAt(0)) + pk.javaField().substring(1);
 
         return """
                 package com.smartadmin.service;
@@ -714,18 +909,53 @@ public class TableCodegenService {
                                 .orElseThrow(() -> new BusinessException("记录不存在"));
                     }
                 }
-                """.formatted(
-                pascal, pascal, pascal, pascal,
-                pascal, pascal, camel,
-                pascal, prefix, pk.javaField(), pascal, camel, pascal, pascal,
-                pascal, pkType, prefix, pascal,
-                pascal, pascal, prefix, pascal, pascal, pascal, camel,
-                pascal, pkType, pascal, prefix, pascal, pascal, camel,
-                pkType, prefix, camel,
-                pkType, prefix, pkType, camel,
-                pascal, pascal, apply,
-                pascal, pkType, camel
-        );
+                """
+                .formatted(
+                        pascal,
+                        pascal,
+                        pascal,
+                        pascal,
+                        pascal,
+                        pascal,
+                        camel,
+                        pascal,
+                        prefix,
+                        pk.javaField(),
+                        pascal,
+                        camel,
+                        pascal,
+                        pascal,
+                        pascal,
+                        pkType,
+                        prefix,
+                        pascal,
+                        pascal,
+                        pascal,
+                        prefix,
+                        pascal,
+                        pascal,
+                        pascal,
+                        camel,
+                        pascal,
+                        pkType,
+                        pascal,
+                        prefix,
+                        pascal,
+                        pascal,
+                        camel,
+                        pkType,
+                        prefix,
+                        camel,
+                        pkType,
+                        prefix,
+                        pkType,
+                        camel,
+                        pascal,
+                        pascal,
+                        apply,
+                        pascal,
+                        pkType,
+                        camel);
     }
 
     private String indexVue(String title, String menuPath, String prefix, List<Col> cols, Col pk) {
@@ -734,38 +964,55 @@ public class TableCodegenService {
         for (Col c : cols) {
             if (!c.listShow()) continue;
             if ("status".equalsIgnoreCase(c.columnName()) && "select".equals(c.formType())) {
-                columnDefs.append("  { type: 'slot', slot: 'status', label: '")
-                        .append(escapeJs(c.label())).append("', width: 90 },\n");
+                columnDefs
+                        .append("  { type: 'slot', slot: 'status', label: '")
+                        .append(escapeJs(c.label()))
+                        .append("', width: 90 },\n");
             } else {
-                columnDefs.append("  { prop: '").append(c.javaField()).append("', label: '")
-                        .append(escapeJs(c.label())).append("', minWidth: 120")
+                columnDefs
+                        .append("  { prop: '")
+                        .append(c.javaField())
+                        .append("', label: '")
+                        .append(escapeJs(c.label()))
+                        .append("', minWidth: 120")
                         .append(c.pk() ? ", width: 80" : "")
                         .append(" },\n");
             }
         }
-        columnDefs.append("  { type: 'slot', slot: 'actions', label: '操作', fixed: 'right', width: 140 },");
+        columnDefs.append(
+                "  { type: 'slot', slot: 'actions', label: '操作', fixed: 'right', width: 140 },");
 
-        boolean hasStatus = cols.stream().anyMatch(c ->
-                c.listShow() && "status".equalsIgnoreCase(c.columnName()));
-        String statusSlot = hasStatus ? """
+        boolean hasStatus =
+                cols.stream()
+                        .anyMatch(c -> c.listShow() && "status".equalsIgnoreCase(c.columnName()));
+        String statusSlot =
+                hasStatus
+                        ? """
                         <template #status="{ row }">
                           <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
                             {{ row.status === 1 ? '启用' : '停用' }}
                           </el-tag>
                         </template>
-                """ : "";
+                """
+                        : "";
 
-        String nameField = cols.stream()
-                .filter(c -> c.javaField().equals("name") || c.columnName().toLowerCase(Locale.ROOT).contains("name"))
-                .map(Col::javaField)
-                .findFirst()
-                .orElse(pk.javaField());
+        String nameField =
+                cols.stream()
+                        .filter(
+                                c ->
+                                        c.javaField().equals("name")
+                                                || c.columnName()
+                                                        .toLowerCase(Locale.ROOT)
+                                                        .contains("name"))
+                        .map(Col::javaField)
+                        .findFirst()
+                        .orElse(pk.javaField());
 
         String tableKey = menuPath.replace('/', ':').replaceAll("^:", "");
 
         return """
                 <template>
-                  <PageLayout
+                  <xnPageLayout
                     v-model:view-mode="viewMode"
                     v-model:page="page"
                     v-model:page-size="size"
@@ -801,14 +1048,14 @@ public class TableCodegenService {
                         </template>
                       </xnTable>
                     </template>
-                  </PageLayout>
+                  </xnPageLayout>
                   <SaveDialog ref="saveRef" @success="loadData" />
                 </template>
 
                 <script setup lang="ts">
                 import { onMounted, ref } from 'vue'
                 import { ElMessage, ElMessageBox } from 'element-plus'
-                import PageLayout from '@/components/PageLayout/PageLayout.vue'
+                import xnPageLayout from '@/components/xnPageLayout/xnPageLayout.vue'
                 import xnSearch from '@/components/xnSearch/xnSearch.vue'
                 import xnButton from '@/components/xnButton/xnButton.vue'
                 import xnTableActions from '@/components/xnButton/xnTableActions.vue'
@@ -906,14 +1153,23 @@ public class TableCodegenService {
 
                 onMounted(loadData)
                 </script>
-                """.formatted(
-                tableKey, title, nameField, statusSlot, prefix,
-                CodegenNaming.toPascal(prefix) + "Page", menuPath,
-                columnDefs.toString(),
-                nameField, pk.javaField(), pk.javaField(),
-                pk.javaField(),
-                pk.javaField(), pk.javaField(), pk.javaField()
-        );
+                """
+                .formatted(
+                        tableKey,
+                        title,
+                        nameField,
+                        statusSlot,
+                        prefix,
+                        CodegenNaming.toPascal(prefix) + "Page",
+                        menuPath,
+                        columnDefs.toString(),
+                        nameField,
+                        pk.javaField(),
+                        pk.javaField(),
+                        pk.javaField(),
+                        pk.javaField(),
+                        pk.javaField(),
+                        pk.javaField());
     }
 
     private String saveVue(String title, String prefix, String pascal, List<Col> cols) {
@@ -925,13 +1181,30 @@ public class TableCodegenService {
         StringBuilder rules = new StringBuilder();
 
         for (Col c : formCols) {
-            formInit.append("  ").append(c.javaField()).append(": ").append(defaultJsValue(c)).append(",\n");
-            resetBody.append("  form.").append(c.javaField()).append(" = ").append(defaultJsValue(c)).append("\n");
-            loadBody.append("  form.").append(c.javaField()).append(" = res.data.").append(c.javaField())
-                    .append(" ?? ").append(defaultJsValue(c)).append("\n");
+            formInit.append("  ")
+                    .append(c.javaField())
+                    .append(": ")
+                    .append(defaultJsValue(c))
+                    .append(",\n");
+            resetBody
+                    .append("  form.")
+                    .append(c.javaField())
+                    .append(" = ")
+                    .append(defaultJsValue(c))
+                    .append("\n");
+            loadBody.append("  form.")
+                    .append(c.javaField())
+                    .append(" = res.data.")
+                    .append(c.javaField())
+                    .append(" ?? ")
+                    .append(defaultJsValue(c))
+                    .append("\n");
             if (c.required() && "String".equals(c.javaType())) {
-                rules.append("  ").append(c.javaField()).append(": [{ required: true, message: '请输入")
-                        .append(escapeJs(c.label())).append("', trigger: 'blur' }],\n");
+                rules.append("  ")
+                        .append(c.javaField())
+                        .append(": [{ required: true, message: '请输入")
+                        .append(escapeJs(c.label()))
+                        .append("', trigger: 'blur' }],\n");
             }
             formItems.append(formItemVue(c));
         }
@@ -1015,31 +1288,35 @@ public class TableCodegenService {
                 function handleClosed() { resetForm() }
                 defineExpose({ open })
                 </script>
-                """.formatted(
-                formItems, prefix, pascal, title,
-                formInit, rules, resetBody, loadBody
-        );
+                """
+                .formatted(formItems, prefix, pascal, title, formInit, rules, resetBody, loadBody);
     }
 
     private String formItemVue(Col c) {
         String label = escapeJs(c.label());
         String prop = c.javaField();
         return switch (c.formType()) {
-            case "number" -> """
+            case "number" ->
+                    """
                       <el-form-item label="%s" prop="%s">
                         <el-input-number v-model="form.%s" :controls="true" style="width: 100%%" />
                       </el-form-item>
-                    """.formatted(label, prop, prop);
-            case "textarea" -> """
+                    """
+                            .formatted(label, prop, prop);
+            case "textarea" ->
+                    """
                       <el-form-item label="%s" prop="%s">
                         <el-input v-model="form.%s" type="textarea" :rows="3" />
                       </el-form-item>
-                    """.formatted(label, prop, prop);
-            case "datetime" -> """
+                    """
+                            .formatted(label, prop, prop);
+            case "datetime" ->
+                    """
                       <el-form-item label="%s" prop="%s">
                         <el-date-picker v-model="form.%s" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" style="width: 100%%" />
                       </el-form-item>
-                    """.formatted(label, prop, prop);
+                    """
+                            .formatted(label, prop, prop);
             case "select" -> {
                 if ("status".equalsIgnoreCase(c.columnName()) || "Integer".equals(c.javaType())) {
                     yield """
@@ -1049,26 +1326,31 @@ public class TableCodegenService {
                                   <el-radio :value="0">停用</el-radio>
                                 </el-radio-group>
                               </el-form-item>
-                            """.formatted(label, prop, prop);
+                            """
+                            .formatted(label, prop, prop);
                 }
                 if ("Boolean".equals(c.javaType())) {
                     yield """
                               <el-form-item label="%s" prop="%s">
                                 <el-switch v-model="form.%s" />
                               </el-form-item>
-                            """.formatted(label, prop, prop);
+                            """
+                            .formatted(label, prop, prop);
                 }
                 yield """
                           <el-form-item label="%s" prop="%s">
                             <el-input v-model="form.%s" />
                           </el-form-item>
-                        """.formatted(label, prop, prop);
+                        """
+                        .formatted(label, prop, prop);
             }
-            default -> """
+            default ->
+                    """
                       <el-form-item label="%s" prop="%s">
                         <el-input v-model="form.%s" />
                       </el-form-item>
-                    """.formatted(label, prop, prop);
+                    """
+                            .formatted(label, prop, prop);
         };
     }
 
@@ -1110,11 +1392,18 @@ public class TableCodegenService {
                 export function batchRemove(ids: number[]) {
                   return request.post<any, ApiResponse<{ count: number }>>('%s/batch-delete', { ids })
                 }
-                """.formatted(apiUrl, apiUrl, apiUrl, apiUrl, apiUrl, apiUrl);
+                """
+                .formatted(apiUrl, apiUrl, apiUrl, apiUrl, apiUrl, apiUrl);
     }
 
-    private String readme(String title, String table, String prefix, String pascal,
-                          String apiBase, String viewPath, String menuPath) {
+    private String readme(
+            String title,
+            String table,
+            String prefix,
+            String pascal,
+            String apiBase,
+            String viewPath,
+            String menuPath) {
         return """
                 # %s — 表驱动代码生成
 
@@ -1132,10 +1421,12 @@ public class TableCodegenService {
                 | 前缀 | `%s` |
                 | API | `%s` |
                 | 视图 | `views/%s` |
-                """.formatted(title, table, pascal, title, menuPath, prefix, apiBase, viewPath);
+                """
+                .formatted(title, table, pascal, title, menuPath, prefix, apiBase, viewPath);
     }
 
-    private String buildZipBase64(List<TableCodegenVO.GeneratedFile> files, String sql, String prefix) {
+    private String buildZipBase64(
+            List<TableCodegenVO.GeneratedFile> files, String sql, String prefix) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try (ZipOutputStream zos = new ZipOutputStream(baos)) {
@@ -1155,31 +1446,39 @@ public class TableCodegenService {
     }
 
     private String toInsertSql(PermSpec spec, Permission parent) {
-        String parentIdExpr = parent.getId() != null
-                ? String.valueOf(parent.getId())
-                : "(SELECT id FROM sys_permission WHERE code = '" + escapeSql(parent.getCode()) + "' LIMIT 1)";
+        String parentIdExpr =
+                parent.getId() != null
+                        ? String.valueOf(parent.getId())
+                        : "(SELECT id FROM sys_permission WHERE code = '"
+                                + escapeSql(parent.getCode())
+                                + "' LIMIT 1)";
         String action = null;
         String icon = null;
         String color = null;
         if (spec.type() != PermissionType.API) {
             String suffix = spec.code().substring(spec.code().lastIndexOf(':') + 1);
-            action = switch (suffix) {
-                case "create" -> "add";
-                case "update", "table-edit" -> "edit";
-                case "view" -> "view";
-                case "delete", "table-delete" -> "delete";
-                default -> suffix;
-            };
+            action =
+                    switch (suffix) {
+                        case "create" -> "add";
+                        case "update", "table-edit" -> "edit";
+                        case "view" -> "view";
+                        case "delete", "table-delete" -> "delete";
+                        default -> suffix;
+                    };
             if (spec.type() == PermissionType.BUTTON) {
-                icon = switch (suffix) {
-                    case "create" -> "Plus";
-                    case "update" -> "Edit";
-                    case "view" -> "View";
-                    case "delete" -> "Delete";
-                    default -> null;
-                };
+                icon =
+                        switch (suffix) {
+                            case "create" -> "Plus";
+                            case "update" -> "Edit";
+                            case "view" -> "View";
+                            case "delete" -> "Delete";
+                            default -> null;
+                        };
             }
-            color = ("delete".equals(suffix) || "table-delete".equals(suffix)) ? "danger" : "primary";
+            color =
+                    ("delete".equals(suffix) || "table-delete".equals(suffix))
+                            ? "danger"
+                            : "primary";
         }
         return String.format(
                 """
@@ -1188,11 +1487,17 @@ public class TableCodegenService {
                 WHERE NOT EXISTS (SELECT 1 FROM sys_permission WHERE code = '%s');
 
                 """,
-                escapeSql(spec.code()), escapeSql(spec.name()), spec.type().name(), parentIdExpr,
-                sqlNullable(spec.path()), sqlNullable(spec.method()),
-                sqlNullable(action), sqlNullable(icon), sqlNullable(color),
-                spec.sort(), escapeSql(spec.code())
-        );
+                escapeSql(spec.code()),
+                escapeSql(spec.name()),
+                spec.type().name(),
+                parentIdExpr,
+                sqlNullable(spec.path()),
+                sqlNullable(spec.method()),
+                sqlNullable(action),
+                sqlNullable(icon),
+                sqlNullable(color),
+                spec.sort(),
+                escapeSql(spec.code()));
     }
 
     private String toPageUiSql(String routePath, String searchJson) {
@@ -1203,8 +1508,7 @@ public class TableCodegenService {
                 WHERE NOT EXISTS (SELECT 1 FROM sys_page_ui_config WHERE route_path = '%s');
 
                 """,
-                escapeSql(routePath), escapeSql(searchJson), escapeSql(routePath)
-        );
+                escapeSql(routePath), escapeSql(searchJson), escapeSql(routePath));
     }
 
     private static String sqlNullable(String value) {
@@ -1224,12 +1528,21 @@ public class TableCodegenService {
     }
 
     private record Col(
-            String columnName, String label, String javaType, String javaField, String formType,
-            boolean pk, boolean nullable, Integer columnSize,
-            boolean listShow, boolean queryable, boolean formShow, boolean required
-    ) {}
+            String columnName,
+            String label,
+            String javaType,
+            String javaField,
+            String formType,
+            boolean pk,
+            boolean nullable,
+            Integer columnSize,
+            boolean listShow,
+            boolean queryable,
+            boolean formShow,
+            boolean required) {}
 
-    private record PermSpec(String code, String name, PermissionType type, String method, String path, int sort) {}
+    private record PermSpec(
+            String code, String name, PermissionType type, String method, String path, int sort) {}
 
     private static PermSpec button(String code, String name, int sort) {
         return new PermSpec(code, name, PermissionType.BUTTON, null, null, sort);

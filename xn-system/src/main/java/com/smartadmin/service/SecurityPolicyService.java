@@ -7,15 +7,14 @@ import com.smartadmin.dto.SecurityPolicyVO;
 import com.smartadmin.entity.SysSecurityPolicy;
 import com.smartadmin.repository.SysSecurityPolicyRepository;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +54,8 @@ public class SecurityPolicyService {
         SecurityProperties.Login login = new SecurityProperties.Login();
         login.setMaxFailures(nz(policy.getMaxFailures(), def.getMaxFailures()));
         login.setLockMinutes(nz(policy.getLockMinutes(), def.getLockMinutes()));
-        login.setRateLimitPerMinute(nz(policy.getRateLimitPerMinute(), def.getRateLimitPerMinute()));
+        login.setRateLimitPerMinute(
+                nz(policy.getRateLimitPerMinute(), def.getRateLimitPerMinute()));
         login.setCaptchaTtlSeconds(nz(policy.getCaptchaTtlSeconds(), def.getCaptchaTtlSeconds()));
         return login;
     }
@@ -119,10 +119,15 @@ public class SecurityPolicyService {
     }
 
     private SysSecurityPolicy loadOrCreate() {
-        return repository.findById(1L).orElseGet(() -> {
-            ensureDefaults();
-            return repository.findById(1L).orElseThrow(() -> new BusinessException("安全策略未初始化"));
-        });
+        return repository
+                .findById(1L)
+                .orElseGet(
+                        () -> {
+                            ensureDefaults();
+                            return repository
+                                    .findById(1L)
+                                    .orElseThrow(() -> new BusinessException("安全策略未初始化"));
+                        });
     }
 
     private static void applyPasswordDefaults(SysSecurityPolicy policy) {
@@ -150,7 +155,8 @@ public class SecurityPolicyService {
         vo.setPwdRequireDigit(Boolean.TRUE.equals(policy.getPwdRequireDigit()));
         vo.setPwdRequireSpecial(Boolean.TRUE.equals(policy.getPwdRequireSpecial()));
         vo.setPwdExpireDays(nzObj(policy.getPwdExpireDays(), 0));
-        vo.setPwdForceChangeFirst(policy.getPwdForceChangeFirst() == null || policy.getPwdForceChangeFirst());
+        vo.setPwdForceChangeFirst(
+                policy.getPwdForceChangeFirst() == null || policy.getPwdForceChangeFirst());
         vo.setPwdHistoryCount(nzObj(policy.getPwdHistoryCount(), 0));
         if (policy.getUpdatedAt() != null) {
             vo.setUpdatedAt(policy.getUpdatedAt().format(FMT));

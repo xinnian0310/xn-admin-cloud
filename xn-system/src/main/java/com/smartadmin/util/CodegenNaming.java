@@ -1,9 +1,8 @@
 package com.smartadmin.util;
 
 import com.smartadmin.common.BusinessException;
-import org.springframework.util.StringUtils;
-
 import java.util.Locale;
+import org.springframework.util.StringUtils;
 
 /** 代码生成命名工具（路由脚手架 / 表驱动共用）。 */
 public final class CodegenNaming {
@@ -11,9 +10,11 @@ public final class CodegenNaming {
     private CodegenNaming() {}
 
     public static String normalizePrefix(String raw) {
-        String v = raw.trim().toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9_-]+", "-")
-                .replaceAll("^-+|-+$", "");
+        String v =
+                raw.trim()
+                        .toLowerCase(Locale.ROOT)
+                        .replaceAll("[^a-z0-9_-]+", "-")
+                        .replaceAll("^-+|-+$", "");
         if (!StringUtils.hasText(v)) {
             throw new BusinessException("模块前缀无效");
         }

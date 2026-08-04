@@ -6,12 +6,6 @@ import com.smartadmin.entity.Role;
 import com.smartadmin.entity.User;
 import com.smartadmin.repository.UserRepository;
 import com.smartadmin.websocket.NoticeSessionHub;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -24,6 +18,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -52,17 +51,22 @@ public class MonitorService {
         vo.setIp(meta.ip());
         vo.setSessionCount(meta.sessionCount());
         if (meta.connectedAt() > 0) {
-            vo.setLoginTime(LocalDateTime.ofInstant(Instant.ofEpochMilli(meta.connectedAt()), ZoneId.systemDefault()));
+            vo.setLoginTime(
+                    LocalDateTime.ofInstant(
+                            Instant.ofEpochMilli(meta.connectedAt()), ZoneId.systemDefault()));
             vo.setOnlineSeconds(Math.max(0, (now - meta.connectedAt()) / 1000));
         }
-        userRepository.findByIdWithRoles(meta.userId()).ifPresent(user -> {
-            vo.setUsername(user.getUsername());
-            vo.setNickname(user.getNickname());
-            if (user.getUnit() != null) {
-                vo.setUnitName(user.getUnit().getName());
-            }
-            vo.setRoles(resolveRoleNames(user));
-        });
+        userRepository
+                .findByIdWithRoles(meta.userId())
+                .ifPresent(
+                        user -> {
+                            vo.setUsername(user.getUsername());
+                            vo.setNickname(user.getNickname());
+                            if (user.getUnit() != null) {
+                                vo.setUnitName(user.getUnit().getName());
+                            }
+                            vo.setRoles(resolveRoleNames(user));
+                        });
         return vo;
     }
 
@@ -93,7 +97,8 @@ public class MonitorService {
     }
 
     private void fillCpuAndMemory(ServerMonitorVO vo) {
-        java.lang.management.OperatingSystemMXBean base = ManagementFactory.getOperatingSystemMXBean();
+        java.lang.management.OperatingSystemMXBean base =
+                ManagementFactory.getOperatingSystemMXBean();
         vo.getCpu().setCores(base.getAvailableProcessors());
         vo.getSystem().setAvailableProcessors(base.getAvailableProcessors());
         if (base instanceof com.sun.management.OperatingSystemMXBean os) {
@@ -128,7 +133,9 @@ public class MonitorService {
         jvm.setHome(System.getProperty("java.home"));
 
         RuntimeMXBean runtimeMX = ManagementFactory.getRuntimeMXBean();
-        jvm.setStartTime(LocalDateTime.ofInstant(Instant.ofEpochMilli(runtimeMX.getStartTime()), ZoneId.systemDefault()));
+        jvm.setStartTime(
+                LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(runtimeMX.getStartTime()), ZoneId.systemDefault()));
         jvm.setUptimeSeconds(runtimeMX.getUptime() / 1000);
     }
 

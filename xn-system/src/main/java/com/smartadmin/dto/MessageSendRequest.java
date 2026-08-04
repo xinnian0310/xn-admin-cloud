@@ -1,8 +1,7 @@
 package com.smartadmin.dto;
 
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class MessageSendRequest {

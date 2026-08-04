@@ -7,11 +7,6 @@ import com.smartadmin.entity.Role;
 import com.smartadmin.entity.SysUnit;
 import com.smartadmin.repository.SysUnitRepository;
 import com.smartadmin.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -20,6 +15,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -33,16 +32,20 @@ public class UnitService {
 
     public List<UnitVO> tree(String keyword, Integer status) {
         rbacService.checkPermission("unit:view");
-        List<SysUnit> all = unitRepository.findAllWithRoles().stream()
-                .sorted(Comparator
-                        .comparing((SysUnit u) -> u.getSort() == null ? 0 : u.getSort())
-                        .thenComparing(SysUnit::getId))
-                .toList();
+        List<SysUnit> all =
+                unitRepository.findAllWithRoles().stream()
+                        .sorted(
+                                Comparator.comparing(
+                                                (SysUnit u) ->
+                                                        u.getSort() == null ? 0 : u.getSort())
+                                        .thenComparing(SysUnit::getId))
+                        .toList();
         all = dataScopeService.filterUnits(all);
-        List<UnitVO> flat = all.stream()
-                .filter(u -> status == null || Objects.equals(u.getStatus(), status))
-                .map(UnitVO::from)
-                .toList();
+        List<UnitVO> flat =
+                all.stream()
+                        .filter(u -> status == null || Objects.equals(u.getStatus(), status))
+                        .map(UnitVO::from)
+                        .toList();
         List<UnitVO> tree = buildTree(flat);
         if (!StringUtils.hasText(keyword)) {
             return tree;
@@ -55,9 +58,9 @@ public class UnitService {
         rbacService.checkPermission("unit:view");
         List<SysUnit> all = dataScopeService.filterUnits(unitRepository.findByStatusWithRoles(1));
         return all.stream()
-                .sorted(Comparator
-                        .comparing((SysUnit u) -> u.getSort() == null ? 0 : u.getSort())
-                        .thenComparing(SysUnit::getId))
+                .sorted(
+                        Comparator.comparing((SysUnit u) -> u.getSort() == null ? 0 : u.getSort())
+                                .thenComparing(SysUnit::getId))
                 .map(UnitVO::from)
                 .toList();
     }
@@ -100,7 +103,8 @@ public class UnitService {
                 unit.setSort(request.getSort());
             }
         } else {
-            if (!unit.getCode().equals(request.getCode()) && unitRepository.existsByCode(request.getCode())) {
+            if (!unit.getCode().equals(request.getCode())
+                    && unitRepository.existsByCode(request.getCode())) {
                 throw new BusinessException("单位编码已存在");
             }
             validateParent(request.getParentId(), id);
@@ -197,8 +201,10 @@ public class UnitService {
         if (selfId != null && parentId.equals(selfId)) {
             throw new BusinessException("上级单位不能是自己");
         }
-        SysUnit parent = unitRepository.findById(parentId)
-                .orElseThrow(() -> new BusinessException("上级单位不存在"));
+        SysUnit parent =
+                unitRepository
+                        .findById(parentId)
+                        .orElseThrow(() -> new BusinessException("上级单位不存在"));
         if (selfId != null) {
             Set<Long> descendants = new HashSet<>(collectSelfAndDescendantIds(selfId));
             if (descendants.contains(parentId)) {
@@ -211,12 +217,12 @@ public class UnitService {
     }
 
     private SysUnit findUnit(Long id) {
-        return unitRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("单位不存在"));
+        return unitRepository.findById(id).orElseThrow(() -> new BusinessException("单位不存在"));
     }
 
     private SysUnit findUnitWithRoles(Long id) {
-        return unitRepository.findByIdWithRoles(id)
+        return unitRepository
+                .findByIdWithRoles(id)
                 .orElseThrow(() -> new BusinessException("单位不存在"));
     }
 
@@ -240,8 +246,10 @@ public class UnitService {
         List<UnitVO> result = new ArrayList<>();
         for (UnitVO node : nodes) {
             List<UnitVO> children = filterTree(node.getChildren(), keyword);
-            boolean matched = (node.getName() != null && node.getName().toLowerCase().contains(keyword))
-                    || (node.getCode() != null && node.getCode().toLowerCase().contains(keyword));
+            boolean matched =
+                    (node.getName() != null && node.getName().toLowerCase().contains(keyword))
+                            || (node.getCode() != null
+                                    && node.getCode().toLowerCase().contains(keyword));
             if (matched || !children.isEmpty()) {
                 UnitVO copy = copyNode(node);
                 copy.setChildren(children);

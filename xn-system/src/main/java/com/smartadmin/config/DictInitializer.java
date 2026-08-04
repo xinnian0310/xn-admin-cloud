@@ -22,18 +22,27 @@ public class DictInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        ensureType("通用状态", "sys_common_status", "系统通用启用/禁用状态", data -> {
-            ensureData("sys_common_status", "启用", "1", 1, "success", true);
-            ensureData("sys_common_status", "禁用", "0", 2, "danger", false);
-        });
-        ensureType("用户性别", "sys_user_sex", "用户性别字典", data -> {
-            ensureData("sys_user_sex", "男", "0", 1, "primary", true);
-            ensureData("sys_user_sex", "女", "1", 2, "danger", false);
-            ensureData("sys_user_sex", "未知", "2", 3, "info", false);
-        });
+        ensureType(
+                "通用状态",
+                "sys_common_status",
+                "系统通用启用/禁用状态",
+                data -> {
+                    ensureData("sys_common_status", "启用", "1", 1, "success", true);
+                    ensureData("sys_common_status", "禁用", "0", 2, "danger", false);
+                });
+        ensureType(
+                "用户性别",
+                "sys_user_sex",
+                "用户性别字典",
+                data -> {
+                    ensureData("sys_user_sex", "男", "0", 1, "primary", true);
+                    ensureData("sys_user_sex", "女", "1", 2, "danger", false);
+                    ensureData("sys_user_sex", "未知", "2", 3, "info", false);
+                });
     }
 
-    private void ensureType(String name, String type, String remark, java.util.function.Consumer<Void> seedData) {
+    private void ensureType(
+            String name, String type, String remark, java.util.function.Consumer<Void> seedData) {
         SysDictType existing = dictTypeRepository.findByType(type).orElse(null);
         if (existing == null) {
             SysDictType created = new SysDictType();
@@ -47,7 +56,13 @@ public class DictInitializer implements CommandLineRunner {
         seedData.accept(null);
     }
 
-    private void ensureData(String dictType, String label, String value, int sort, String listClass, boolean isDefault) {
+    private void ensureData(
+            String dictType,
+            String label,
+            String value,
+            int sort,
+            String listClass,
+            boolean isDefault) {
         if (dictDataRepository.existsByDictTypeAndValue(dictType, value)) {
             return;
         }

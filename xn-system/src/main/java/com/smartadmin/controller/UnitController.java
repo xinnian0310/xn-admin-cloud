@@ -9,6 +9,8 @@ import com.smartadmin.dto.UnitVO;
 import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.UnitService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,9 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/units")
@@ -37,10 +36,8 @@ public class UnitController {
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "status", required = false) Integer status) {
         String kw = StringUtils.hasText(keyword) ? keyword.trim() : fuzzyWord;
-        return ApiResponse.success(unitService.tree(
-                StringUtils.hasText(kw) ? kw.trim() : null,
-                status
-        ));
+        return ApiResponse.success(
+                unitService.tree(StringUtils.hasText(kw) ? kw.trim() : null, status));
     }
 
     @GetMapping("/options")
@@ -68,7 +65,8 @@ public class UnitController {
 
     @PutMapping("/{id}")
     @OperLog(title = "单位管理", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<UnitVO> update(@PathVariable Long id, @Valid @RequestBody UnitRequest request) {
+    public ApiResponse<UnitVO> update(
+            @PathVariable Long id, @Valid @RequestBody UnitRequest request) {
         return ApiResponse.success("更新成功", unitService.update(id, request));
     }
 
@@ -81,7 +79,8 @@ public class UnitController {
 
     @PutMapping("/{id}/status")
     @OperLog(title = "单位管理", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+    public ApiResponse<Void> updateStatus(
+            @PathVariable Long id, @RequestBody Map<String, Integer> body) {
         Integer status = body.get("status");
         if (status == null) {
             return ApiResponse.error(400, "状态不能为空");
@@ -92,7 +91,8 @@ public class UnitController {
 
     @PutMapping("/{id}/roles")
     @OperLog(title = "单位管理", businessType = OperBusinessType.GRANT)
-    public ApiResponse<Void> assignRoles(@PathVariable Long id, @Valid @RequestBody RoleIdsRequest request) {
+    public ApiResponse<Void> assignRoles(
+            @PathVariable Long id, @Valid @RequestBody RoleIdsRequest request) {
         unitService.assignRoles(id, request.getRoleIds());
         return ApiResponse.success("角色分配成功", null);
     }

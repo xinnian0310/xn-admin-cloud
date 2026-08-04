@@ -12,6 +12,8 @@ import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.UserService;
 import com.smartadmin.util.ExcelHttpResponse;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,9 +26,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -51,7 +50,8 @@ public class UserController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long roleId,
             @RequestParam(required = false) Long unitId) {
-        return ExcelHttpResponse.xlsx(userService.exportExcel(keyword, roleId, unitId), "users.xlsx");
+        return ExcelHttpResponse.xlsx(
+                userService.exportExcel(keyword, roleId, unitId), "users.xlsx");
     }
 
     @GetMapping("/{id}")
@@ -80,7 +80,8 @@ public class UserController {
 
     @PutMapping("/{id}")
     @OperLog(title = "用户管理", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<UserVO> update(@PathVariable Long id, @Valid @RequestBody UserRequest request) {
+    public ApiResponse<UserVO> update(
+            @PathVariable Long id, @Valid @RequestBody UserRequest request) {
         return ApiResponse.success("更新成功", userService.update(id, request));
     }
 
@@ -93,7 +94,8 @@ public class UserController {
 
     @PatchMapping("/{id}/status")
     @OperLog(title = "用户管理", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+    public ApiResponse<Void> updateStatus(
+            @PathVariable Long id, @RequestBody Map<String, Integer> body) {
         Integer status = body.get("status");
         if (status == null) {
             return ApiResponse.error(400, "状态不能为空");

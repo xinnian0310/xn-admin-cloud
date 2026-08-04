@@ -7,19 +7,17 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
 @Table(
         name = "sys_table_column_config",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "table_key"})
-)
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "table_key"}))
 public class SysTableColumnConfig {
 
     @Id

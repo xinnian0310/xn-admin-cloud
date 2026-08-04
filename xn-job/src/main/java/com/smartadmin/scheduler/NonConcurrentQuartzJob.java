@@ -9,8 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @DisallowConcurrentExecution
 public class NonConcurrentQuartzJob implements Job {
 
-    @Autowired
-    private JobInvokeService jobInvokeService;
+    @Autowired private JobInvokeService jobInvokeService;
 
     @Override
     public void execute(JobExecutionContext context) {

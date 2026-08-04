@@ -1,9 +1,8 @@
 package com.smartadmin.config.nacos;
 
-import org.springframework.context.ApplicationEvent;
-
 import java.util.Collections;
 import java.util.Set;
+import org.springframework.context.ApplicationEvent;
 
 /** Nacos 配置热更新完成事件。 */
 public class NacosConfigRefreshedEvent extends ApplicationEvent {

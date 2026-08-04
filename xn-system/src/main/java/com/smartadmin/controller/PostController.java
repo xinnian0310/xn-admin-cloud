@@ -12,6 +12,8 @@ import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.PostService;
 import com.smartadmin.util.ExcelHttpResponse;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,9 +25,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -69,7 +68,8 @@ public class PostController {
 
     @PutMapping("/{id}")
     @OperLog(title = "岗位管理", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<PostVO> update(@PathVariable Long id, @Valid @RequestBody PostRequest request) {
+    public ApiResponse<PostVO> update(
+            @PathVariable Long id, @Valid @RequestBody PostRequest request) {
         return ApiResponse.success("更新成功", postService.update(id, request));
     }
 
@@ -99,5 +99,4 @@ public class PostController {
     public ApiResponse<ImportResultVO> importPosts(@RequestBody List<PostImportRow> rows) {
         return ApiResponse.success("导入完成", postService.importPosts(rows));
     }
-
 }

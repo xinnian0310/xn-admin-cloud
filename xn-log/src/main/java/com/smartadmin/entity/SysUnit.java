@@ -10,11 +10,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.HashSet;
 import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -53,7 +52,6 @@ public class SysUnit {
     @JoinTable(
             name = "sys_unit_role",
             joinColumns = @JoinColumn(name = "unit_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 }

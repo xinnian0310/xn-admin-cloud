@@ -8,8 +8,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 /** 从当前请求上下文提取客户端 IP / User-Agent，供登录日志、操作日志复用 */
 public final class WebUtils {
 
-    private WebUtils() {
-    }
+    private WebUtils() {}
 
     public static HttpServletRequest getCurrentRequest() {
         var attributes = RequestContextHolder.getRequestAttributes();
@@ -26,7 +25,7 @@ public final class WebUtils {
 
     public static String getClientIp(HttpServletRequest request) {
         String[] headers = {
-                "X-Forwarded-For", "X-Real-IP", "Proxy-Client-IP", "WL-Proxy-Client-IP"
+            "X-Forwarded-For", "X-Real-IP", "Proxy-Client-IP", "WL-Proxy-Client-IP"
         };
         for (String header : headers) {
             String value = request.getHeader(header);

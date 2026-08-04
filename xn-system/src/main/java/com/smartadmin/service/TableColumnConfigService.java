@@ -7,16 +7,15 @@ import com.smartadmin.dto.TableColumnSettingDTO;
 import com.smartadmin.entity.SysTableColumnConfig;
 import com.smartadmin.entity.User;
 import com.smartadmin.repository.SysTableColumnConfigRepository;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,9 +32,12 @@ public class TableColumnConfigService {
         User user = rbacService.currentUser();
         TableColumnConfigVO vo = new TableColumnConfigVO();
         vo.setTableKey(tableKey);
-        repository.findByUserIdAndTableKey(user.getId(), tableKey).ifPresent(config -> {
-            vo.setColumns(parseColumns(config.getColumnsJson()));
-        });
+        repository
+                .findByUserIdAndTableKey(user.getId(), tableKey)
+                .ifPresent(
+                        config -> {
+                            vo.setColumns(parseColumns(config.getColumnsJson()));
+                        });
         return vo;
     }
 
@@ -45,8 +47,10 @@ public class TableColumnConfigService {
         String tableKey = request.getTableKey().trim();
         List<TableColumnSettingDTO> columns = normalizeColumns(request.getColumns());
 
-        SysTableColumnConfig config = repository.findByUserIdAndTableKey(user.getId(), tableKey)
-                .orElseGet(SysTableColumnConfig::new);
+        SysTableColumnConfig config =
+                repository
+                        .findByUserIdAndTableKey(user.getId(), tableKey)
+                        .orElseGet(SysTableColumnConfig::new);
         config.setUserId(user.getId());
         config.setTableKey(tableKey);
         config.setColumnsJson(writeColumns(columns));
@@ -75,7 +79,9 @@ public class TableColumnConfigService {
             result.add(dto);
             index++;
         }
-        result.sort(Comparator.comparing(TableColumnSettingDTO::getSort, Comparator.nullsLast(Integer::compareTo)));
+        result.sort(
+                Comparator.comparing(
+                        TableColumnSettingDTO::getSort, Comparator.nullsLast(Integer::compareTo)));
         for (int i = 0; i < result.size(); i++) {
             result.get(i).setSort(i);
         }
@@ -87,7 +93,8 @@ public class TableColumnConfigService {
             return List.of();
         }
         try {
-            return objectMapper.readValue(json, new TypeReference<List<TableColumnSettingDTO>>() {});
+            return objectMapper.readValue(
+                    json, new TypeReference<List<TableColumnSettingDTO>>() {});
         } catch (Exception e) {
             return List.of();
         }

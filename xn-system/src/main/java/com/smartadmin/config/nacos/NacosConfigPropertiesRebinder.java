@@ -1,9 +1,9 @@
 package com.smartadmin.config.nacos;
 
+import com.smartadmin.config.AppNacosProperties;
 import com.smartadmin.config.InfraProperties;
 import com.smartadmin.config.KkFileViewProperties;
 import com.smartadmin.config.MinioProperties;
-import com.smartadmin.config.AppNacosProperties;
 import com.smartadmin.config.RedisProperties;
 import com.smartadmin.config.SecurityProperties;
 import lombok.RequiredArgsConstructor;

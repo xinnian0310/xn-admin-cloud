@@ -3,11 +3,6 @@ package com.smartadmin.service;
 import com.smartadmin.common.BusinessException;
 import com.smartadmin.dto.CaptchaVO;
 import com.smartadmin.dto.LoginPageConfigVO;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
-import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -19,6 +14,10 @@ import java.util.Base64;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -39,9 +38,15 @@ public class CaptchaService {
         if (active == null || !Boolean.TRUE.equals(active.getCaptchaEnabled())) {
             return null;
         }
-        String type = StringUtils.hasText(active.getCaptchaType()) ? active.getCaptchaType().toUpperCase(Locale.ROOT) : "IMAGE";
+        String type =
+                StringUtils.hasText(active.getCaptchaType())
+                        ? active.getCaptchaType().toUpperCase(Locale.ROOT)
+                        : "IMAGE";
         String captchaId = UUID.randomUUID().toString().replace("-", "");
-        Duration ttl = Duration.ofSeconds(Math.max(30, securityPolicyService.effectiveLogin().getCaptchaTtlSeconds()));
+        Duration ttl =
+                Duration.ofSeconds(
+                        Math.max(
+                                30, securityPolicyService.effectiveLogin().getCaptchaTtlSeconds()));
 
         if ("SLIDER".equals(type)) {
             kvStore.set(KEY_PREFIX + captchaId, PENDING, ttl);
@@ -72,15 +77,14 @@ public class CaptchaService {
         if (percent < 92) {
             throw new BusinessException("请完成滑块验证");
         }
-        Duration ttl = Duration.ofSeconds(Math.max(30, securityPolicyService.effectiveLogin().getCaptchaTtlSeconds()));
+        Duration ttl =
+                Duration.ofSeconds(
+                        Math.max(
+                                30, securityPolicyService.effectiveLogin().getCaptchaTtlSeconds()));
         kvStore.set(key, VERIFIED, ttl);
     }
 
-    /**
-     * 登录前校验。若登录页未开启验证码则跳过。
-     * IMAGE：比对用户输入；SLIDER：须已 verifySlider。
-     * 校验成功后立即失效，不可复用。
-     */
+    /** 登录前校验。若登录页未开启验证码则跳过。 IMAGE：比对用户输入；SLIDER：须已 verifySlider。 校验成功后立即失效，不可复用。 */
     public void validateForLogin(String captchaId, String captchaCode) {
         LoginPageConfigVO active = loginPageConfigService.getActive();
         if (active == null || !Boolean.TRUE.equals(active.getCaptchaEnabled())) {
@@ -95,13 +99,15 @@ public class CaptchaService {
             throw new BusinessException("验证码无效或已过期");
         }
 
-        String type = StringUtils.hasText(active.getCaptchaType()) ? active.getCaptchaType().toUpperCase(Locale.ROOT) : "IMAGE";
+        String type =
+                StringUtils.hasText(active.getCaptchaType())
+                        ? active.getCaptchaType().toUpperCase(Locale.ROOT)
+                        : "IMAGE";
         boolean ok;
         if ("SLIDER".equals(type)) {
             ok = VERIFIED.equals(stored);
         } else {
-            ok = StringUtils.hasText(captchaCode)
-                    && stored.equalsIgnoreCase(captchaCode.trim());
+            ok = StringUtils.hasText(captchaCode) && stored.equalsIgnoreCase(captchaCode.trim());
         }
         kvStore.delete(key);
         if (!ok) {
@@ -144,7 +150,8 @@ public class CaptchaService {
         g.dispose();
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             ImageIO.write(image, "png", baos);
-            return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
+            return "data:image/png;base64,"
+                    + Base64.getEncoder().encodeToString(baos.toByteArray());
         } catch (Exception ex) {
             throw new BusinessException("生成验证码失败");
         }

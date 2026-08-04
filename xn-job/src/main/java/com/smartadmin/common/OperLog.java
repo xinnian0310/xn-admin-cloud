@@ -1,7 +1,6 @@
 package com.smartadmin.common;
 
 import com.smartadmin.entity.OperBusinessType;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

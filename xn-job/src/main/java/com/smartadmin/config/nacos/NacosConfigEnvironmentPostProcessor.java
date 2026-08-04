@@ -1,6 +1,7 @@
 package com.smartadmin.config.nacos;
 
 import com.alibaba.nacos.api.config.ConfigService;
+import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
@@ -9,10 +10,9 @@ import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.util.StringUtils;
 
-import java.util.Map;
-
 /**
  * 启动早期从 Nacos 拉取配置并注入 Environment。
+ *
  * <p>不依赖 Spring Cloud，兼容 Boot 4.1。
  */
 public class NacosConfigEnvironmentPostProcessor implements EnvironmentPostProcessor, Ordered {
@@ -29,7 +29,8 @@ public class NacosConfigEnvironmentPostProcessor implements EnvironmentPostProce
     }
 
     @Override
-    public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
+    public void postProcessEnvironment(
+            ConfigurableEnvironment environment, SpringApplication application) {
         if (!NacosConfigSupport.isConfigEnabled(environment)) {
             return;
         }
@@ -50,8 +51,13 @@ public class NacosConfigEnvironmentPostProcessor implements EnvironmentPostProce
             }
             Map<String, Object> map = NacosConfigSupport.parseYamlToMap(content, dataId);
             NacosConfigSupport.applyToEnvironment(environment, map);
-            log.info("已从 Nacos 加载配置: dataId=" + dataId + ", group=" + group
-                    + ", keys=" + map.size());
+            log.info(
+                    "已从 Nacos 加载配置: dataId="
+                            + dataId
+                            + ", group="
+                            + group
+                            + ", keys="
+                            + map.size());
         } catch (IllegalStateException ex) {
             throw ex;
         } catch (Exception ex) {

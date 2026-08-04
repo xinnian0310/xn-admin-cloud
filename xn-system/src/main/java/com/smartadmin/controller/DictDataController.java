@@ -9,6 +9,8 @@ import com.smartadmin.dto.PageResult;
 import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.DictDataService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,9 +21,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dict-data")
@@ -59,7 +58,8 @@ public class DictDataController {
 
     @PutMapping("/{id}")
     @OperLog(title = "字典数据", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<DictDataVO> update(@PathVariable Long id, @Valid @RequestBody DictDataRequest request) {
+    public ApiResponse<DictDataVO> update(
+            @PathVariable Long id, @Valid @RequestBody DictDataRequest request) {
         return ApiResponse.success("更新成功", dictDataService.update(id, request));
     }
 

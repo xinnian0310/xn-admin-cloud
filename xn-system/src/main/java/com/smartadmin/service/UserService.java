@@ -16,19 +16,18 @@ import com.smartadmin.repository.SysUnitRepository;
 import com.smartadmin.repository.UserRepository;
 import com.smartadmin.util.ExcelExportUtil;
 import com.smartadmin.util.SensitiveDataUtil;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -59,13 +58,14 @@ public class UserService {
         boolean unitIdsEmpty = filter.unrestricted();
         List<Long> unitIds = unitIdsEmpty ? List.of(-1L) : filter.unitIds();
 
-        Page<User> result = userRepository.search(
-                StringUtils.hasText(keyword) ? keyword : "",
-                roleId,
-                unitIds,
-                unitIdsEmpty,
-                selfUserId,
-                pageable);
+        Page<User> result =
+                userRepository.search(
+                        StringUtils.hasText(keyword) ? keyword : "",
+                        roleId,
+                        unitIds,
+                        unitIdsEmpty,
+                        selfUserId,
+                        pageable);
         List<UserVO> records = result.getContent().stream().map(this::toUserVO).toList();
         return new PageResult<>(records, result.getTotalElements(), page, size);
     }
@@ -101,7 +101,8 @@ public class UserService {
         rbacService.checkPermission("user:update");
         User user = findUserWithRoles(id);
         dataScopeService.assertUserAccessible(user);
-        if (!user.getUsername().equals(request.getUsername()) && userRepository.existsByUsername(request.getUsername())) {
+        if (!user.getUsername().equals(request.getUsername())
+                && userRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException("用户名已存在");
         }
         resolveRoleIds(request);
@@ -147,36 +148,49 @@ public class UserService {
 
         UserRequest request = new UserRequest();
         request.setUsername(username);
-        String password = StringUtils.hasText(row.getPassword()) ? row.getPassword().trim() : DEFAULT_IMPORT_PASSWORD;
+        String password =
+                StringUtils.hasText(row.getPassword())
+                        ? row.getPassword().trim()
+                        : DEFAULT_IMPORT_PASSWORD;
         passwordPolicyService.validateComplexity(password);
         request.setPassword(password);
-        request.setNickname(StringUtils.hasText(row.getNickname()) ? row.getNickname().trim() : username);
+        request.setNickname(
+                StringUtils.hasText(row.getNickname()) ? row.getNickname().trim() : username);
         request.setEmail(row.getEmail() != null ? row.getEmail().trim() : null);
         request.setPhone(row.getPhone() != null ? row.getPhone().trim() : null);
         request.setStatus(row.getStatus() != null ? row.getStatus() : 1);
 
         if (StringUtils.hasText(row.getUnitCode())) {
-            SysUnit unit = unitRepository.findByCode(row.getUnitCode().trim())
-                    .orElseThrow(() -> new BusinessException("单位编码不存在: " + row.getUnitCode()));
+            SysUnit unit =
+                    unitRepository
+                            .findByCode(row.getUnitCode().trim())
+                            .orElseThrow(
+                                    () -> new BusinessException("单位编码不存在: " + row.getUnitCode()));
             request.setUnitId(unit.getId());
         }
 
         if (StringUtils.hasText(row.getPostCode())) {
-            SysPost post = postRepository.findByCode(row.getPostCode().trim())
-                    .orElseThrow(() -> new BusinessException("岗位编码不存在: " + row.getPostCode()));
+            SysPost post =
+                    postRepository
+                            .findByCode(row.getPostCode().trim())
+                            .orElseThrow(
+                                    () -> new BusinessException("岗位编码不存在: " + row.getPostCode()));
             request.setPostId(post.getId());
         }
 
         List<Long> roleIds = new ArrayList<>();
         if (StringUtils.hasText(row.getRoleCodes())) {
-            List<String> codes = Arrays.stream(row.getRoleCodes().split("[,，;；\\s]+"))
-                    .map(String::trim)
-                    .filter(StringUtils::hasText)
-                    .distinct()
-                    .toList();
+            List<String> codes =
+                    Arrays.stream(row.getRoleCodes().split("[,，;；\\s]+"))
+                            .map(String::trim)
+                            .filter(StringUtils::hasText)
+                            .distinct()
+                            .toList();
             for (String code : codes) {
-                Role role = roleRepository.findByCode(code)
-                        .orElseThrow(() -> new BusinessException("角色编码不存在: " + code));
+                Role role =
+                        roleRepository
+                                .findByCode(code)
+                                .orElseThrow(() -> new BusinessException("角色编码不存在: " + code));
                 roleIds.add(role.getId());
             }
         }
@@ -208,7 +222,8 @@ public class UserService {
     private void deleteInternal(Long id) {
         User user = findUserWithRoles(id);
         dataScopeService.assertUserAccessible(user);
-        if ("SuperAdmin".equalsIgnoreCase(user.getUsername()) || "admin".equalsIgnoreCase(user.getUsername())) {
+        if ("SuperAdmin".equalsIgnoreCase(user.getUsername())
+                || "admin".equalsIgnoreCase(user.getUsername())) {
             throw new BusinessException("不能删除默认管理员账号");
         }
         if (rbacService.isSuperAdmin(user)) {
@@ -226,7 +241,9 @@ public class UserService {
         User user = findUserWithRoles(id);
         dataScopeService.assertUserAccessible(user);
         rbacService.ensureCanDisableSuperAdmin(user, status);
-        if (("SuperAdmin".equalsIgnoreCase(user.getUsername()) || "admin".equalsIgnoreCase(user.getUsername())) && status == 0) {
+        if (("SuperAdmin".equalsIgnoreCase(user.getUsername())
+                        || "admin".equalsIgnoreCase(user.getUsername()))
+                && status == 0) {
             throw new BusinessException("不能禁用默认管理员账号");
         }
         user.setStatus(status);
@@ -245,8 +262,11 @@ public class UserService {
             return;
         }
         if (StringUtils.hasText(request.getRole())) {
-            Role role = roleRepository.findByCode(request.getRole())
-                    .orElseThrow(() -> new BusinessException("角色不存在: " + request.getRole()));
+            Role role =
+                    roleRepository
+                            .findByCode(request.getRole())
+                            .orElseThrow(
+                                    () -> new BusinessException("角色不存在: " + request.getRole()));
             request.setRoleIds(List.of(role.getId()));
             return;
         }
@@ -276,15 +296,19 @@ public class UserService {
             rbacService.syncLegacyRoleField(user);
         }
         if (request.getUnitId() != null) {
-            SysUnit unit = unitRepository.findById(request.getUnitId())
-                    .orElseThrow(() -> new BusinessException("单位不存在"));
+            SysUnit unit =
+                    unitRepository
+                            .findById(request.getUnitId())
+                            .orElseThrow(() -> new BusinessException("单位不存在"));
             user.setUnit(unit);
         } else {
             user.setUnit(null);
         }
         if (request.getPostId() != null) {
-            SysPost post = postRepository.findById(request.getPostId())
-                    .orElseThrow(() -> new BusinessException("岗位不存在"));
+            SysPost post =
+                    postRepository
+                            .findById(request.getPostId())
+                            .orElseThrow(() -> new BusinessException("岗位不存在"));
             user.setPost(post);
         } else {
             user.setPost(null);
@@ -305,33 +329,42 @@ public class UserService {
         List<Long> unitIds = unitIdsEmpty ? List.of(-1L) : filter.unitIds();
 
         PageRequest pageable = PageRequest.of(0, EXPORT_LIMIT);
-        Page<User> result = userRepository.search(
-                StringUtils.hasText(keyword) ? keyword : "",
-                roleId,
-                unitIds,
-                unitIdsEmpty,
-                selfUserId,
-                pageable);
+        Page<User> result =
+                userRepository.search(
+                        StringUtils.hasText(keyword) ? keyword : "",
+                        roleId,
+                        unitIds,
+                        unitIdsEmpty,
+                        selfUserId,
+                        pageable);
         List<User> rows = result.getContent();
         return ExcelExportUtil.toXlsx(
                 "用户",
                 List.of("用户名", "昵称", "邮箱", "手机号", "单位", "岗位", "角色", "状态"),
-                rows.stream().map(u -> {
-                    UserVO vo = toUserVO(u);
-                    String roles = vo.getEffectiveRoleList() == null || vo.getEffectiveRoleList().isEmpty()
-                            ? ""
-                            : vo.getEffectiveRoleList().stream().map(r -> r.getName()).collect(Collectors.joining(","));
-                    return List.of(
-                            nullToEmpty(u.getUsername()),
-                            nullToEmpty(u.getNickname()),
-                            nullToEmpty(vo.getEmail()),
-                            nullToEmpty(vo.getPhone()),
-                            nullToEmpty(vo.getUnitName()),
-                            nullToEmpty(vo.getPostName()),
-                            roles,
-                            u.getStatus() != null && u.getStatus() == 1 ? "启用" : "停用"
-                    );
-                }).toList());
+                rows.stream()
+                        .map(
+                                u -> {
+                                    UserVO vo = toUserVO(u);
+                                    String roles =
+                                            vo.getEffectiveRoleList() == null
+                                                            || vo.getEffectiveRoleList().isEmpty()
+                                                    ? ""
+                                                    : vo.getEffectiveRoleList().stream()
+                                                            .map(r -> r.getName())
+                                                            .collect(Collectors.joining(","));
+                                    return List.of(
+                                            nullToEmpty(u.getUsername()),
+                                            nullToEmpty(u.getNickname()),
+                                            nullToEmpty(vo.getEmail()),
+                                            nullToEmpty(vo.getPhone()),
+                                            nullToEmpty(vo.getUnitName()),
+                                            nullToEmpty(vo.getPostName()),
+                                            roles,
+                                            u.getStatus() != null && u.getStatus() == 1
+                                                    ? "启用"
+                                                    : "停用");
+                                })
+                        .toList());
     }
 
     private static String nullToEmpty(String value) {
@@ -339,35 +372,47 @@ public class UserService {
     }
 
     private User findUserWithRoles(Long id) {
-        return userRepository.findByIdWithRoles(id)
+        return userRepository
+                .findByIdWithRoles(id)
                 .orElseThrow(() -> new BusinessException("用户不存在"));
     }
 
     private UserVO toUserVO(User user) {
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            userRepository.findByIdWithRoles(user.getId()).ifPresent(u -> {
-                user.setRoles(u.getRoles());
-                user.setUnit(u.getUnit());
-                user.setPost(u.getPost());
-            });
+            userRepository
+                    .findByIdWithRoles(user.getId())
+                    .ifPresent(
+                            u -> {
+                                user.setRoles(u.getRoles());
+                                user.setUnit(u.getUnit());
+                                user.setPost(u.getPost());
+                            });
         } else if (user.getUnit() == null || user.getPost() == null) {
-            userRepository.findByIdWithRoles(user.getId()).ifPresent(u -> {
-                if (user.getUnit() == null) {
-                    user.setUnit(u.getUnit());
-                }
-                if (user.getPost() == null) {
-                    user.setPost(u.getPost());
-                }
-            });
+            userRepository
+                    .findByIdWithRoles(user.getId())
+                    .ifPresent(
+                            u -> {
+                                if (user.getUnit() == null) {
+                                    user.setUnit(u.getUnit());
+                                }
+                                if (user.getPost() == null) {
+                                    user.setPost(u.getPost());
+                                }
+                            });
         }
         UserVO vo = UserVO.from(user);
         if (user.getUnit() != null) {
-            unitRepository.findByIdWithRoles(user.getUnit().getId()).ifPresent(unit -> {
-                List<Role> unitRoles = unit.getRoles() == null
-                        ? List.of()
-                        : unit.getRoles().stream().collect(Collectors.toList());
-                vo.fillUnitRoles(unitRoles);
-            });
+            unitRepository
+                    .findByIdWithRoles(user.getUnit().getId())
+                    .ifPresent(
+                            unit -> {
+                                List<Role> unitRoles =
+                                        unit.getRoles() == null
+                                                ? List.of()
+                                                : unit.getRoles().stream()
+                                                        .collect(Collectors.toList());
+                                vo.fillUnitRoles(unitRoles);
+                            });
         } else {
             vo.fillUnitRoles(List.of());
         }

@@ -23,14 +23,14 @@ public class TableColumnConfigController {
     private final TableColumnConfigService tableColumnConfigService;
 
     @GetMapping
-    public ApiResponse<TableColumnConfigVO> get(
-            @RequestParam(value = "tableKey") String tableKey) {
+    public ApiResponse<TableColumnConfigVO> get(@RequestParam(value = "tableKey") String tableKey) {
         return ApiResponse.success(tableColumnConfigService.getForCurrentUser(tableKey));
     }
 
     @PutMapping
     @OperLog(title = "表格列配置", businessType = OperBusinessType.UPDATE)
-    public ApiResponse<TableColumnConfigVO> save(@Valid @RequestBody TableColumnConfigRequest request) {
+    public ApiResponse<TableColumnConfigVO> save(
+            @Valid @RequestBody TableColumnConfigRequest request) {
         return ApiResponse.success("保存成功", tableColumnConfigService.saveForCurrentUser(request));
     }
 }

@@ -1,11 +1,10 @@
 package com.smartadmin.dto;
 
 import com.smartadmin.entity.SysUnit;
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Data;
 
 @Data
 public class UnitVO {
@@ -34,7 +33,8 @@ public class UnitVO {
         vo.setBuiltIn(unit.getBuiltIn());
         if (unit.getRoles() != null && !unit.getRoles().isEmpty()) {
             vo.setRoleList(unit.getRoles().stream().map(RoleVO::from).collect(Collectors.toList()));
-            vo.setRoleIds(unit.getRoles().stream().map(r -> r.getId()).collect(Collectors.toList()));
+            vo.setRoleIds(
+                    unit.getRoles().stream().map(r -> r.getId()).collect(Collectors.toList()));
         }
         return vo;
     }

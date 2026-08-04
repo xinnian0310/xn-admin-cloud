@@ -5,19 +5,15 @@ import com.smartadmin.dto.ApiSignatureVO;
 import com.smartadmin.entity.Permission;
 import com.smartadmin.entity.PermissionType;
 import com.smartadmin.repository.PermissionRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
-/**
- * 接口权限注册表：以「权限内容」里 API 类型权限为准，
- * 提供接口是否已登记的匹配能力，并缓存结果。
- */
+/** 接口权限注册表：以「权限内容」里 API 类型权限为准， 提供接口是否已登记的匹配能力，并缓存结果。 */
 @Component
 @RequiredArgsConstructor
 public class ApiPermissionRegistry {
@@ -42,7 +38,8 @@ public class ApiPermissionRegistry {
             if (p.getType() == PermissionType.API
                     && StringUtils.hasText(p.getPath())
                     && StringUtils.hasText(p.getMethod())) {
-                entries.add(new Entry(p.getMethod().toUpperCase(), p.getPath(), compile(p.getPath())));
+                entries.add(
+                        new Entry(p.getMethod().toUpperCase(), p.getPath(), compile(p.getPath())));
             }
         }
         this.apiEntries = entries;
@@ -84,9 +81,8 @@ public class ApiPermissionRegistry {
 
     public ApiRegistryVO snapshot() {
         ensureLoaded();
-        List<ApiSignatureVO> apis = apiEntries.stream()
-                .map(e -> new ApiSignatureVO(e.method, e.rawPath))
-                .toList();
+        List<ApiSignatureVO> apis =
+                apiEntries.stream().map(e -> new ApiSignatureVO(e.method, e.rawPath)).toList();
         return new ApiRegistryVO(apis, List.copyOf(allCodes));
     }
 }

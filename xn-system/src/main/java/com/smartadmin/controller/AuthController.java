@@ -15,6 +15,7 @@ import com.smartadmin.service.AuthService;
 import com.smartadmin.service.CaptchaService;
 import com.smartadmin.service.RouteService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,8 +26,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -44,7 +43,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(@RequestHeader(value = "Authorization", required = false) String authorization) {
+    public ApiResponse<Void> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         authService.logout(authorization);
         return ApiResponse.success(null);
     }

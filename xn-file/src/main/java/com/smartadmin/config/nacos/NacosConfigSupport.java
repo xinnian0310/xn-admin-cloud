@@ -3,16 +3,6 @@ package com.smartadmin.config.nacos;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigService;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.EnumerablePropertySource;
-import org.springframework.core.env.MapPropertySource;
-import org.springframework.core.env.MutablePropertySources;
-import org.springframework.core.env.PropertySource;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.boot.env.YamlPropertySourceLoader;
-import org.springframework.util.StringUtils;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,14 +10,22 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.springframework.boot.env.YamlPropertySourceLoader;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.EnumerablePropertySource;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.MutablePropertySources;
+import org.springframework.core.env.PropertySource;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.util.StringUtils;
 
 /** Nacos 配置拉取与 PropertySource 装配（bootstrap / 热更新共用）。 */
 public final class NacosConfigSupport {
 
     public static final String PROPERTY_SOURCE_NAME = "nacosConfig";
 
-    private NacosConfigSupport() {
-    }
+    private NacosConfigSupport() {}
 
     public static boolean isConfigEnabled(ConfigurableEnvironment env) {
         return env.getProperty("app.nacos.config.enabled", Boolean.class, false);
@@ -119,9 +117,11 @@ public final class NacosConfigSupport {
         return flat;
     }
 
-    public static void applyToEnvironment(ConfigurableEnvironment env, Map<String, Object> properties) {
+    public static void applyToEnvironment(
+            ConfigurableEnvironment env, Map<String, Object> properties) {
         MutablePropertySources sources = env.getPropertySources();
-        MapPropertySource ps = new MapPropertySource(PROPERTY_SOURCE_NAME, new HashMap<>(properties));
+        MapPropertySource ps =
+                new MapPropertySource(PROPERTY_SOURCE_NAME, new HashMap<>(properties));
         if (sources.contains(PROPERTY_SOURCE_NAME)) {
             sources.replace(PROPERTY_SOURCE_NAME, ps);
         } else {

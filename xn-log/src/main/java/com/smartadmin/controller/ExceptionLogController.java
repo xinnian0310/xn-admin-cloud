@@ -9,6 +9,8 @@ import com.smartadmin.entity.OperBusinessType;
 import com.smartadmin.service.ExceptionLogService;
 import com.smartadmin.util.ExcelHttpResponse;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.time.LocalDateTime;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/logs/exception")
@@ -36,17 +35,22 @@ public class ExceptionLogController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beginTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
-        return ApiResponse.success(exceptionLogService.list(page, size, keyword, beginTime, endTime));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime beginTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endTime) {
+        return ApiResponse.success(
+                exceptionLogService.list(page, size, keyword, beginTime, endTime));
     }
 
     @GetMapping("/export")
     @OperLog(title = "异常日志", businessType = OperBusinessType.EXPORT)
     public ResponseEntity<byte[]> export(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beginTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime beginTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endTime) {
         return ExcelHttpResponse.xlsx(
                 exceptionLogService.exportExcel(keyword, beginTime, endTime),
                 "exception-logs.xlsx");

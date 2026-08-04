@@ -7,21 +7,17 @@ import io.lettuce.core.SetArgs;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 import jakarta.annotation.PreDestroy;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-/**
- * 轻量 KV：优先 Redis，不可用时回落到带过期时间的内存 Map。
- * 用于验证码、登录锁定、限流等短生命周期数据。
- */
+/** 轻量 KV：优先 Redis，不可用时回落到带过期时间的内存 Map。 用于验证码、登录锁定、限流等短生命周期数据。 */
 @Slf4j
 @Service
 public class AppKvStore {
@@ -42,10 +38,12 @@ public class AppKvStore {
     }
 
     public void set(String key, String value, Duration ttl) {
-        Boolean ok = tryRedis(cmds -> {
-            cmds.set(key, value, SetArgs.Builder.ex(Math.max(1, ttl.getSeconds())));
-            return Boolean.TRUE;
-        });
+        Boolean ok =
+                tryRedis(
+                        cmds -> {
+                            cmds.set(key, value, SetArgs.Builder.ex(Math.max(1, ttl.getSeconds())));
+                            return Boolean.TRUE;
+                        });
         if (Boolean.TRUE.equals(ok)) {
             return;
         }
@@ -69,10 +67,11 @@ public class AppKvStore {
     }
 
     public void delete(String key) {
-        tryRedis(cmds -> {
-            cmds.del(key);
-            return true;
-        });
+        tryRedis(
+                cmds -> {
+                    cmds.del(key);
+                    return true;
+                });
         local.remove(key);
     }
 
@@ -86,13 +85,15 @@ public class AppKvStore {
 
     /** 自增；key 不存在时以 1 起步并设置 TTL（仅首次）。 */
     public long incr(String key, Duration ttlIfNew) {
-        Long remote = tryRedis(cmds -> {
-            Long n = cmds.incr(key);
-            if (n != null && n == 1L) {
-                cmds.expire(key, Math.max(1, ttlIfNew.getSeconds()));
-            }
-            return n;
-        });
+        Long remote =
+                tryRedis(
+                        cmds -> {
+                            Long n = cmds.incr(key);
+                            if (n != null && n == 1L) {
+                                cmds.expire(key, Math.max(1, ttlIfNew.getSeconds()));
+                            }
+                            return n;
+                        });
         if (remote != null && redisReady) {
             return remote;
         }
@@ -125,10 +126,12 @@ public class AppKvStore {
 
     /** 按前缀列出未过期 key（Redis 用 KEYS；内存遍历）。仅供管理端列举锁定账号等场景。 */
     public List<String> keysByPrefix(String prefix) {
-        List<String> remote = tryRedis(cmds -> {
-            List<String> keys = cmds.keys(prefix + "*");
-            return keys != null ? keys : List.<String>of();
-        });
+        List<String> remote =
+                tryRedis(
+                        cmds -> {
+                            List<String> keys = cmds.keys(prefix + "*");
+                            return keys != null ? keys : List.<String>of();
+                        });
         if (remote != null && redisReady) {
             return remote;
         }
@@ -169,11 +172,12 @@ public class AppKvStore {
         }
         closeRedisQuietly();
         try {
-            RedisURI.Builder builder = RedisURI.builder()
-                    .withHost(redisProperties.getHost())
-                    .withPort(redisProperties.getPort())
-                    .withDatabase(redisProperties.getDatabase())
-                    .withTimeout(Duration.ofMillis(500));
+            RedisURI.Builder builder =
+                    RedisURI.builder()
+                            .withHost(redisProperties.getHost())
+                            .withPort(redisProperties.getPort())
+                            .withDatabase(redisProperties.getDatabase())
+                            .withTimeout(Duration.ofMillis(500));
             if (StringUtils.hasText(redisProperties.getPassword())) {
                 builder.withPassword(redisProperties.getPassword().toCharArray());
             }
@@ -182,9 +186,15 @@ public class AppKvStore {
             connection.sync().ping();
             redisReady = true;
             nextReconnectAt = Instant.EPOCH;
-            log.info("AppKvStore 已连接 Redis {}:{}", redisProperties.getHost(), redisProperties.getPort());
+            log.info(
+                    "AppKvStore 已连接 Redis {}:{}",
+                    redisProperties.getHost(),
+                    redisProperties.getPort());
         } catch (Exception ex) {
-            log.warn("AppKvStore 无法连接 Redis，使用内存存储（{}s 后重试）：{}", RECONNECT_BACKOFF.getSeconds(), ex.getMessage());
+            log.warn(
+                    "AppKvStore 无法连接 Redis，使用内存存储（{}s 后重试）：{}",
+                    RECONNECT_BACKOFF.getSeconds(),
+                    ex.getMessage());
             markRedisDown();
         }
     }
@@ -223,6 +233,5 @@ public class AppKvStore {
         T apply(RedisCommands<String, String> cmds);
     }
 
-    private record Entry(String value, Instant expireAt) {
-    }
+    private record Entry(String value, Instant expireAt) {}
 }

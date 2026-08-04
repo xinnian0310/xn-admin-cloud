@@ -10,6 +10,9 @@ import com.smartadmin.entity.Permission;
 import com.smartadmin.entity.Role;
 import com.smartadmin.repository.PermissionRepository;
 import com.smartadmin.repository.RoleRepository;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,10 +20,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -34,15 +33,18 @@ public class RoleService {
     public PageResult<RoleVO> list(int page, int size, String keyword) {
         rbacService.checkPermission("role:view");
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
-        Page<Role> result = roleRepository.search(StringUtils.hasText(keyword) ? keyword : "", pageable);
+        Page<Role> result =
+                roleRepository.search(StringUtils.hasText(keyword) ? keyword : "", pageable);
         List<RoleVO> records = result.getContent().stream().map(RoleVO::from).toList();
         return new PageResult<>(records, result.getTotalElements(), page, size);
     }
 
     public RoleDetailVO getById(Long id) {
         rbacService.checkPermission("role:view");
-        Role role = roleRepository.findByIdWithPermissions(id)
-                .orElseThrow(() -> new BusinessException("角色不存在"));
+        Role role =
+                roleRepository
+                        .findByIdWithPermissions(id)
+                        .orElseThrow(() -> new BusinessException("角色不存在"));
         List<Long> permissionIds = role.getPermissions().stream().map(Permission::getId).toList();
         return RoleDetailVO.from(role, permissionIds);
     }
@@ -76,7 +78,8 @@ public class RoleService {
                 role.setDataScope(DataScope.ALL);
             }
         } else {
-            if (!role.getCode().equals(request.getCode()) && roleRepository.existsByCode(request.getCode())) {
+            if (!role.getCode().equals(request.getCode())
+                    && roleRepository.existsByCode(request.getCode())) {
                 throw new BusinessException("角色编码已存在");
             }
             role.setCode(request.getCode());
@@ -122,7 +125,8 @@ public class RoleService {
     public void updateStatus(Long id, Integer status) {
         rbacService.checkPermission("role:update");
         Role role = findRole(id);
-        if (Boolean.TRUE.equals(role.getBuiltIn()) && RbacService.SUPER_ADMIN_CODE.equals(role.getCode())) {
+        if (Boolean.TRUE.equals(role.getBuiltIn())
+                && RbacService.SUPER_ADMIN_CODE.equals(role.getCode())) {
             throw new BusinessException("不能禁用超级管理员角色");
         }
         role.setStatus(status);
@@ -133,19 +137,24 @@ public class RoleService {
     public void assignPermissions(Long id, List<Long> permissionIds) {
         rbacService.checkPermission("role:assign");
         Role role = findRole(id);
-        if (Boolean.TRUE.equals(role.getBuiltIn()) && RbacService.SUPER_ADMIN_CODE.equals(role.getCode())) {
+        if (Boolean.TRUE.equals(role.getBuiltIn())
+                && RbacService.SUPER_ADMIN_CODE.equals(role.getCode())) {
             throw new BusinessException("不能修改超级管理员角色的权限");
         }
-        Set<Permission> permissions = new HashSet<>(permissionRepository.findAllById(permissionIds));
+        Set<Permission> permissions =
+                new HashSet<>(permissionRepository.findAllById(permissionIds));
         role.setPermissions(permissions);
         roleRepository.save(role);
         appCacheService.evictAllPermissionCaches();
     }
 
     private Role findRole(Long id) {
-        return roleRepository.findByIdWithPermissions(id)
-                .orElse(roleRepository.findById(id)
-                        .orElseThrow(() -> new BusinessException("角色不存在")));
+        return roleRepository
+                .findByIdWithPermissions(id)
+                .orElse(
+                        roleRepository
+                                .findById(id)
+                                .orElseThrow(() -> new BusinessException("角色不存在")));
     }
 
     public List<RoleVO> listOptions() {

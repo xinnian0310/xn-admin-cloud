@@ -2,9 +2,8 @@ package com.smartadmin.dto;
 
 import com.smartadmin.entity.NoticeStatus;
 import com.smartadmin.entity.SysNotice;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class NoticeVO {
