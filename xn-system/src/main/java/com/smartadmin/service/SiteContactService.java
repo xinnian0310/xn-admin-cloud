@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -149,6 +150,7 @@ public class SiteContactService {
             if (!StringUtils.hasText(item.getIcon())) {
                 item.setIcon("Link");
             }
+            normalizeByType(item);
         }
         for (SiteContactVO.Qrcode qr : vo.getDonation().getQrcodes()) {
             if (qr == null) {
@@ -162,5 +164,82 @@ public class SiteContactService {
             }
         }
         return vo;
+    }
+
+    private String resolveType(SiteContactVO.ContactItem item) {
+        String type = item.getType() == null ? "" : item.getType().trim().toLowerCase();
+        if ("text".equals(type)
+                || "link".equals(type)
+                || "email".equals(type)
+                || "qq".equals(type)) {
+            return type;
+        }
+        if ("交流群".equals(item.getLabel())
+                || (item.getGroups() != null && !item.getGroups().isEmpty())) {
+            return "qq";
+        }
+        if ("邮箱".equals(item.getLabel())
+                || (item.getLink() != null && item.getLink().startsWith("mailto:"))) {
+            return "email";
+        }
+        if (StringUtils.hasText(item.getLink())) {
+            return "link";
+        }
+        return "text";
+    }
+
+    private void normalizeByType(SiteContactVO.ContactItem item) {
+        String type = resolveType(item);
+        item.setType(type);
+        switch (type) {
+            case "qq" -> normalizeQqGroups(item);
+            case "email" -> {
+                item.setGroups(null);
+                if (StringUtils.hasText(item.getValue())) {
+                    String email = item.getValue().trim();
+                    item.setValue(email);
+                    if (!StringUtils.hasText(item.getLink())
+                            || !item.getLink().startsWith("mailto:")) {
+                        item.setLink("mailto:" + email);
+                    }
+                }
+            }
+            case "link" -> item.setGroups(null);
+            default -> {
+                item.setGroups(null);
+                item.setLink(null);
+            }
+        }
+    }
+
+    /** QQ群：保证 groups 可用；旧数据仅有 value 时自动迁移 */
+    private void normalizeQqGroups(SiteContactVO.ContactItem item) {
+        List<SiteContactVO.GroupItem> groups = item.getGroups();
+        if (groups == null) {
+            groups = new ArrayList<>();
+        }
+        List<SiteContactVO.GroupItem> cleaned = new ArrayList<>();
+        for (SiteContactVO.GroupItem g : groups) {
+            if (g == null || !StringUtils.hasText(g.getValue())) {
+                continue;
+            }
+            SiteContactVO.GroupItem copy = new SiteContactVO.GroupItem();
+            copy.setValue(g.getValue().trim());
+            copy.setFull(g.getFull());
+            cleaned.add(copy);
+        }
+        if (cleaned.isEmpty() && StringUtils.hasText(item.getValue())) {
+            SiteContactVO.GroupItem legacy = new SiteContactVO.GroupItem();
+            legacy.setValue(item.getValue().trim());
+            legacy.setFull(false);
+            cleaned.add(legacy);
+        }
+        item.setGroups(cleaned);
+        item.setLink(null);
+        if (!cleaned.isEmpty()) {
+            item.setValue(cleaned.get(0).getValue());
+        } else if (item.getValue() == null) {
+            item.setValue("");
+        }
     }
 }

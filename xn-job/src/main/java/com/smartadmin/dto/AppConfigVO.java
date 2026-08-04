@@ -18,8 +18,11 @@ public class AppConfigVO {
     @Setter
     public static class AppInfo {
         private String name = "心念后台管理系统";
-        private String company = "心念科技";
-        private String subtitle = "心念科技";
+
+        /** 应用介绍：管理端首页 / 官网开源项目介绍 */
+        private String intro =
+                "面向中后台的 Vue3 + 微服务管理脚手架：JWT 登录、RBAC 动态路由、page-ui 驱动 CRUD、多布局与主题、通知推送与系统监控一站集成，对接 xn-admin-cloud 网关即可开箱使用。";
+
         private String favicon = "/xinnian-tech-logo.png";
         private String logo = "/xinnian-tech-logo.png";
         private Integer logoWidth = 28;
