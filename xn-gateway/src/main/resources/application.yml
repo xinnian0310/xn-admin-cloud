@@ -1,0 +1,73 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: xn-gateway
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8849}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        fail-fast: false
+    loadbalancer:
+      nacos:
+        enabled: true
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOriginPatterns: "*"
+                allowedMethods: "*"
+                allowedHeaders: "*"
+                allowCredentials: false
+          routes:
+            - id: xn-file
+              uri: lb://xn-file
+              predicates:
+                - Path=/api/files/**
+            - id: xn-log
+              uri: lb://xn-log
+              predicates:
+                - Path=/api/logs/**
+            - id: xn-job
+              uri: lb://xn-job
+              predicates:
+                - Path=/api/jobs/**
+            - id: xn-system-api
+              uri: lb://xn-system
+              predicates:
+                - Path=/api/**
+            - id: xn-system-uploads
+              uri: lb://xn-system
+              predicates:
+                - Path=/uploads/**
+            - id: xn-system-ws
+              uri: lb://xn-system
+              predicates:
+                - Path=/ws/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    com.alibaba.cloud.nacos: INFO

@@ -1,0 +1,108 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: xn-system
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev,cloud}
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/smartadmin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 55MB
+  quartz:
+    job-store-type: memory
+    auto-startup: false
+    overwrite-existing-jobs: true
+    properties:
+      org.quartz.scheduler.instanceName: xnAdminScheduler
+      org.quartz.threadPool.threadCount: 10
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# JWT：86400000 = 24 小时固定过期；密钥通过环境变量 JWT_SECRET 注入（dev 见 application-dev.yml）
+app:
+  jwt:
+    secret: ${JWT_SECRET:}
+    expiration: ${JWT_EXPIRATION:86400000}
+  api-guard:
+    enforce: true
+  upload:
+    dir: ${UPLOAD_DIR:uploads}
+  redis:
+    enabled: ${REDIS_ENABLED:true}
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: ${REDIS_DATABASE:0}
+  minio:
+    enabled: ${MINIO_ENABLED:true}
+    endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:9000}
+    access-key: ${MINIO_ACCESS_KEY:}
+    secret-key: ${MINIO_SECRET_KEY:}
+    bucket: ${MINIO_BUCKET:xn-admin}
+    region: ${MINIO_REGION:us-east-1}
+  kkfileview:
+    enabled: ${KKFILEVIEW_ENABLED:true}
+    base-url: ${KKFILEVIEW_BASE_URL:http://127.0.0.1:8012}
+  nacos:
+    enabled: ${NACOS_ENABLED:true}
+    server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8849}
+    username: ${NACOS_USERNAME:}
+    password: ${NACOS_PASSWORD:}
+    # 配置中心（默认关闭，不依赖 SCA；开启后从 Nacos 拉取 YAML 并支持热更新）
+    config:
+      enabled: ${NACOS_CONFIG_ENABLED:false}
+      namespace: ${NACOS_NAMESPACE:}
+      group: ${NACOS_GROUP:DEFAULT_GROUP}
+      # 留空则按 spring.application.name + profile，如 xn-system-dev.yml
+      data-id: ${NACOS_DATA_ID:}
+      refresh: ${NACOS_CONFIG_REFRESH:true}
+      fail-fast: ${NACOS_CONFIG_FAIL_FAST:false}
+      timeout-ms: ${NACOS_CONFIG_TIMEOUT:3000}
+  infra:
+    restart-enabled: ${INFRA_RESTART_ENABLED:false}
+    project-root:
+  security:
+    login:
+      max-failures: ${LOGIN_MAX_FAILURES:5}
+      lock-minutes: ${LOGIN_LOCK_MINUTES:15}
+      rate-limit-per-minute: ${LOGIN_RATE_LIMIT:30}
+      captcha-ttl-seconds: 120
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+    swagger:
+      enabled: ${SWAGGER_ENABLED:true}

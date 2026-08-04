@@ -1,0 +1,36 @@
+# 本地开发默认值（勿用于生产）
+spring:
+  datasource:
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+  flyway:
+    # 开发期若改过已执行的 migration 脚本，启动时自动修复 checksum，避免校验失败起不来
+    repair-on-migrate: true
+
+app:
+  jwt:
+    secret: XnAdminSecretKeyForJwtTokenGeneration2026MustBeLongEnough
+  minio:
+    access-key: minioadmin
+    secret-key: minioadmin
+  nacos:
+    username: nacos
+    password: nacos
+    # 需要时开启配置中心：先在 Nacos 发布 docs/nacos/xn-system-dev.yml
+    # config:
+    #   enabled: true
+  infra:
+    restart-enabled: true
+  security:
+    cors:
+      allowed-origins: "*"
+    swagger:
+      enabled: true
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

@@ -1,0 +1,22 @@
+﻿server:
+  port: 8083
+
+spring:
+  application:
+    name: xn-log
+  quartz:
+    auto-startup: false
+  flyway:
+    enabled: false
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8849}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        fail-fast: false

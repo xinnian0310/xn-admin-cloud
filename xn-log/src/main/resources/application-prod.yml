@@ -1,0 +1,34 @@
+# 生产配置：敏感项必须由环境变量注入，缺失则启动失败
+spring:
+  datasource:
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+  flyway:
+    enabled: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  minio:
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+  nacos:
+    username: ${NACOS_USERNAME:}
+    password: ${NACOS_PASSWORD:}
+  infra:
+    restart-enabled: false
+  security:
+    cors:
+      # 逗号分隔多域名，例如 https://admin.example.com,https://www.example.com
+      allowed-origins: ${CORS_ALLOWED_ORIGINS}
+    swagger:
+      enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
