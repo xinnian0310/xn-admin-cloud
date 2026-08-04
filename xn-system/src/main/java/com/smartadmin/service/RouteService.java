@@ -136,6 +136,7 @@ public class RouteService {
         route = routeRepository.save(route);
         syncMenuPermission(route, true);
         appCacheService.evictByPrefix(AppCacheService.PREFIX_MENUS);
+        appCacheService.evictSiteUiShots();
         return RouteVO.from(route);
     }
 
@@ -153,6 +154,7 @@ public class RouteService {
         route = routeRepository.save(route);
         syncMenuPermission(route, false);
         appCacheService.evictByPrefix(AppCacheService.PREFIX_MENUS);
+        appCacheService.evictSiteUiShots();
         return RouteVO.from(route);
     }
 
@@ -184,6 +186,7 @@ public class RouteService {
         routeRepository.delete(route);
         appCacheService.evictByPrefix(AppCacheService.PREFIX_MENUS);
         appCacheService.evictAllPermissionCaches();
+        appCacheService.evictSiteUiShots();
     }
 
     public static String pathToViewPath(String path) {

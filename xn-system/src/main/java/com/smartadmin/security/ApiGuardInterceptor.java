@@ -28,7 +28,9 @@ public class ApiGuardInterceptor implements HandlerInterceptor {
                     "/api/auth/captcha/slider",
                     "/api/auth/api-registry",
                     "/api/login-page-configs/active",
-                    "/api/system-config/public");
+                    "/api/system-config/public",
+                    "/api/site-contact/public",
+                    "/api/site-ui-shots/public");
 
     private final ApiPermissionRegistry registry;
 

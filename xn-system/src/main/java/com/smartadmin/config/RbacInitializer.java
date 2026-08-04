@@ -54,6 +54,7 @@ public class RbacInitializer implements CommandLineRunner {
         ensureDictPermissions();
         ensureLoginPagePermissions();
         ensureSystemConfigPermissions();
+        ensureSiteContactPermissions();
         ensureSecurityPolicyPermissions();
         ensureLoginLogPermissions();
         ensureOperLogPermissions();
@@ -120,6 +121,31 @@ public class RbacInitializer implements CommandLineRunner {
                 "系统配置资源上传",
                 "POST",
                 "/api/system-config/upload",
+                menu,
+                3);
+        // /public 走 permitAll，不登记到角色
+    }
+
+    /** 联系与捐赠：仅登记菜单与接口，不配置按钮权限；登录用户即可维护 */
+    private void ensureSiteContactPermissions() {
+        Permission settings =
+                permissionRepository
+                        .findByCode("menu:system:settings")
+                        .or(() -> permissionRepository.findByCode("menu:system"))
+                        .orElse(null);
+        Permission menu =
+                ensureMenuPermission(
+                        "menu:system:site-contact", "联系与捐赠", "/system/site-contact", settings, 4);
+        // 本页不配置按钮权限，直接使用默认增删改查
+        removeObsoletePermission("site-contact:view");
+        removeObsoletePermission("site-contact:update");
+        upsertApi("api:GET:/api/site-contact", "联系捐赠查询", "GET", "/api/site-contact", menu, 1);
+        upsertApi("api:PUT:/api/site-contact", "联系捐赠保存", "PUT", "/api/site-contact", menu, 2);
+        upsertApi(
+                "api:POST:/api/site-contact/upload",
+                "捐赠二维码上传",
+                "POST",
+                "/api/site-contact/upload",
                 menu,
                 3);
         // /public 走 permitAll，不登记到角色

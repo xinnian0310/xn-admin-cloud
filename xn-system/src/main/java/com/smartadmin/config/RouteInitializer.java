@@ -72,6 +72,7 @@ public class RouteInitializer implements CommandLineRunner {
         ensureDictDataRoute();
         ensureLoginPageRoute();
         ensureSystemConfigRoute();
+        ensureSiteContactRoute();
         ensureSecurityPolicyRoute();
         ensureLoginLogRoute();
         ensureOperLogRoute();
@@ -209,6 +210,16 @@ public class RouteInitializer implements CommandLineRunner {
         moveMenu("/system/login-settings", "menu:system:login-page", settingsGroup, 1);
         moveMenu("/system/config", "menu:system:config", settingsGroup, 2);
         moveMenu("/system/security", "menu:system:security", settingsGroup, 3);
+        moveMenu("/system/site-contact", "menu:system:site-contact", settingsGroup, 4);
+        routeRepository
+                .findByPath("/system/site-contact")
+                .ifPresent(
+                        route -> {
+                            if (Boolean.TRUE.equals(route.getPermissionControl())) {
+                                route.setPermissionControl(false);
+                                routeRepository.save(route);
+                            }
+                        });
 
         // 系统工具
         moveMenu("/system/files", "menu:system:file", toolsGroup, 1);
@@ -776,6 +787,7 @@ public class RouteInitializer implements CommandLineRunner {
         setIconByPath("/system/dicts/data", "Collection");
         setIconByPath("/system/login-settings", "PictureFilled");
         setIconByPath("/system/config", "Setting");
+        setIconByPath("/system/site-contact", "Phone");
         setIconByPath("/system/security", "Key");
         setIconByPath("/system/files", "FolderOpened");
         setIconByPath("/system/jobs", "Timer");
@@ -892,6 +904,33 @@ public class RouteInitializer implements CommandLineRunner {
         route.setHidden(false);
         route.setAffix(false);
         route.setPermissionControl(true);
+        route.setBuiltIn(true);
+        routeRepository.save(route);
+    }
+
+    /** 联系与捐赠菜单路由 */
+    private void ensureSiteContactRoute() {
+        String path = "/system/site-contact";
+        if (routeRepository.existsByPath(path)) {
+            return;
+        }
+        SysRoute parent = findDirByPermission(PERM_SETTINGS_GROUP);
+        if (parent == null) {
+            parent = findDirByPermission("menu:system");
+        }
+        SysRoute route = new SysRoute();
+        route.setTitle("联系与捐赠");
+        route.setPath(path);
+        route.setViewPath("system/site-contact");
+        route.setIcon("Phone");
+        route.setPermission("menu:system:site-contact");
+        route.setParent(parent);
+        route.setType(RouteType.MENU);
+        route.setSort(4);
+        route.setStatus(1);
+        route.setHidden(false);
+        route.setAffix(false);
+        route.setPermissionControl(false);
         route.setBuiltIn(true);
         routeRepository.save(route);
     }
