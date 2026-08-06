@@ -22,6 +22,10 @@ public class RouteRequest {
     @Size(max = 50)
     private String icon;
 
+    /** React 端图标；可选 */
+    @Size(max = 80)
+    private String iconAntd;
+
     @Size(max = 100)
     private String permission;
 

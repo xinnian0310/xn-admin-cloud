@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -41,10 +43,17 @@ public class AppConfigService {
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
-    /** 公开读取（登录页品牌等），无需鉴权 */
+    /** 公开读取（登录页品牌等），无需鉴权；无 client 时返回共享兜底 name/intro */
     public AppConfigVO getPublic() {
-        return appCacheService.getAppConfig(
-                new tools.jackson.core.type.TypeReference<>() {}, this::loadOrDefault);
+        return getPublic(null);
+    }
+
+    /** 公开读取；指定 clientId 时用 {@code app.clients[clientId]} 覆盖 name / intro。 */
+    public AppConfigVO getPublic(String clientId) {
+        AppConfigVO raw =
+                appCacheService.getAppConfig(
+                        new tools.jackson.core.type.TypeReference<>() {}, this::loadOrDefault);
+        return projectForClient(raw, clientId);
     }
 
     public AppConfigVO getForAdmin() {
@@ -59,6 +68,7 @@ public class AppConfigService {
             throw new BusinessException("配置不能为空");
         }
         validate(request);
+        normalize(request);
         SysAppConfig entity =
                 repository
                         .findById(SINGLETON_ID)
@@ -116,8 +126,14 @@ public class AppConfigService {
     }
 
     private AppConfigVO loadOrDefault() {
-        return normalize(
-                repository.findById(SINGLETON_ID).map(this::parse).orElseGet(AppConfigVO::new));
+        AppConfigVO vo =
+                repository.findById(SINGLETON_ID).map(this::parse).orElseGet(AppConfigVO::new);
+        boolean clientsChanged = prepareAppClients(vo);
+        normalize(vo);
+        if (clientsChanged) {
+            persistInternal(vo);
+        }
+        return vo;
     }
 
     private AppConfigVO parse(SysAppConfig entity) {
@@ -132,12 +148,175 @@ public class AppConfigService {
         }
     }
 
+    /** 确保 app.clients 可写，并补齐 / 迁移各前端 name·intro；返回是否有变更需落库。 */
+    private boolean prepareAppClients(AppConfigVO vo) {
+        if (vo.getApp() == null) {
+            vo.setApp(new AppConfigVO.AppInfo());
+        }
+        if (vo.getApp().getClients() == null) {
+            vo.getApp().setClients(new LinkedHashMap<>());
+        }
+        return syncClientProfiles(vo.getApp());
+    }
+
     private AppConfigVO normalize(AppConfigVO vo) {
+        if (vo.getApp() == null) {
+            vo.setApp(new AppConfigVO.AppInfo());
+        }
+        if (vo.getApp().getClients() == null) {
+            vo.getApp().setClients(new LinkedHashMap<>());
+        }
+        syncClientProfiles(vo.getApp());
         if (vo.getLogRetention() == null) {
             vo.setLogRetention(new AppConfigVO.LogRetentionConfig());
         }
         vo.setSensitiveData(normalizeSensitiveData(vo.getSensitiveData()));
         return vo;
+    }
+
+    /**
+     * 补齐 / 修复各前端工程 name·intro，并迁移旧 clientId。
+     *
+     * <p>若库里仍是旧的「共享介绍」被写进多个 client，会按技术栈默认值拆开回填。
+     *
+     * @return 是否有变更（需落库）
+     */
+    private boolean syncClientProfiles(AppConfigVO.AppInfo app) {
+        boolean changed = false;
+        Map<String, AppConfigVO.ClientAppProfile> clients = app.getClients();
+
+        // 旧 id：xn-admin-vue3-options-js → xn-admin-vue2-js
+        if (clients.containsKey("xn-admin-vue3-options-js")) {
+            AppConfigVO.ClientAppProfile legacy = clients.remove("xn-admin-vue3-options-js");
+            clients.putIfAbsent(
+                    "xn-admin-vue2-js",
+                    legacy != null
+                            ? legacy
+                            : AppConfigVO.AppInfo.defaultClientProfiles().get("xn-admin-vue2-js"));
+            changed = true;
+        }
+
+        // 根级旧共享介绍清空（介绍只认 clients）
+        if (shouldReplaceClientIntro(app.getIntro(), null, "")) {
+            app.setIntro("");
+            changed = true;
+        }
+
+        for (Map.Entry<String, AppConfigVO.ClientAppProfile> entry :
+                AppConfigVO.AppInfo.defaultClientProfiles().entrySet()) {
+            String clientId = entry.getKey();
+            AppConfigVO.ClientAppProfile def = entry.getValue();
+            AppConfigVO.ClientAppProfile existing = clients.get(clientId);
+            if (existing == null) {
+                clients.put(clientId, def);
+                changed = true;
+                continue;
+            }
+            if (!StringUtils.hasText(existing.getName())) {
+                existing.setName(def.getName());
+                changed = true;
+            }
+            // 空介绍、旧文案、或误用了其他工程的默认介绍 → 换成该技术栈当前默认
+            if (shouldReplaceClientIntro(existing.getIntro(), clientId, def.getIntro())) {
+                existing.setIntro(def.getIntro());
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    /**
+     * 是否用默认介绍覆盖现有值。
+     *
+     * @param intro 当前介绍
+     * @param clientId 当前工程；根级传 null
+     * @param desiredIntro 该工程目标默认介绍
+     */
+    private static boolean shouldReplaceClientIntro(
+            String intro, String clientId, String desiredIntro) {
+        if (!StringUtils.hasText(intro)) {
+            // 仅当有目标文案时才用默认填空；根级 desired 为空则不动
+            return StringUtils.hasText(desiredIntro);
+        }
+        String t = intro.trim();
+        if (StringUtils.hasText(desiredIntro) && t.equals(desiredIntro.trim())) {
+            return false;
+        }
+        if (LEGACY_INTROS.contains(t)) {
+            return true;
+        }
+        // 误用了其他工程的默认介绍
+        if (StringUtils.hasText(clientId)) {
+            for (Map.Entry<String, AppConfigVO.ClientAppProfile> entry :
+                    AppConfigVO.AppInfo.defaultClientProfiles().entrySet()) {
+                if (entry.getKey().equals(clientId)) {
+                    continue;
+                }
+                String other = entry.getValue() != null ? entry.getValue().getIntro() : null;
+                if (StringUtils.hasText(other) && t.equals(other.trim())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static final Set<String> LEGACY_INTROS =
+            Set.of(
+                    // 旧共享根级（未写 JavaScript）
+                    "面向中后台的 Vue3 + 微服务管理脚手架：JWT 登录、RBAC 动态路由、page-ui 驱动 CRUD、多布局与主题、通知推送与系统监控一站集成，对接 xn-admin-cloud 网关即可开箱使用。",
+                    // 上一版 vue3-js / vue2-js 默认
+                    "与 xn-admin-vue3-ts 功能、界面完全对齐的 Vue3 + JavaScript 版本，采用 Composition API / <script setup>。适合熟悉组合式 API、希望少写类型注解的团队，同样对接 xn-admin-cloud。",
+                    "与 xn-admin-vue3-ts 功能、界面完全对齐的 JavaScript 版本，采用 Composition API / <script setup>。适合熟悉组合式 API、希望少写类型注解的团队，同样对接 xn-admin-cloud。",
+                    "面向中后台的 Vue2 + JavaScript 管理脚手架：对接同一套 xn-admin-cloud 微服务后端，适合 Vue2 技术栈团队或渐进迁移场景。",
+                    "与 xn-admin-vue3-ts 功能、界面完全对齐的 JavaScript 版本，采用经典 Options API（data / methods / computed / watch）。适合从 Vue 2 迁移或更习惯选项式写法的团队，同样对接 xn-admin-cloud。");
+
+    /** 无权限校验的内部落库（用于补齐默认 clients） */
+    @Transactional
+    protected void persistInternal(AppConfigVO vo) {
+        try {
+            SysAppConfig entity =
+                    repository
+                            .findById(SINGLETON_ID)
+                            .orElseGet(
+                                    () -> {
+                                        SysAppConfig created = new SysAppConfig();
+                                        created.setId(SINGLETON_ID);
+                                        return created;
+                                    });
+            entity.setConfigJson(objectMapper.writeValueAsString(vo));
+            repository.save(entity);
+            appCacheService.evictAppConfig();
+        } catch (Exception e) {
+            throw new BusinessException("写入默认前端应用信息失败");
+        }
+    }
+
+    /** 按前端 clientId 投影品牌文案；不修改缓存中的原始配置。 */
+    private AppConfigVO projectForClient(AppConfigVO raw, String clientId) {
+        if (raw == null) {
+            return new AppConfigVO();
+        }
+        AppConfigVO copy;
+        try {
+            copy = objectMapper.readValue(objectMapper.writeValueAsString(raw), AppConfigVO.class);
+        } catch (Exception e) {
+            return normalize(raw);
+        }
+        normalize(copy);
+        if (!StringUtils.hasText(clientId) || copy.getApp().getClients().isEmpty()) {
+            return copy;
+        }
+        AppConfigVO.ClientAppProfile profile = copy.getApp().getClients().get(clientId.trim());
+        if (profile != null) {
+            if (StringUtils.hasText(profile.getName())) {
+                copy.getApp().setName(profile.getName());
+            }
+            if (profile.getIntro() != null) {
+                copy.getApp().setIntro(profile.getIntro());
+            }
+        }
+        return copy;
     }
 
     /** 供业务读取脱敏策略（走缓存公开配置） */
@@ -176,6 +355,20 @@ public class AppConfigService {
     private void validate(AppConfigVO vo) {
         if (vo.getApp() == null || !StringUtils.hasText(vo.getApp().getName())) {
             throw new BusinessException("项目名称不能为空");
+        }
+        if (vo.getApp().getClients() != null) {
+            for (Map.Entry<String, AppConfigVO.ClientAppProfile> entry :
+                    vo.getApp().getClients().entrySet()) {
+                String clientId = entry.getKey();
+                if (!StringUtils.hasText(clientId)
+                        || !clientId.trim().matches("^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$")) {
+                    throw new BusinessException("无效的前端 clientId: " + clientId);
+                }
+                AppConfigVO.ClientAppProfile profile = entry.getValue();
+                if (profile != null && !StringUtils.hasText(profile.getName())) {
+                    throw new BusinessException("前端「" + clientId.trim() + "」的项目名称不能为空");
+                }
+            }
         }
         if (vo.getUi() != null && vo.getUi().getLayout() != null) {
             String mode = vo.getUi().getLayout().getMode();

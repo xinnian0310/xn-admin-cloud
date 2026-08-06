@@ -24,10 +24,15 @@ public class AppConfigController {
 
     private final AppConfigService appConfigService;
 
-    /** 公开配置（登录页品牌等，无需鉴权） */
+    /**
+     * 公开配置（登录页品牌等，无需鉴权）。
+     *
+     * @param client 前端工程 clientId；传入时用 {@code app.clients[client]} 覆盖 name / intro
+     */
     @GetMapping("/public")
-    public ApiResponse<AppConfigVO> publicConfig() {
-        return ApiResponse.success(appConfigService.getPublic());
+    public ApiResponse<AppConfigVO> publicConfig(
+            @RequestParam(value = "client", required = false) String client) {
+        return ApiResponse.success(appConfigService.getPublic(client));
     }
 
     @GetMapping

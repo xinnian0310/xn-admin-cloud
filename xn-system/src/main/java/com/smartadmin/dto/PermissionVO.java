@@ -19,6 +19,7 @@ public class PermissionVO {
     private String method;
     private String action;
     private String icon;
+    private String iconAntd;
     private String buttonColor;
     private Integer sort;
     private Boolean builtIn;
@@ -35,6 +36,7 @@ public class PermissionVO {
         vo.setMethod(permission.getMethod());
         vo.setAction(permission.getAction());
         vo.setIcon(permission.getIcon());
+        vo.setIconAntd(permission.getIconAntd());
         vo.setButtonColor(permission.getButtonColor());
         vo.setSort(permission.getSort());
         vo.setBuiltIn(permission.getBuiltIn());

@@ -30,6 +30,10 @@ public class SysRoute {
     @Column(length = 50)
     private String icon;
 
+    /** React / Ant Design 前端图标（Iconify 或 antd: 前缀）；Vue 端继续用 icon */
+    @Column(name = "icon_antd", length = 80)
+    private String iconAntd;
+
     @Column(length = 100)
     private String permission;
 

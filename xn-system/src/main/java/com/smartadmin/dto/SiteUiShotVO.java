@@ -13,8 +13,8 @@ public class SiteUiShotVO {
     /** 前端项目标识，如 vue */
     private String project = "vue";
 
-    /** 静态图相对目录（官网 public 下） */
-    private String imageBase = "/docs/images";
+    /** 静态图相对目录（官网 public 下，按前端项目分子目录） */
+    private String imageBase = "/docs/images/xn-admin-vue3-ts";
 
     private List<ShotItem> shots = new ArrayList<>();
 

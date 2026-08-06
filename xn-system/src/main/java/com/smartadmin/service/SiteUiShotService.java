@@ -27,8 +27,12 @@ public class SiteUiShotService {
 
     private static final String PROJECT_VUE = "vue";
 
-    /** 路由 path → 截图文件名（与 xn-admin-vue3-ts/docs/images、xn-home/public/docs/images 对齐） */
+    /** 路由 path → 截图文件名（与 xn-home/public/docs/images/xn-admin-vue3-ts 对齐） */
     private static final Map<String, String> PATH_IMAGE_MAP = buildPathImageMap();
+
+    /** 各前端项目截图目录：xn-home/public/docs/images/{projectDir} */
+    private static final Map<String, String> PROJECT_IMAGE_BASE =
+            Map.of(PROJECT_VUE, "/docs/images/xn-admin-vue3-ts");
 
     private final SysRouteRepository routeRepository;
     private final AppCacheService appCacheService;
@@ -42,7 +46,7 @@ public class SiteUiShotService {
     private SiteUiShotVO build(String project) {
         SiteUiShotVO vo = new SiteUiShotVO();
         vo.setProject(project);
-        vo.setImageBase("/docs/images");
+        vo.setImageBase(PROJECT_IMAGE_BASE.getOrDefault(project, "/docs/images/" + project));
         if (!PROJECT_VUE.equals(project)) {
             return vo;
         }

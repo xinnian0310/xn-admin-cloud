@@ -57,6 +57,15 @@ spring:
               uri: lb://xn-system
               predicates:
                 - Path=/ws/**
+            # 接口文档页 iframe / 代理依赖（springdoc）
+            - id: xn-system-swagger-ui
+              uri: lb://xn-system
+              predicates:
+                - Path=/swagger-ui/**,/swagger-ui.html
+            - id: xn-system-openapi
+              uri: lb://xn-system
+              predicates:
+                - Path=/v3/api-docs,/v3/api-docs/**
 
 management:
   endpoints:

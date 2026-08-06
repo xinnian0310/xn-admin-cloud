@@ -238,6 +238,7 @@ public class RouteService {
             route.setViewPath(null);
         }
         route.setIcon(request.getIcon());
+        route.setIconAntd(request.getIconAntd());
         // permission 由系统自动生成，忽略前端传入
         route.setType(request.getType());
         route.setSort(request.getSort() != null ? request.getSort() : 0);
