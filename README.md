@@ -6,6 +6,8 @@
 
 版本：`1.0.0` · 许可证：[Apache-2.0](./LICENSE) · Copyright 2026 心念
 
+> 本仓库独立开源。配套管理端 / 官网为**其它独立仓库**（见下方「相关仓库」），不随本仓库一并发布。
+
 ## 服务一览
 
 | 服务 | 端口 | 职责 |
@@ -16,9 +18,19 @@
 | **xn-log** | 8083 | 登录 / 操作 / 异常 / 任务日志 |
 | **xn-job** | 8084 | Quartz 定时任务 |
 
-中间件：MySQL、Redis、MinIO、Nacos（库名 `smartadmin`）。
+中间件：MySQL、Redis、MinIO、Nacos（默认库名 `smartadmin`，可按配置修改）。
 
-配套前端：与本仓库同级的 [`xn-admin-vue3-ts`](../xn-admin-vue3-ts/)（开发代理指向网关 `8088`）。
+## 相关仓库
+
+| 仓库 | 说明 |
+|------|------|
+| `xn-admin-vue3-ts` | 基准管理端（Vue 3 + TypeScript + Element Plus） |
+| `xn-admin-vue3-js` | Vue 3 + JavaScript（Composition） |
+| `xn-admin-vue2-js` | Vue 3 + JavaScript（Options API） |
+| `xn-admin-react-ts` | React 19 + TypeScript + Ant Design |
+| `xn-home` | 官网 |
+
+各前端开发代理默认指向本仓库网关 `http://127.0.0.1:8088`。
 
 ## 网关路由
 
@@ -29,9 +41,9 @@
 | `/api/jobs/**` | `xn-job` |
 | `/api/**`、`/uploads/**`、`/ws/**` | `xn-system` |
 
-- 注册中心：`127.0.0.1:8849`（与上层目录 `tool/nacos3` 一致），默认账号 `nacos/nacos`
-- 前端开发代理指向网关 `8088`；常用前端端口：react-ts `1800`、vue2-js `1801`、vue3-js `1802`、vue3-ts `1803`、xn-home `8888`
+- 注册中心默认：`127.0.0.1:8849`，账号以 Nacos 配置为准（示例环境常见 `nacos/nacos`，生产务必修改）
 - 健康检查：http://127.0.0.1:8088/actuator/health
+- 常用前端开发端口（其它仓库）：react-ts `1800`、vue2-js `1801`、vue3-js `1802`、vue3-ts `1803`、xn-home `8888`
 
 ## 默认账号
 
@@ -42,7 +54,7 @@
 | `SuperAdmin` | `SuperAdmin` | 超级管理员 |
 | `admin` | `admin` | 管理员 |
 
-请尽快修改密码。生产环境务必使用 `prod`（或 `prod,cloud`）profile，且勿使用示例密钥。
+**仅用于本地开发。** 登录后请尽快修改密码。生产环境务必使用 `prod`（或 `prod,cloud`）profile，且勿使用示例密钥。详见 [SECURITY.md](./SECURITY.md)。
 
 ## Profile 说明
 
@@ -57,7 +69,11 @@
 
 ## 快速启动
 
-前提：MySQL / Redis / Nacos 已就绪（若仓库位于上层 monorepo，可用上层 `启动-tool.bat`）。
+### 前提
+
+1. **JDK 21**、Maven 3.9+（本仓库自带 `mvnw`，可不装全局 Maven）
+2. **MySQL**、**Redis**、**Nacos**、**MinIO** 已就绪，且库 / 桶 / 账号与配置一致  
+   （可用 Docker Compose 或本机安装；端口与账号以各服务 `application-*.yml` / `env.example` 为准）
 
 ### Maven（推荐，可复现）
 
@@ -71,6 +87,8 @@ mvnw -pl xn-log spring-boot:run
 mvnw -pl xn-job spring-boot:run
 mvnw -pl xn-gateway spring-boot:run
 ```
+
+Linux / macOS 将 `set` 换为 `export`，并用 `./mvnw`。
 
 各模块目录内也有独立 `mvnw`，可在模块目录执行 `mvnw spring-boot:run`。
 
@@ -89,7 +107,6 @@ mvnw -pl xn-gateway spring-boot:run
 
 - 各服务有 `env.example`，可复制为环境变量（**生产勿使用示例密钥**）
 - 关键变量示例：`JWT_SECRET`、`DB_USERNAME`、`DB_PASSWORD`、`CORS_ALLOWED_ORIGINS`、`MINIO_*`
-- 中间件启停：上层 `启动-tool.bat` / `停止-tool.bat`；前端：`启动-前端.bat` / `停止-前端.bat`
 
 生产启动示例：
 
@@ -150,9 +167,20 @@ docker build -f xn-job/Dockerfile .
 
 镜像运行时请设置 `SPRING_PROFILES_ACTIVE=prod,cloud` 及数据库 / JWT / MinIO 等环境变量。
 
+## 生产部署（摘要）
+
+- Profile：`prod,cloud`（不要带 `dev`）
+- 经 Nginx / 网关对外提供 HTTPS；数据库与中间件仅内网可达
+- 镜像构建见上文 Docker；运行时注入数据库 / JWT / MinIO / Nacos 等环境变量
+- 完整安全要求见 [SECURITY.md](./SECURITY.md)
+
 ## 现状与演进
 
 - 当前为「共享代码 + 按控制器拆进程」：降低拆分风险，业务服务裁剪各自 Controller。  
 - 鉴权在各业务服务内完成（JWT）；网关负责路由与发现，不作统一鉴权过滤器。  
 - 后续可再抽 `xn-common`、Feign/MQ、按服务拆库。  
 - 新业务：新增 module（如 `xn-order`），并在 gateway 增加路由即可。
+
+## 许可证
+
+[Apache License 2.0](./LICENSE)

@@ -2,7 +2,7 @@
 
 微服务核心业务服务（端口 **8081**）：登录鉴权、RBAC、组织、字典、配置、公告、站内信、监控等。经网关 [`xn-gateway`](../xn-gateway/)（8088）对外提供 `/api/**`（除 files / logs / jobs）。
 
-属于 [`xn-admin-cloud`](../README.md)，对接前端 [`xn-admin-vue3-ts`](../../xn-admin-vue3-ts/)。
+属于本仓库 [`xn-admin-cloud`](../README.md)；配套前端为独立仓库 **xn-admin-vue3-ts** 等。
 
 ## 技术栈
 
@@ -17,7 +17,7 @@
 
 ## 快速启动
 
-要求：JDK 21、MySQL（库 `smartadmin`）、Nacos / Redis（见仓库 `启动-tool.bat`）。建议按 [`env.example`](./env.example) 配置。
+要求：JDK 21、MySQL（库 `smartadmin`）、Nacos / Redis / MinIO 已就绪。建议按 [`env.example`](./env.example) 与仓库根 README 配置。
 
 ```bash
 # Windows（推荐 IDEA Start All Cloud）
@@ -82,4 +82,4 @@ set SPRING_PROFILES_ACTIVE=dev,cloud
 
 统一响应：`{ code, message, data }`（`code === 200` 表示成功）。
 
-更完整说明见 [xn-admin-cloud README](../README.md) 与 [根 README](../../README.md)。
+更完整说明见 [xn-admin-cloud README](../README.md)。
