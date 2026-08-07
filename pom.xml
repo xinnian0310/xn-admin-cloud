@@ -90,6 +90,8 @@
   </dependencyManagement>
 
   <build>
+    <!-- 产物为 xn-system.jar 等，不含版本号，便于服务器同名替换 -->
+    <finalName>${project.artifactId}</finalName>
     <pluginManagement>
       <plugins>
         <plugin>
