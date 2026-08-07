@@ -18,7 +18,7 @@
 | **xn-log** | 8083 | 登录 / 操作 / 异常 / 任务日志 |
 | **xn-job** | 8084 | Quartz 定时任务 |
 
-中间件：MySQL、Redis、MinIO、Nacos（默认库名 `smartadmin`，可按配置修改）。
+中间件：MySQL、Redis、MinIO、Nacos（默认库名 `xn_admin`，可按配置修改）。
 
 ## 相关仓库
 

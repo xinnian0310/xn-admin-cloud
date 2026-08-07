@@ -17,7 +17,7 @@
 
 ## 快速启动
 
-要求：JDK 21、MySQL（库 `smartadmin`）、Nacos / Redis / MinIO 已就绪。建议按 [`env.example`](./env.example) 与仓库根 README 配置。
+要求：JDK 21、MySQL（库 `xn_admin`）、Nacos / Redis / MinIO 已就绪。建议按 [`env.example`](./env.example) 与仓库根 README 配置。
 
 ```bash
 # Windows（推荐 IDEA Start All Cloud）
@@ -33,7 +33,7 @@ set SPRING_PROFILES_ACTIVE=dev,cloud
 | 配置项 | 说明 |
 |--------|------|
 | `server.port` | 默认 `8081`（可用 `SERVER_PORT` 覆盖） |
-| `spring.datasource.*` | MySQL（库名 `smartadmin`） |
+| `spring.datasource.*` | MySQL（库名 `xn_admin`） |
 | `app.jwt.secret` / `expiration` | JWT 密钥与有效期 |
 | `app.api-guard.enforce` | 生产建议 `true` |
 | `app.redis.*` | Redis |
