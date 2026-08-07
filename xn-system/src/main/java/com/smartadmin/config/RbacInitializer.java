@@ -446,15 +446,15 @@ public class RbacInitializer implements CommandLineRunner {
         upsertButton("operlog:delete", "删除", menu, 1);
         upsertButton("operlog:clean", "清空", menu, 2);
         upsertButton("operlog:export", "导出", menu, 3);
-        upsertTableButton("operlog:table-delete", "删除", menu, 1);
-        upsertTableButton("operlog:table-view", "详情", menu, 2);
+        upsertTableButton("operlog:table-view", "详情", menu, 1);
+        upsertTableButton("operlog:table-delete", "删除", menu, 2);
         for (String code :
                 List.of(
                         "operlog:delete",
                         "operlog:clean",
                         "operlog:export",
-                        "operlog:table-delete",
-                        "operlog:table-view")) {
+                        "operlog:table-view",
+                        "operlog:table-delete")) {
             permissionRepository.findByCode(code).ifPresent(this::grantToPrivilegedRoles);
         }
         upsertApi("api:GET:/api/logs/oper", "操作日志列表接口", "GET", "/api/logs/oper", menu, 1);
@@ -570,13 +570,17 @@ public class RbacInitializer implements CommandLineRunner {
         Permission sql =
                 ensureMenuPermission("menu:monitor:sql", "SQL监控", "/monitor/sql", monitor, 4);
 
-        // 删改查 + 表格操作
-        ensureViewUpdateDeleteButtons(redis, "redis");
-        ensureViewUpdateDeleteButtons(sql, "sql");
+        // 查看 + 删除（无独立编辑能力；编辑曾与查看同行为）
+        ensureViewDeleteButtons(redis, "redis");
+        ensureViewDeleteButtons(sql, "sql");
         removeObsoletePermission("redis:refresh");
         removeObsoletePermission("redis:flush");
+        removeObsoletePermission("redis:update");
+        removeObsoletePermission("redis:table-edit");
         removeObsoletePermission("sql:refresh");
         removeObsoletePermission("sql:clean");
+        removeObsoletePermission("sql:update");
+        removeObsoletePermission("sql:table-edit");
 
         upsertApi("api:GET:/api/monitor/redis", "Redis监控数据", "GET", "/api/monitor/redis", redis, 1);
         upsertApi(
@@ -723,15 +727,15 @@ public class RbacInitializer implements CommandLineRunner {
         upsertButton("exlog:delete", "删除", menu, 1);
         upsertButton("exlog:clean", "清空", menu, 2);
         upsertButton("exlog:export", "导出", menu, 3);
-        upsertTableButton("exlog:table-delete", "删除", menu, 1);
-        upsertTableButton("exlog:table-view", "详情", menu, 2);
+        upsertTableButton("exlog:table-view", "详情", menu, 1);
+        upsertTableButton("exlog:table-delete", "删除", menu, 2);
         for (String code :
                 List.of(
                         "exlog:delete",
                         "exlog:clean",
                         "exlog:export",
-                        "exlog:table-delete",
-                        "exlog:table-view")) {
+                        "exlog:table-view",
+                        "exlog:table-delete")) {
             permissionRepository.findByCode(code).ifPresent(this::grantToPrivilegedRoles);
         }
         upsertApi("api:GET:/api/logs/exception", "异常日志列表", "GET", "/api/logs/exception", menu, 1);
@@ -951,10 +955,9 @@ public class RbacInitializer implements CommandLineRunner {
                         .findByCode("menu:system:tools")
                         .or(() -> permissionRepository.findByCode("menu:system"))
                         .orElse(null);
-        Permission menu =
-                ensureMenuPermission("menu:system:api-docs", "接口文档", "/system/api-docs", tools, 4);
-        upsertButton("api-docs:view", "查看", menu, 1);
-        permissionRepository.findByCode("api-docs:view").ifPresent(this::grantToPrivilegedRoles);
+        ensureMenuPermission("menu:system:api-docs", "接口文档", "/system/api-docs", tools, 4);
+        // 页面无工具栏按钮，仅保留菜单入口
+        removeObsoletePermission("api-docs:view");
     }
 
     /** 表驱动代码生成 */
@@ -1700,9 +1703,23 @@ public class RbacInitializer implements CommandLineRunner {
         ensurePermissionContentButtons(menu);
     }
 
-    /** 「权限内容」页：工具栏四件套 + 表格编辑/删除（独立权限码） */
+    /** 「权限内容」页：工具栏仅新增；表格查看/编辑/删除（前端不会渲染工具栏编辑/查看/删除） */
     private void ensurePermissionContentButtons(Permission menu) {
-        ensureDualCrudButtons(menu, "permission-content", false, false);
+        upsertButton("permission-content:create", "新增", menu, 1);
+        upsertTableButton("permission-content:table-view", "查看", menu, 1);
+        upsertTableButton("permission-content:table-edit", "编辑", menu, 2);
+        upsertTableButton("permission-content:table-delete", "删除", menu, 3);
+        for (String code :
+                List.of(
+                        "permission-content:create",
+                        "permission-content:table-view",
+                        "permission-content:table-edit",
+                        "permission-content:table-delete")) {
+            permissionRepository.findByCode(code).ifPresent(this::grantToPrivilegedRoles);
+        }
+        removeObsoletePermission("permission-content:update");
+        removeObsoletePermission("permission-content:view");
+        removeObsoletePermission("permission-content:delete");
     }
 
     /** 标准双组件按钮： - BUTTON（工具栏 xnButton）：新增、编辑、查看、删除 - TABLE_BUTTON（表格纯文本）：查看、编辑、删除；可选 分配权限 / 添加子级 */
@@ -1744,21 +1761,17 @@ public class RbacInitializer implements CommandLineRunner {
         }
     }
 
-    /** 删改查（无新增）+ 表格查看/编辑/删除，用于监控类页面 */
-    private void ensureViewUpdateDeleteButtons(Permission menu, String prefix) {
+    /** 查看 + 删除（无编辑）+ 表格查看/删除，用于 Redis/SQL 等只读详情监控页 */
+    private void ensureViewDeleteButtons(Permission menu, String prefix) {
         upsertButton(prefix + ":view", "查看", menu, 1);
-        upsertButton(prefix + ":update", "编辑", menu, 2);
-        upsertButton(prefix + ":delete", "删除", menu, 3);
+        upsertButton(prefix + ":delete", "删除", menu, 2);
         upsertTableButton(prefix + ":table-view", "查看", menu, 1);
-        upsertTableButton(prefix + ":table-edit", "编辑", menu, 2);
-        upsertTableButton(prefix + ":table-delete", "删除", menu, 3);
+        upsertTableButton(prefix + ":table-delete", "删除", menu, 2);
         for (String code :
                 List.of(
                         prefix + ":view",
-                        prefix + ":update",
                         prefix + ":delete",
                         prefix + ":table-view",
-                        prefix + ":table-edit",
                         prefix + ":table-delete")) {
             permissionRepository.findByCode(code).ifPresent(this::grantToPrivilegedRoles);
         }
@@ -1892,7 +1905,10 @@ public class RbacInitializer implements CommandLineRunner {
         saveTableButton(map, "role:assign", "分配权限", menuRole, 4);
 
         // 角色权限页主要用于分配；权限维护在「权限内容」
-        saveCrudButtons(map, "permission-content", menuPermContent);
+        saveButton(map, "permission-content:create", "新增", menuPermContent, 1);
+        saveTableButton(map, "permission-content:table-view", "查看", menuPermContent, 1);
+        saveTableButton(map, "permission-content:table-edit", "编辑", menuPermContent, 2);
+        saveTableButton(map, "permission-content:table-delete", "删除", menuPermContent, 3);
         saveApi(
                 map,
                 "api:GET:/api/permissions/tree",

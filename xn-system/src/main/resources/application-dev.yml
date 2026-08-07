@@ -12,6 +12,9 @@ spring:
 app:
   jwt:
     secret: XnAdminSecretKeyForJwtTokenGeneration2026MustBeLongEnough
+  # spring-boot:run 时 user.dir 为模块目录，默认指到仓库 cloud/uploads
+  upload:
+    dir: ${UPLOAD_DIR:../uploads}
   minio:
     access-key: minioadmin
     secret-key: minioadmin
