@@ -19,6 +19,10 @@ public class RouteRequest {
     @Size(max = 200)
     private String viewPath;
 
+    /** 外链地址（LINK 类型） */
+    @Size(max = 500)
+    private String linkUrl;
+
     @Size(max = 50)
     private String icon;
 

@@ -433,21 +433,32 @@ public class PageUiInitializer implements CommandLineRunner {
 
     /** 路由管理页：搜索区 + 默认按钮（新增/编辑/查看/删除） */
     private void ensureRoutesConfig() {
-        if (pageUiConfigRepository.findByRoutePath("/system/routes").isPresent()) {
+        String searchConfig =
+                """
+                [
+                  {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索标题/路径"},
+                  {"label":"类型","prop":"type","type":"select","placeholder":"请选择类型","options":[{"label":"目录","value":"DIR"},{"label":"菜单","value":"MENU"},{"label":"外部链接","value":"LINK"}]},
+                  {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"启用","value":1},{"label":"禁用","value":0}]},
+                  {"label":"内置","prop":"builtIn","type":"select","placeholder":"请选择","options":[{"label":"是","value":true},{"label":"否","value":false}]}
+                ]
+                """;
+        var existing = pageUiConfigRepository.findByRoutePath("/system/routes");
+        if (existing.isPresent()) {
+            SysPageUiConfig config = existing.get();
+            String current = config.getSearchConfig();
+            if (current == null
+                    || !current.contains("\"LINK\"")
+                    || current.contains("\"外链\"")
+                    || !current.contains("\"外部链接\"")) {
+                config.setSearchConfig(searchConfig);
+                pageUiConfigRepository.save(config);
+            }
             return;
         }
         SysPageUiConfig config = new SysPageUiConfig();
         config.setRoutePath("/system/routes");
         config.setBuiltIn(true);
-        config.setSearchConfig(
-                """
-                [
-                  {"label":"综合查询","prop":"FuzzyWord","type":"input","placeholder":"搜索标题/路径"},
-                  {"label":"类型","prop":"type","type":"select","placeholder":"请选择类型","options":[{"label":"目录","value":"DIR"},{"label":"菜单","value":"MENU"}]},
-                  {"label":"状态","prop":"status","type":"select","placeholder":"请选择状态","options":[{"label":"启用","value":1},{"label":"禁用","value":0}]},
-                  {"label":"内置","prop":"builtIn","type":"select","placeholder":"请选择","options":[{"label":"是","value":true},{"label":"否","value":false}]}
-                ]
-                """);
+        config.setSearchConfig(searchConfig);
         pageUiConfigRepository.save(config);
     }
 

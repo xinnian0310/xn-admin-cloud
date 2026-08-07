@@ -79,7 +79,8 @@ public class RouteService {
                                     nullToEmpty(node.getTitle()),
                                     nullToEmpty(node.getPath()),
                                     nullToEmpty(node.getPermission()),
-                                    nullToEmpty(node.getViewPath()))
+                                    nullToEmpty(node.getViewPath()),
+                                    nullToEmpty(node.getLinkUrl()))
                             .toLowerCase();
             if (!haystack.contains(kw)) {
                 return false;
@@ -216,14 +217,66 @@ public class RouteService {
                 throw new BusinessException("菜单路由必须填写访问路径");
             }
             request.setPath(normalizePath(request.getPath()));
-            routeRepository
-                    .findByPath(request.getPath())
-                    .ifPresent(
-                            existing -> {
-                                if (excludeId == null || !existing.getId().equals(excludeId)) {
-                                    throw new BusinessException("访问路径已存在: " + request.getPath());
-                                }
-                            });
+            ensurePathUnique(request.getPath(), excludeId);
+        }
+        if (request.getType() == RouteType.LINK) {
+            if (!StringUtils.hasText(request.getLinkUrl())) {
+                throw new BusinessException("外部链接路由必须填写外部链接");
+            }
+            request.setLinkUrl(normalizeLinkUrl(request.getLinkUrl()));
+            // 访问路径由表单隐藏或后端自动生成，不要求用户填写
+            if (StringUtils.hasText(request.getPath())) {
+                request.setPath(normalizePath(request.getPath()));
+            } else {
+                request.setPath(allocateLinkPath(request.getLinkUrl(), excludeId));
+            }
+            ensurePathUnique(request.getPath(), excludeId);
+        }
+    }
+
+    private void ensurePathUnique(String path, Long excludeId) {
+        routeRepository
+                .findByPath(path)
+                .ifPresent(
+                        existing -> {
+                            if (excludeId == null || !existing.getId().equals(excludeId)) {
+                                throw new BusinessException("访问路径已存在: " + path);
+                            }
+                        });
+    }
+
+    /** 由外部链接生成唯一访问路径，如 /link/www-baidu-com */
+    private String allocateLinkPath(String linkUrl, Long excludeId) {
+        String base = linkUrlToPathBase(linkUrl);
+        String candidate = base;
+        int suffix = 2;
+        while (true) {
+            var existing = routeRepository.findByPath(candidate);
+            if (existing.isEmpty()
+                    || (excludeId != null && existing.get().getId().equals(excludeId))) {
+                return candidate;
+            }
+            candidate = base + "-" + suffix++;
+        }
+    }
+
+    private static String linkUrlToPathBase(String linkUrl) {
+        String normalized = normalizeLinkUrl(linkUrl);
+        try {
+            java.net.URI uri = java.net.URI.create(normalized);
+            String host = uri.getHost();
+            String slug =
+                    StringUtils.hasText(host)
+                            ? host.toLowerCase(Locale.ROOT)
+                                    .replaceAll("[^a-z0-9]+", "-")
+                                    .replaceAll("(^-|-$)", "")
+                            : "";
+            if (!StringUtils.hasText(slug)) {
+                slug = Integer.toUnsignedString(normalized.hashCode(), 36);
+            }
+            return "/link/" + slug;
+        } catch (IllegalArgumentException ex) {
+            return "/link/" + Integer.toUnsignedString(normalized.hashCode(), 36);
         }
     }
 
@@ -233,9 +286,16 @@ public class RouteService {
             String path = normalizePath(request.getPath());
             route.setPath(path);
             route.setViewPath(pathToViewPath(path));
+            route.setLinkUrl(null);
+        } else if (request.getType() == RouteType.LINK) {
+            String path = normalizePath(request.getPath());
+            route.setPath(path);
+            route.setViewPath(null);
+            route.setLinkUrl(normalizeLinkUrl(request.getLinkUrl()));
         } else {
             route.setPath(null);
             route.setViewPath(null);
+            route.setLinkUrl(null);
         }
         route.setIcon(request.getIcon());
         route.setIconAntd(request.getIconAntd());
@@ -245,8 +305,15 @@ public class RouteService {
         route.setStatus(request.getStatus() != null ? request.getStatus() : 1);
         route.setHidden(request.getHidden() != null ? request.getHidden() : false);
         route.setAffix(request.getAffix() != null ? request.getAffix() : false);
-        route.setPermissionControl(
-                request.getPermissionControl() != null ? request.getPermissionControl() : false);
+        // 外部链接不启用菜单权限控制，登录用户均可访问
+        if (request.getType() == RouteType.LINK) {
+            route.setPermissionControl(false);
+        } else {
+            route.setPermissionControl(
+                    request.getPermissionControl() != null
+                            ? request.getPermissionControl()
+                            : false);
+        }
         if (request.getParentId() != null) {
             route.setParent(findRoute(request.getParentId()));
         } else {
@@ -266,9 +333,24 @@ public class RouteService {
         return cleaned.startsWith("/") ? cleaned : "/" + cleaned;
     }
 
-    /** 菜单：按访问路径生成；目录：按父级权限 + 自身 id 生成。 已有标识在路径未变时保留，避免破坏已分配的内置权限。 */
+    /** 补全协议，统一外链格式 */
+    private static String normalizeLinkUrl(String linkUrl) {
+        if (!StringUtils.hasText(linkUrl)) {
+            return linkUrl;
+        }
+        String cleaned = linkUrl.trim();
+        if (cleaned.startsWith("//")) {
+            return "https:" + cleaned;
+        }
+        if (!cleaned.matches("(?i)^[a-z][a-z0-9+.-]*:.*")) {
+            return "https://" + cleaned;
+        }
+        return cleaned;
+    }
+
+    /** 菜单/外链：按访问路径生成；目录：按父级权限 + 自身 id 生成。 已有标识在路径未变时保留，避免破坏已分配的内置权限。 */
     private void ensurePermissionCode(SysRoute route, String oldPath, boolean isNew) {
-        if (route.getType() == RouteType.MENU) {
+        if (route.getType() == RouteType.MENU || route.getType() == RouteType.LINK) {
             String generated = pathToPermissionCode(route.getPath());
             boolean pathChanged = isNew || oldPath == null || !oldPath.equals(route.getPath());
             String expectedOld = pathToPermissionCode(oldPath);

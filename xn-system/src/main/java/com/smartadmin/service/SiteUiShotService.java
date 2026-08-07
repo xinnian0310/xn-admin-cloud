@@ -26,13 +26,16 @@ import org.springframework.util.StringUtils;
 public class SiteUiShotService {
 
     private static final String PROJECT_VUE = "vue";
+    private static final String PROJECT_REACT = "react";
 
-    /** 路由 path → 截图文件名（与 xn-home/public/docs/images/xn-admin-vue3-ts 对齐） */
+    /** 路由 path → 截图文件名（与 xn-home/public/docs/images/* 对齐） */
     private static final Map<String, String> PATH_IMAGE_MAP = buildPathImageMap();
 
     /** 各前端项目截图目录：xn-home/public/docs/images/{projectDir} */
     private static final Map<String, String> PROJECT_IMAGE_BASE =
-            Map.of(PROJECT_VUE, "/docs/images/xn-admin-vue3-ts");
+            Map.of(
+                    PROJECT_VUE, "/docs/images/xn-admin-vue3-ts",
+                    PROJECT_REACT, "/docs/images/xn-admin-react-ts");
 
     private final SysRouteRepository routeRepository;
     private final AppCacheService appCacheService;
@@ -47,7 +50,7 @@ public class SiteUiShotService {
         SiteUiShotVO vo = new SiteUiShotVO();
         vo.setProject(project);
         vo.setImageBase(PROJECT_IMAGE_BASE.getOrDefault(project, "/docs/images/" + project));
-        if (!PROJECT_VUE.equals(project)) {
+        if (!PROJECT_VUE.equals(project) && !PROJECT_REACT.equals(project)) {
             return vo;
         }
 
@@ -172,6 +175,9 @@ public class SiteUiShotService {
         map.put("/system/security", "security.png");
         map.put("/system/files", "files.png");
         map.put("/system/jobs", "jobs.png");
+        map.put("/system/jobs/logs", "jobs-log.png");
+        map.put("/system/recycle", "recycle.png");
+        map.put("/system/codegen", "codegen.png");
         return Map.copyOf(map);
     }
 }

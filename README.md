@@ -181,6 +181,14 @@ docker build -f xn-job/Dockerfile .
 - 后续可再抽 `xn-common`、Feign/MQ、按服务拆库。  
 - 新业务：新增 module（如 `xn-order`），并在 gateway 增加路由即可。
 
+## 支持捐赠
+
+如果这个项目对你有帮助，欢迎请作者喝杯咖啡 ☕
+
+| 微信支付 | 支付宝 |
+| -------- | ------ |
+| ![微信支付](./docs/donation/wechat.jpg) | ![支付宝](./docs/donation/alipay.jpg) |
+
 ## 许可证
 
 [Apache License 2.0](./LICENSE)

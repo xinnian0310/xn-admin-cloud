@@ -14,6 +14,7 @@ public class RouteVO {
     private String title;
     private String path;
     private String viewPath;
+    private String linkUrl;
     private String icon;
     private String iconAntd;
     private String permission;
@@ -33,6 +34,7 @@ public class RouteVO {
         vo.setTitle(route.getTitle());
         vo.setPath(route.getPath());
         vo.setViewPath(route.getViewPath());
+        vo.setLinkUrl(route.getLinkUrl());
         vo.setIcon(route.getIcon());
         vo.setIconAntd(route.getIconAntd());
         vo.setPermission(route.getPermission());

@@ -27,6 +27,10 @@ public class SysRoute {
     @Column(length = 200)
     private String viewPath;
 
+    /** 外链地址（LINK 类型），主内容区 iframe 加载 */
+    @Column(name = "link_url", length = 500)
+    private String linkUrl;
+
     @Column(length = 50)
     private String icon;
 
