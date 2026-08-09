@@ -97,7 +97,12 @@ public class AppConfigVO {
         private LayoutUi layout = new LayoutUi();
         private FontSizeUi fontSize = new FontSizeUi();
         private TagsViewUi tagsView = new TagsViewUi();
+
+        /** Vue 端 Element Plus Config Provider */
         private ElementPlusUi elementPlus = new ElementPlusUi();
+
+        /** React 端 Ant Design ConfigProvider / App */
+        private AntdUi antd = new AntdUi();
     }
 
     @Getter
@@ -158,6 +163,36 @@ public class AppConfigVO {
         private Boolean alignCenter = true;
         private Boolean draggable = true;
         private Boolean overflow = false;
+    }
+
+    /** Ant Design 原生字段名，与 Element Plus 配置并存、互不覆盖。 */
+    @Getter
+    @Setter
+    public static class AntdUi {
+        private String locale = "zh-cn";
+
+        /** large | middle | small */
+        private String componentSize = "middle";
+
+        private String prefixCls = "ant";
+        private ButtonUi button = new ButtonUi();
+        private AntdMessageUi message = new AntdMessageUi();
+        private AntdModalUi modal = new AntdModalUi();
+    }
+
+    @Getter
+    @Setter
+    public static class AntdMessageUi {
+        private Integer maxCount = 3;
+    }
+
+    @Getter
+    @Setter
+    public static class AntdModalUi {
+        private Boolean centered = true;
+
+        /** React XnModal 可拖拽；与 Element Plus dialog.draggable 语义对齐 */
+        private Boolean draggable = true;
     }
 
     @Getter

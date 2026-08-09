@@ -67,6 +67,8 @@ public class RbacInitializer implements CommandLineRunner {
         ensureCodegenPermissions();
         removeLegacyPermissionIfEmpty("menu:system:logs");
         ensureRoleDataScopes();
+        // 游客：全量菜单/按钮展示 + 仅查询接口（含登录态个人接口）
+        ensureGuestPermissions();
         // 启动补齐权限后刷新接口注册表，避免新 API 未登记被守卫拦截
         permissionRepository.flush();
         apiPermissionRegistry.reload();
@@ -81,7 +83,7 @@ public class RbacInitializer implements CommandLineRunner {
         }
     }
 
-    /** 补齐角色数据权限：SUPER_ADMIN=ALL，其余默认 UNIT_AND_CHILDREN */
+    /** 补齐角色数据权限：SUPER_ADMIN/ADMIN=ALL，其余默认 UNIT_AND_CHILDREN */
     private void ensureRoleDataScopes() {
         for (Role role : roleRepository.findAll()) {
             if (role.getDataScope() != null) {
@@ -536,6 +538,14 @@ public class RbacInitializer implements CommandLineRunner {
         }
         removeObsoletePermission("online:refresh");
         removeObsoletePermission("online:table-kick");
+        // 在线用户仅保留「下线」，清理历史 CRUD 残留按钮（四端 page-ui 同源）
+        removeObsoletePermission("online:create");
+        removeObsoletePermission("online:update");
+        removeObsoletePermission("online:view");
+        removeObsoletePermission("online:delete");
+        removeObsoletePermission("online:table-view");
+        removeObsoletePermission("online:table-edit");
+        removeObsoletePermission("online:table-delete");
 
         // 服务监控：刷新 + 基础设施重启（页面硬编码按钮）
         upsertButton("server:refresh", "刷新", server, 1);
@@ -570,15 +580,19 @@ public class RbacInitializer implements CommandLineRunner {
         Permission sql =
                 ensureMenuPermission("menu:monitor:sql", "SQL监控", "/monitor/sql", monitor, 4);
 
-        // 查看 + 删除（无独立编辑能力；编辑曾与查看同行为）
+        // 查看 + 删除 + 清空（无独立编辑；编辑曾与查看同行为）
         ensureViewDeleteButtons(redis, "redis");
+        upsertButton("redis:flush", "清空", redis, 3);
+        permissionRepository.findByCode("redis:flush").ifPresent(this::grantToPrivilegedRoles);
+
         ensureViewDeleteButtons(sql, "sql");
+        upsertButton("sql:clean", "清空", sql, 3);
+        permissionRepository.findByCode("sql:clean").ifPresent(this::grantToPrivilegedRoles);
+
         removeObsoletePermission("redis:refresh");
-        removeObsoletePermission("redis:flush");
         removeObsoletePermission("redis:update");
         removeObsoletePermission("redis:table-edit");
         removeObsoletePermission("sql:refresh");
-        removeObsoletePermission("sql:clean");
         removeObsoletePermission("sql:update");
         removeObsoletePermission("sql:table-edit");
 
@@ -2232,6 +2246,7 @@ public class RbacInitializer implements CommandLineRunner {
         Role superAdmin = createRole("SUPER_ADMIN", "超级管理员", "拥有全部权限，系统兜底角色", true);
         Role admin = createRole("ADMIN", "管理员", "日常管理，含用户/角色/权限", true);
         Role user = createRole("USER", "普通用户", "工作台与只读权限", true);
+        Role guest = createRole("GUEST", "游客", "全量菜单与查询权限；不含新增/修改/删除/清空/导入/导出等写操作", true);
 
         superAdmin.setPermissions(new HashSet<>(permissions.values()));
         admin.setPermissions(new HashSet<>(permissions.values()));
@@ -2254,8 +2269,11 @@ public class RbacInitializer implements CommandLineRunner {
                 });
         user.setPermissions(userPerms);
 
-        roleRepository.saveAll(List.of(superAdmin, admin, user));
-        return Map.of("SUPER_ADMIN", superAdmin, "ADMIN", admin, "USER", user);
+        // 游客权限由 ensureGuestPermissions 在启动末尾统一同步
+        guest.setPermissions(new HashSet<>());
+
+        roleRepository.saveAll(List.of(superAdmin, admin, user, guest));
+        return Map.of("SUPER_ADMIN", superAdmin, "ADMIN", admin, "USER", user, "GUEST", guest);
     }
 
     private Role createRole(String code, String name, String desc, boolean builtIn) {
@@ -2273,7 +2291,7 @@ public class RbacInitializer implements CommandLineRunner {
         return role;
     }
 
-    /** 内置角色展示名：SUPER_ADMIN=超级管理员，ADMIN=管理员 */
+    /** 内置角色展示名：SUPER_ADMIN=超级管理员，ADMIN=管理员，GUEST=游客 */
     private void ensureBuiltinRoles() {
         roleRepository
                 .findByCode("SUPER_ADMIN")
@@ -2309,6 +2327,172 @@ public class RbacInitializer implements CommandLineRunner {
                                 roleRepository.save(role);
                             }
                         });
+        roleRepository
+                .findByCode("GUEST")
+                .ifPresentOrElse(
+                        role -> {
+                            boolean dirty = false;
+                            if (!"游客".equals(role.getName())) {
+                                role.setName("游客");
+                                dirty = true;
+                            }
+                            if (!"全量菜单与查询权限；不含新增/修改/删除/清空/导入/导出等写操作"
+                                    .equals(role.getDescription())) {
+                                role.setDescription("全量菜单与查询权限；不含新增/修改/删除/清空/导入/导出等写操作");
+                                dirty = true;
+                            }
+                            if (!Boolean.TRUE.equals(role.getBuiltIn())) {
+                                role.setBuiltIn(true);
+                                dirty = true;
+                            }
+                            if (role.getStatus() == null || role.getStatus() != 1) {
+                                role.setStatus(1);
+                                dirty = true;
+                            }
+                            // 游客按单位数据范围；演示环境会挂到最高单位，勿升为 ALL
+                            if (role.getDataScope() == DataScope.ALL) {
+                                role.setDataScope(DataScope.UNIT_AND_CHILDREN);
+                                dirty = true;
+                            }
+                            if (dirty) {
+                                roleRepository.save(role);
+                            }
+                        },
+                        () ->
+                                roleRepository.save(
+                                        createRole(
+                                                "GUEST",
+                                                "游客",
+                                                "全量菜单与查询权限；不含新增/修改/删除/清空/导入/导出等写操作",
+                                                true)));
+    }
+
+    /**
+     * 游客角色权限：全部菜单 + 查询类按钮/表格按钮 + GET 查询接口； 排除新增/修改/删除/清空/导入/导出等写操作（含对应按钮与 export 类 GET）；
+     * 另保留登录态个人/收件箱等全站通用非 GET 接口，保证基本可用。
+     */
+    private void ensureGuestPermissions() {
+        Role guest = roleRepository.findByCode("GUEST").orElse(null);
+        if (guest == null) {
+            return;
+        }
+        Role managed = roleRepository.findByIdWithPermissions(guest.getId()).orElse(guest);
+        Set<Permission> desired = new HashSet<>();
+        for (Permission p : permissionRepository.findAll()) {
+            if (isGuestAllowedPermission(p)) {
+                desired.add(p);
+            }
+        }
+        for (String code :
+                List.of(
+                        "api:PUT:/api/table-columns",
+                        "api:PUT:/api/user-ui-config",
+                        "api:DELETE:/api/user-ui-config",
+                        "api:PUT:/api/auth/me",
+                        "api:POST:/api/auth/refresh",
+                        "api:PUT:/api/auth/me/password",
+                        "api:POST:/api/auth/me/avatar",
+                        "api:POST:/api/messages/{id}/read",
+                        "api:DELETE:/api/messages/mine/{id}",
+                        "api:POST:/api/messages/mine/batch-delete",
+                        "api:POST:/api/notices/{id}/read")) {
+            permissionRepository.findByCode(code).ifPresent(desired::add);
+        }
+        Set<Long> currentIds =
+                managed.getPermissions() == null
+                        ? Set.of()
+                        : managed.getPermissions().stream()
+                                .map(Permission::getId)
+                                .collect(java.util.stream.Collectors.toSet());
+        Set<Long> desiredIds =
+                desired.stream()
+                        .map(Permission::getId)
+                        .collect(java.util.stream.Collectors.toSet());
+        if (!currentIds.equals(desiredIds)) {
+            managed.setPermissions(desired);
+            roleRepository.save(managed);
+        }
+    }
+
+    /** 游客可分配：菜单全开；按钮/接口排除写操作与导出类查询。 */
+    private boolean isGuestAllowedPermission(Permission p) {
+        if (p == null || p.getType() == null) {
+            return false;
+        }
+        if (p.getType() == PermissionType.MENU) {
+            return true;
+        }
+        if (p.getType() == PermissionType.BUTTON || p.getType() == PermissionType.TABLE_BUTTON) {
+            return !isGuestExcludedWriteLike(p);
+        }
+        if (p.getType() == PermissionType.API) {
+            if (p.getMethod() == null || !"GET".equalsIgnoreCase(p.getMethod())) {
+                return false;
+            }
+            return !isGuestExcludedWriteLike(p);
+        }
+        return false;
+    }
+
+    /** 判断权限是否属于游客应排除的写操作：新增/修改/删除/清空/导入/导出，以及下线、重启等变更类能力。 */
+    private boolean isGuestExcludedWriteLike(Permission p) {
+        String hay =
+                String.join(
+                                " ",
+                                nullToEmpty(p.getCode()),
+                                nullToEmpty(p.getAction()),
+                                nullToEmpty(p.getName()),
+                                nullToEmpty(p.getPath()),
+                                nullToEmpty(p.getMethod()))
+                        .toLowerCase(Locale.ROOT);
+        for (String key :
+                List.of(
+                        ":create",
+                        ":update",
+                        ":edit",
+                        ":delete",
+                        ":clear",
+                        ":clean",
+                        ":flush",
+                        ":import",
+                        ":export",
+                        ":offline",
+                        ":kick",
+                        ":restart",
+                        ":run",
+                        "table-edit",
+                        "table-delete",
+                        "table-run",
+                        "/export",
+                        "/import",
+                        "/clean",
+                        "/clear",
+                        "/flush",
+                        "/kick",
+                        "/restart",
+                        "新增",
+                        "修改",
+                        "编辑",
+                        "删除",
+                        "清空",
+                        "导入",
+                        "导出",
+                        "下线",
+                        "重启",
+                        "执行一次")) {
+            if (hay.contains(key.toLowerCase(Locale.ROOT))) {
+                return true;
+            }
+        }
+        String action = nullToEmpty(p.getAction()).toLowerCase(Locale.ROOT);
+        return Set.of(
+                        "create", "add", "update", "edit", "delete", "remove", "clear", "clean",
+                        "flush", "import", "export", "offline", "kick", "restart", "run")
+                .contains(action);
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     /** 种子账号（幂等校正用户名大小写 / 角色；密码仅在新建时写入默认值）： SuperAdmin → 超级管理员；admin → 管理员。 */
@@ -2398,6 +2582,17 @@ public class RbacInitializer implements CommandLineRunner {
                 "13800000001",
                 "ADMIN",
                 adminRole);
+
+        Role guestRole = roleRepository.findByCode("GUEST").orElse(null);
+        normalizeSeedUser(
+                List.of("guest", "Guest", "GUEST"),
+                "guest",
+                "guest",
+                "游客",
+                null,
+                null,
+                "GUEST",
+                guestRole);
     }
 
     /** 找到任一别名用户并校正为标准用户名/角色；不存在则新建（含默认密码）。已存在账号不覆盖密码。 */

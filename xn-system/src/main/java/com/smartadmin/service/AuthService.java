@@ -148,9 +148,6 @@ public class AuthService {
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
         User user = rbacService.currentUser();
-        if (rbacService.isSuperAdmin(user)) {
-            throw new BusinessException("超级管理员禁止修改密码");
-        }
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new BusinessException("原密码不正确");
         }

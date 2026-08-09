@@ -26,29 +26,42 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 userRepository
                         .findByUsernameWithRolesIgnoreCase(username)
                         .orElseThrow(() -> new UsernameNotFoundException("用户不存在"));
+        return toLoginUser(user);
+    }
+
+    public UserDetails loadUserById(Long userId) throws UsernameNotFoundException {
+        User user =
+                userRepository
+                        .findByIdWithRoles(userId)
+                        .orElseThrow(() -> new UsernameNotFoundException("用户不存在"));
+        return toLoginUser(user);
+    }
+
+    private LoginUser toLoginUser(User user) {
         if (user.getDeletedAt() != null) {
             throw new UsernameNotFoundException("用户不存在");
         }
 
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        boolean isSuperAdmin =
-                permissionRepository
-                        .findRoleCodesByUserId(user.getId())
-                        .contains(RbacService.SUPER_ADMIN_CODE);
-        if (isSuperAdmin) {
+        var roleCodes = permissionRepository.findRoleCodesByUserId(user.getId());
+        if (roleCodes.contains(RbacService.SUPER_ADMIN_CODE)) {
             authorities.add(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
+        }
+        if (roleCodes.contains("ADMIN")) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+        if (roleCodes.contains("GUEST")) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_GUEST"));
         }
         permissionRepository
                 .findPermissionCodesByUserId(user.getId())
                 .forEach(code -> authorities.add(new SimpleGrantedAuthority(code)));
 
-        return new org.springframework.security.core.userdetails.User(
+        return new LoginUser(
+                user.getId(),
                 user.getUsername(),
                 user.getPassword(),
                 user.getStatus() == 1,
-                true,
-                true,
-                true,
                 authorities);
     }
 }

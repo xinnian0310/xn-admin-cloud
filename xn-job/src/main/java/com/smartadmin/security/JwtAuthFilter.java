@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -32,17 +33,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             Long userId = jwtUtil.getUserId(token);
             long iat = jwtUtil.getIssuedAtMillis(token);
             if (!tokenBlacklistService.isRevoked(token, userId, iat)) {
-                String username = jwtUtil.getUsername(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                try {
+                    UserDetails userDetails = resolveUserDetails(token, userId);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } catch (UsernameNotFoundException ignored) {
+                    // 令牌主体已失效（用户被删/改名后旧缓存等），按未登录继续，由接口鉴权处理
+                }
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private UserDetails resolveUserDetails(String token, Long userId) {
+        if (userId != null) {
+            try {
+                return userDetailsService.loadUserById(userId);
+            } catch (UsernameNotFoundException ignored) {
+                // 回退用户名（兼容旧令牌）
+            }
+        }
+        return userDetailsService.loadUserByUsername(jwtUtil.getUsername(token));
     }
 
     private String resolveToken(HttpServletRequest request) {

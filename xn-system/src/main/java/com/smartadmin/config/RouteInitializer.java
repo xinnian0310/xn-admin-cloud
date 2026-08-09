@@ -52,6 +52,9 @@ public class RouteInitializer implements CommandLineRunner {
     /** 个人中心（顶级目录） */
     public static final String PERM_PERSONAL_GROUP = "menu:personal";
 
+    /** 组件演示（顶级目录，主菜单末尾） */
+    public static final String PERM_DEMO_GROUP = "menu:demo";
+
     private final SysRouteRepository routeRepository;
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
@@ -89,6 +92,7 @@ public class RouteInitializer implements CommandLineRunner {
         ensureSystemMenuStructure();
         ensureHomeRoute();
         ensureMonitorRoutes();
+        ensureDemoRoutes();
         ensureRouteIcons();
         ensurePermissionControlDefaults();
         syncMenuPermissionsFromRoutes();
@@ -155,6 +159,7 @@ public class RouteInitializer implements CommandLineRunner {
      * ├── 基础数据（字典）
      * ├── 系统设置（登录页、系统配置）
      * └── 系统工具（文件、定时任务、任务日志、接口文档）
+     * 组件演示 → 基础组件 / 系统组件
      * </pre>
      */
     private void ensureSystemMenuStructure() {
@@ -250,7 +255,7 @@ public class RouteInitializer implements CommandLineRunner {
                             }
                         });
 
-        // 一级菜单排序：首页(1) → 个人中心(2) → 系统监控(3) → 系统管理(4)
+        // 一级菜单排序：首页(1) → 个人中心(2) → 系统监控(3) → 系统管理(4) → 组件演示(5)
         routeRepository
                 .findByPath("/dashboard")
                 .ifPresent(
@@ -263,6 +268,10 @@ public class RouteInitializer implements CommandLineRunner {
         if (system.getSort() == null || system.getSort() != 4) {
             system.setSort(4);
             routeRepository.save(system);
+        }
+        SysRoute demoGroup = findDirByPermission(PERM_DEMO_GROUP);
+        if (demoGroup != null) {
+            setParentAndSort(demoGroup, null, 5);
         }
     }
 
@@ -759,46 +768,172 @@ public class RouteInitializer implements CommandLineRunner {
         routeRepository.save(profile);
     }
 
+    /**
+     * 补全内置路由图标：{@code icon}（Element / Vue）+ {@code iconAntd}（Ant / React）。 此前仅演示菜单有 iconAntd，其余路由
+     * React 端只能回退映射 Element 名。
+     */
     private void ensureRouteIcons() {
-        setIconByPath("/dashboard", "HomeFilled");
-        setIconByPermission("menu:system", RouteType.DIR, "Setting");
-        setIconByPermission("menu:monitor", RouteType.DIR, "Monitor");
-        setIconByPath("/monitor/online", "Connection");
-        setIconByPath("/monitor/server", "Cpu");
-        setIconByPermission(PERM_ORG_GROUP, RouteType.DIR, "OfficeBuilding");
-        setIconByPermission(PERM_RBAC_GROUP, RouteType.DIR, "Lock");
-        setIconByPermission(PERM_CONTENT_GROUP, RouteType.DIR, "Notebook");
-        setIconByPermission(PERM_BASE_GROUP, RouteType.DIR, "Collection");
-        setIconByPermission(PERM_SETTINGS_GROUP, RouteType.DIR, "Tools");
-        setIconByPermission(PERM_TOOLS_GROUP, RouteType.DIR, "Suitcase");
-        setIconByPermission(PERM_LOGS_GROUP, RouteType.DIR, "Document");
-        setIconByPermission(PERM_PERSONAL_GROUP, RouteType.DIR, "UserFilled");
-        setIconByPath("/users", "User");
-        setIconByPath("/profile", "UserFilled");
-        setIconByPath("/system/roles", "Avatar");
-        setIconByPath("/system/units", "OfficeBuilding");
-        setIconByPath("/system/permissions", "SetUp");
-        setIconByPath("/system/routes", "Guide");
-        setIconByPath("/system/permissions-content", "Key");
-        setIconByPath("/system/notices", "Bell");
-        setIconByPath("/system/messages", "Message");
-        setIconByPath("/messages/mine", "ChatDotRound");
-        setIconByPath("/system/dicts", "Collection");
-        setIconByPath("/system/dicts/data", "Collection");
-        setIconByPath("/system/login-settings", "PictureFilled");
-        setIconByPath("/system/config", "Setting");
-        setIconByPath("/system/site-contact", "Phone");
-        setIconByPath("/system/security", "Key");
-        setIconByPath("/system/files", "FolderOpened");
-        setIconByPath("/system/jobs", "Timer");
-        setIconByPath("/system/api-docs", "Document");
-        setIconByPath("/system/recycle", "Delete");
-        setIconByPath("/system/codegen", "MagicStick");
-        setIconByPath("/system/logs/login", "Position");
-        setIconByPath("/system/logs/oper", "Document");
-        setIconByPath("/system/logs/exception", "Warning");
-        setIconByPath("/monitor/redis", "Coin");
-        setIconByPath("/monitor/sql", "DataLine");
+        setIconByPath("/dashboard", "HomeFilled", "HomeOutlined");
+        setIconByPermission("menu:system", RouteType.DIR, "Setting", "SettingOutlined");
+        setIconByPermission("menu:monitor", RouteType.DIR, "Monitor", "MonitorOutlined");
+        setIconByPath("/monitor/online", "Connection", "ApiOutlined");
+        setIconByPath("/monitor/server", "Cpu", "CloudServerOutlined");
+        setIconByPermission(PERM_ORG_GROUP, RouteType.DIR, "OfficeBuilding", "BankOutlined");
+        setIconByPermission(PERM_RBAC_GROUP, RouteType.DIR, "Lock", "LockOutlined");
+        setIconByPermission(PERM_CONTENT_GROUP, RouteType.DIR, "Notebook", "ReadOutlined");
+        setIconByPermission(PERM_BASE_GROUP, RouteType.DIR, "Collection", "AppstoreOutlined");
+        setIconByPermission(PERM_SETTINGS_GROUP, RouteType.DIR, "Tools", "ToolOutlined");
+        setIconByPermission(PERM_TOOLS_GROUP, RouteType.DIR, "Suitcase", "LaptopOutlined");
+        setIconByPermission(PERM_LOGS_GROUP, RouteType.DIR, "Document", "FileTextOutlined");
+        setIconByPermission(PERM_PERSONAL_GROUP, RouteType.DIR, "UserFilled", "UserOutlined");
+        setIconByPath("/users", "User", "UserOutlined");
+        setIconByPath("/profile", "UserFilled", "UserOutlined");
+        setIconByPath("/system/roles", "Avatar", "TeamOutlined");
+        setIconByPath("/system/units", "OfficeBuilding", "BankOutlined");
+        setIconByPath("/system/posts", "Postcard", "IdcardOutlined");
+        setIconByPath("/system/permissions", "SetUp", "ControlOutlined");
+        setIconByPath("/system/routes", "Guide", "CompassOutlined");
+        setIconByPath("/system/permissions-content", "Key", "KeyOutlined");
+        setIconByPath("/system/notices", "Bell", "BellOutlined");
+        setIconByPath("/system/messages", "Message", "MailOutlined");
+        setIconByPath("/messages/mine", "ChatDotRound", "MessageOutlined");
+        setIconByPath("/system/dicts", "Collection", "BookOutlined");
+        setIconByPath("/system/dicts/data", "Collection", "BookOutlined");
+        setIconByPath("/system/login-settings", "PictureFilled", "PictureOutlined");
+        setIconByPath("/system/config", "Setting", "SettingOutlined");
+        setIconByPath("/system/site-contact", "Phone", "PhoneOutlined");
+        setIconByPath("/system/security", "Key", "SafetyCertificateOutlined");
+        setIconByPath("/system/files", "FolderOpened", "FolderOpenOutlined");
+        setIconByPath("/system/jobs", "Timer", "FieldTimeOutlined");
+        setIconByPath("/system/jobs/logs", "Document", "FileSearchOutlined");
+        setIconByPath("/system/api-docs", "Document", "ApiOutlined");
+        setIconByPath("/system/recycle", "Delete", "DeleteOutlined");
+        setIconByPath("/system/codegen", "MagicStick", "CodeOutlined");
+        setIconByPath("/system/logs/login", "Position", "LoginOutlined");
+        setIconByPath("/system/logs/oper", "Document", "FileTextOutlined");
+        setIconByPath("/system/logs/exception", "Warning", "WarningOutlined");
+        setIconByPath("/monitor/redis", "Coin", "DatabaseOutlined");
+        setIconByPath("/monitor/sql", "DataLine", "LineChartOutlined");
+        setIconByPermission(PERM_DEMO_GROUP, RouteType.DIR, "Grid", "AppstoreOutlined");
+        setIconByPath("/demos/ui", "Brush", "BgColorsOutlined");
+        setIconByPath("/demos/xn", "Box", "BlockOutlined");
+    }
+
+    /** 顶级「组件演示」：基础组件（Element/Ant）+ 系统组件（Xn*） */
+    private void ensureDemoRoutes() {
+        SysRoute demo = findDirByPermission(PERM_DEMO_GROUP);
+        if (demo == null) {
+            demo = saveDirStandalone("组件演示", "Grid", PERM_DEMO_GROUP, null, 5);
+            demo.setIconAntd("AppstoreOutlined");
+            demo = routeRepository.save(demo);
+        } else {
+            boolean dirty = false;
+            if (!"组件演示".equals(demo.getTitle())) {
+                demo.setTitle("组件演示");
+                dirty = true;
+            }
+            if (!"Grid".equals(demo.getIcon())) {
+                demo.setIcon("Grid");
+                dirty = true;
+            }
+            if (!"AppstoreOutlined".equals(demo.getIconAntd())) {
+                demo.setIconAntd("AppstoreOutlined");
+                dirty = true;
+            }
+            if (demo.getParent() != null) {
+                demo.setParent(null);
+                dirty = true;
+            }
+            if (demo.getSort() == null || demo.getSort() != 5) {
+                demo.setSort(5);
+                dirty = true;
+            }
+            if (dirty) {
+                demo = routeRepository.save(demo);
+            }
+        }
+
+        ensureDemoMenu(
+                "/demos/ui",
+                "demos/ui",
+                "基础组件",
+                "Brush",
+                "BgColorsOutlined",
+                "menu:demo:ui",
+                demo,
+                1);
+        ensureDemoMenu(
+                "/demos/xn", "demos/xn", "系统组件", "Box", "BlockOutlined", "menu:demo:xn", demo, 2);
+    }
+
+    private void ensureDemoMenu(
+            String path,
+            String viewPath,
+            String title,
+            String icon,
+            String iconAntd,
+            String permission,
+            SysRoute parent,
+            int sort) {
+        SysRoute existing = routeRepository.findByPath(path).orElse(null);
+        if (existing != null) {
+            boolean dirty = false;
+            if (!title.equals(existing.getTitle())) {
+                existing.setTitle(title);
+                dirty = true;
+            }
+            if (!icon.equals(existing.getIcon())) {
+                existing.setIcon(icon);
+                dirty = true;
+            }
+            if (iconAntd != null && !iconAntd.equals(existing.getIconAntd())) {
+                existing.setIconAntd(iconAntd);
+                dirty = true;
+            }
+            if (!permission.equals(existing.getPermission())) {
+                existing.setPermission(permission);
+                dirty = true;
+            }
+            if (parent != null
+                    && (existing.getParent() == null
+                            || !Objects.equals(existing.getParent().getId(), parent.getId()))) {
+                existing.setParent(parent);
+                dirty = true;
+            }
+            if (existing.getSort() == null || existing.getSort() != sort) {
+                existing.setSort(sort);
+                dirty = true;
+            }
+            if (Boolean.TRUE.equals(existing.getHidden())) {
+                existing.setHidden(false);
+                dirty = true;
+            }
+            if (Boolean.TRUE.equals(existing.getPermissionControl())) {
+                existing.setPermissionControl(false);
+                dirty = true;
+            }
+            if (dirty) {
+                routeRepository.save(existing);
+            }
+            return;
+        }
+
+        SysRoute route = new SysRoute();
+        route.setTitle(title);
+        route.setPath(path);
+        route.setViewPath(viewPath);
+        route.setIcon(icon);
+        route.setIconAntd(iconAntd);
+        route.setPermission(permission);
+        route.setParent(parent);
+        route.setType(RouteType.MENU);
+        route.setSort(sort);
+        route.setStatus(1);
+        route.setHidden(false);
+        route.setAffix(false);
+        route.setPermissionControl(false);
+        route.setBuiltIn(true);
+        routeRepository.save(route);
     }
 
     private void ensureUnitRoute() {
@@ -1212,26 +1347,43 @@ public class RouteInitializer implements CommandLineRunner {
         routeRepository.save(route);
     }
 
-    private void setIconByPath(String path, String icon) {
+    private void setIconByPath(String path, String icon, String iconAntd) {
         routeRepository
                 .findByPath(path)
                 .ifPresent(
                         route -> {
+                            boolean dirty = false;
                             if (!icon.equals(route.getIcon())) {
                                 route.setIcon(icon);
+                                dirty = true;
+                            }
+                            if (iconAntd != null && !iconAntd.equals(route.getIconAntd())) {
+                                route.setIconAntd(iconAntd);
+                                dirty = true;
+                            }
+                            if (dirty) {
                                 routeRepository.save(route);
                             }
                         });
     }
 
-    private void setIconByPermission(String permission, RouteType type, String icon) {
+    private void setIconByPermission(
+            String permission, RouteType type, String icon, String iconAntd) {
         routeRepository.findAll().stream()
                 .filter(r -> type == r.getType() && permission.equals(r.getPermission()))
                 .findFirst()
                 .ifPresent(
                         route -> {
+                            boolean dirty = false;
                             if (!icon.equals(route.getIcon())) {
                                 route.setIcon(icon);
+                                dirty = true;
+                            }
+                            if (iconAntd != null && !iconAntd.equals(route.getIconAntd())) {
+                                route.setIconAntd(iconAntd);
+                                dirty = true;
+                            }
+                            if (dirty) {
                                 routeRepository.save(route);
                             }
                         });

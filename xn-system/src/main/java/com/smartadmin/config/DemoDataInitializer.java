@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
  *     └── 运维部门
  * </pre>
  *
- * 仅保留超级管理员（SuperAdmin）/ 管理员（admin）账号，其余用户清掉。 生产 / 非 dev 环境不会加载，避免误删业务数据。
+ * 仅保留超级管理员（SuperAdmin）/ 管理员（admin）/ 游客（guest）账号，其余用户清掉。 生产 / 非 dev 环境不会加载，避免误删业务数据。
  */
 @Component
 @Profile("dev")
@@ -47,10 +47,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class DemoDataInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DemoDataInitializer.class);
-    private static final Set<String> KEEP_ROLE_CODES = Set.of("SUPER_ADMIN", "ADMIN", "USER");
+    private static final Set<String> KEEP_ROLE_CODES =
+            Set.of("SUPER_ADMIN", "ADMIN", "USER", "GUEST");
     private static final Set<String> KEEP_UNIT_CODES =
             Set.of("XN", "XN_XA", "XN_XA_RD", "XN_XA_MKT", "XN_XA_QA", "XN_XA_FIN", "XN_XA_OPS");
-    private static final Set<String> KEEP_USERNAMES = Set.of("SuperAdmin", "admin");
+    private static final Set<String> KEEP_USERNAMES = Set.of("SuperAdmin", "admin", "guest", "游客");
 
     private final SysUnitRepository unitRepository;
     private final RoleRepository roleRepository;
@@ -81,7 +82,7 @@ public class DemoDataInitializer implements CommandLineRunner {
         }
     }
 
-    /** 删除非内置三角色 */
+    /** 删除非内置角色（超管/管理员/普通用户/游客） */
     private int purgeExtraRoles() {
         Role userRole = roleRepository.findByCode("USER").orElse(null);
         List<Role> extras =
@@ -136,7 +137,7 @@ public class DemoDataInitializer implements CommandLineRunner {
         return extras.size();
     }
 
-    /** 内置角色展示名：SUPER_ADMIN=超级管理员，ADMIN=管理员 */
+    /** 内置角色展示名：SUPER_ADMIN=超级管理员，ADMIN=管理员，GUEST=游客 */
     private void renameBuiltinRoles() {
         roleRepository
                 .findByCode("SUPER_ADMIN")
@@ -166,6 +167,23 @@ public class DemoDataInitializer implements CommandLineRunner {
                             }
                             if (!"日常管理，含用户/角色/权限".equals(role.getDescription())) {
                                 role.setDescription("日常管理，含用户/角色/权限");
+                                dirty = true;
+                            }
+                            if (dirty) {
+                                roleRepository.save(role);
+                            }
+                        });
+        roleRepository
+                .findByCode("GUEST")
+                .ifPresent(
+                        role -> {
+                            boolean dirty = false;
+                            if (!"游客".equals(role.getName())) {
+                                role.setName("游客");
+                                dirty = true;
+                            }
+                            if (!"全部菜单与按钮展示，仅查询类接口（只读）".equals(role.getDescription())) {
+                                role.setDescription("全部菜单与按钮展示，仅查询类接口（只读）");
                                 dirty = true;
                             }
                             if (dirty) {
@@ -259,7 +277,7 @@ public class DemoDataInitializer implements CommandLineRunner {
         }
     }
 
-    /** 种子账号昵称：SuperAdmin=超级管理员，admin=管理员 */
+    /** 种子账号昵称：SuperAdmin=超级管理员，admin=管理员，guest=游客 */
     private void renameSeedNicknames() {
         userRepository
                 .findByUsernameIgnoreCase("SuperAdmin")
@@ -279,9 +297,18 @@ public class DemoDataInitializer implements CommandLineRunner {
                                 userRepository.save(user);
                             }
                         });
+        userRepository
+                .findByUsernameIgnoreCase("guest")
+                .ifPresent(
+                        user -> {
+                            if (!"游客".equals(user.getNickname())) {
+                                user.setNickname("游客");
+                                userRepository.save(user);
+                            }
+                        });
     }
 
-    /** 仅保留 SuperAdmin / admin（或带 SUPER_ADMIN、ADMIN 角色的账号），其余用户删除。 */
+    /** 仅保留种子账号（SuperAdmin / admin / guest / 游客）或带 SUPER_ADMIN、ADMIN 角色的账号，其余删除。 */
     private int purgeNonAdminUsers() {
         int removed = 0;
         for (User bare : List.copyOf(userRepository.findAll())) {

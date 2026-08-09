@@ -11,6 +11,7 @@ import com.smartadmin.repository.SysFileRepository;
 import com.smartadmin.repository.SysRecycleBinRepository;
 import com.smartadmin.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -58,18 +59,18 @@ public class RecycleService {
         }
         user.setDeletedAt(LocalDateTime.now());
         userRepository.save(user);
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("id", user.getId());
+        snapshot.put("username", user.getUsername());
+        snapshot.put("nickname", user.getNickname());
+        snapshot.put("email", user.getEmail());
+        snapshot.put("phone", user.getPhone());
         upsertBin(
                 BIZ_USER,
                 user.getId(),
                 StringUtils.hasText(user.getNickname()) ? user.getNickname() : user.getUsername(),
                 "用户名: " + user.getUsername(),
-                snapshotOf(
-                        Map.of(
-                                "id", user.getId(),
-                                "username", user.getUsername(),
-                                "nickname", user.getNickname(),
-                                "email", user.getEmail(),
-                                "phone", user.getPhone())));
+                snapshotOf(snapshot));
         appCacheService.evictPermissionCodes(user.getId());
     }
 
@@ -81,18 +82,18 @@ public class RecycleService {
         }
         file.setDeletedAt(LocalDateTime.now());
         sysFileRepository.save(file);
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("id", file.getId());
+        snapshot.put("objectKey", file.getObjectKey());
+        snapshot.put("originalName", file.getOriginalName());
+        snapshot.put("storage", file.getStorage());
+        snapshot.put("sizeBytes", file.getSizeBytes());
         upsertBin(
                 BIZ_FILE,
                 file.getId(),
                 file.getOriginalName(),
                 file.getObjectKey(),
-                snapshotOf(
-                        Map.of(
-                                "id", file.getId(),
-                                "objectKey", file.getObjectKey(),
-                                "originalName", file.getOriginalName(),
-                                "storage", file.getStorage(),
-                                "sizeBytes", file.getSizeBytes())));
+                snapshotOf(snapshot));
     }
 
     @Transactional

@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @Service
 @RequiredArgsConstructor
@@ -62,13 +64,30 @@ public class AppConfigService {
     }
 
     @Transactional
-    public AppConfigVO update(AppConfigVO request) {
+    public AppConfigVO update(JsonNode patch) {
         rbacService.checkPermission("system-config:update");
-        if (request == null) {
+        if (patch == null || patch.isNull() || !patch.isObject()) {
             throw new BusinessException("配置不能为空");
         }
-        validate(request);
-        normalize(request);
+        AppConfigVO existing = loadOrDefault();
+        ObjectNode base;
+        try {
+            base = (ObjectNode) objectMapper.valueToTree(existing);
+            deepMergeObject(base, patch);
+        } catch (Exception e) {
+            throw new BusinessException("配置合并失败");
+        }
+        AppConfigVO merged;
+        try {
+            merged = objectMapper.treeToValue(base, AppConfigVO.class);
+        } catch (Exception e) {
+            throw new BusinessException("配置解析失败");
+        }
+        if (merged == null) {
+            throw new BusinessException("配置不能为空");
+        }
+        validate(merged);
+        normalize(merged);
         SysAppConfig entity =
                 repository
                         .findById(SINGLETON_ID)
@@ -79,13 +98,36 @@ public class AppConfigService {
                                     return created;
                                 });
         try {
-            entity.setConfigJson(objectMapper.writeValueAsString(request));
+            entity.setConfigJson(objectMapper.writeValueAsString(merged));
         } catch (Exception e) {
             throw new BusinessException("配置序列化失败");
         }
         repository.save(entity);
         appCacheService.evictAppConfig();
-        return request;
+        return merged;
+    }
+
+    /**
+     * 将 patch 深合并进 target：仅覆盖 patch 中出现的键；对象递归合并，其余类型直接替换。 用于各前端只提交本栈字段（ui.antd /
+     * ui.elementPlus）时保留另一侧配置。
+     */
+    private void deepMergeObject(ObjectNode target, JsonNode patch) {
+        if (patch == null || !patch.isObject()) {
+            return;
+        }
+        for (String key : patch.propertyNames()) {
+            JsonNode value = patch.get(key);
+            if (value == null || value.isNull()) {
+                target.set(key, value);
+                continue;
+            }
+            JsonNode current = target.get(key);
+            if (value.isObject() && current != null && current.isObject()) {
+                deepMergeObject((ObjectNode) current, value);
+            } else {
+                target.set(key, value.deepCopy());
+            }
+        }
     }
 
     @Transactional
@@ -406,11 +448,21 @@ public class AppConfigService {
         if (vo.getUi() != null && vo.getUi().getElementPlus() != null) {
             String locale = vo.getUi().getElementPlus().getLocale();
             if (StringUtils.hasText(locale) && !Set.of("zh-cn", "en").contains(locale)) {
-                throw new BusinessException("语言包无效");
+                throw new BusinessException("Element Plus 语言包无效");
             }
             String size = vo.getUi().getElementPlus().getSize();
             if (StringUtils.hasText(size) && !Set.of("large", "default", "small").contains(size)) {
-                throw new BusinessException("组件尺寸无效");
+                throw new BusinessException("Element Plus 组件尺寸无效");
+            }
+        }
+        if (vo.getUi() != null && vo.getUi().getAntd() != null) {
+            String locale = vo.getUi().getAntd().getLocale();
+            if (StringUtils.hasText(locale) && !Set.of("zh-cn", "en").contains(locale)) {
+                throw new BusinessException("Ant Design 语言包无效");
+            }
+            String size = vo.getUi().getAntd().getComponentSize();
+            if (StringUtils.hasText(size) && !Set.of("large", "middle", "small").contains(size)) {
+                throw new BusinessException("Ant Design 组件尺寸无效");
             }
         }
         if (vo.getLogRetention() != null) {

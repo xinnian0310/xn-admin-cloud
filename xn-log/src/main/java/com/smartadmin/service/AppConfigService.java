@@ -153,11 +153,21 @@ public class AppConfigService {
         if (vo.getUi() != null && vo.getUi().getElementPlus() != null) {
             String locale = vo.getUi().getElementPlus().getLocale();
             if (StringUtils.hasText(locale) && !Set.of("zh-cn", "en").contains(locale)) {
-                throw new BusinessException("语言包无效");
+                throw new BusinessException("Element Plus 语言包无效");
             }
             String size = vo.getUi().getElementPlus().getSize();
             if (StringUtils.hasText(size) && !Set.of("large", "default", "small").contains(size)) {
-                throw new BusinessException("组件尺寸无效");
+                throw new BusinessException("Element Plus 组件尺寸无效");
+            }
+        }
+        if (vo.getUi() != null && vo.getUi().getAntd() != null) {
+            String locale = vo.getUi().getAntd().getLocale();
+            if (StringUtils.hasText(locale) && !Set.of("zh-cn", "en").contains(locale)) {
+                throw new BusinessException("Ant Design 语言包无效");
+            }
+            String size = vo.getUi().getAntd().getComponentSize();
+            if (StringUtils.hasText(size) && !Set.of("large", "middle", "small").contains(size)) {
+                throw new BusinessException("Ant Design 组件尺寸无效");
             }
         }
         if (vo.getLogRetention() != null) {

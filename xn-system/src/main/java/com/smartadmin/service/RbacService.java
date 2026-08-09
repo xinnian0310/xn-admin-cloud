@@ -7,6 +7,7 @@ import com.smartadmin.repository.PermissionRepository;
 import com.smartadmin.repository.RoleRepository;
 import com.smartadmin.repository.SysUnitRepository;
 import com.smartadmin.repository.UserRepository;
+import com.smartadmin.security.LoginUser;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -29,11 +30,21 @@ public class RbacService {
     private final AppCacheService appCacheService;
 
     public User currentUser() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user =
-                userRepository
-                        .findByUsernameWithRoles(username)
-                        .orElseThrow(() -> new BusinessException("用户不存在"));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new BusinessException(401, "未登录");
+        }
+        User user = null;
+        Object principal = auth.getPrincipal();
+        if (principal instanceof LoginUser loginUser && loginUser.getId() != null) {
+            user = userRepository.findByIdWithRoles(loginUser.getId()).orElse(null);
+        }
+        if (user == null && auth.getName() != null) {
+            user = userRepository.findByUsernameWithRolesIgnoreCase(auth.getName()).orElse(null);
+        }
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
         if (user.getDeletedAt() != null) {
             throw new BusinessException(401, "账号已被删除");
         }
@@ -136,7 +147,13 @@ public class RbacService {
         if ("ADMIN".equals(code)) {
             return 1;
         }
-        return 2;
+        if ("USER".equals(code)) {
+            return 2;
+        }
+        if ("GUEST".equals(code)) {
+            return 3;
+        }
+        return 4;
     }
 
     public void ensureSuperAdminExists(User user, List<Long> newRoleIds) {

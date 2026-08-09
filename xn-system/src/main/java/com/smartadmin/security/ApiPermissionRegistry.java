@@ -7,6 +7,7 @@ import com.smartadmin.entity.PermissionType;
 import com.smartadmin.repository.PermissionRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ public class ApiPermissionRegistry {
     private volatile List<String> allCodes = List.of();
     private volatile boolean loaded = false;
 
-    private record Entry(String method, String rawPath, Pattern pattern) {}
+    private record Entry(String code, String method, String rawPath, Pattern pattern) {}
 
     public synchronized void reload() {
         List<Entry> entries = new ArrayList<>();
@@ -39,7 +40,11 @@ public class ApiPermissionRegistry {
                     && StringUtils.hasText(p.getPath())
                     && StringUtils.hasText(p.getMethod())) {
                 entries.add(
-                        new Entry(p.getMethod().toUpperCase(), p.getPath(), compile(p.getPath())));
+                        new Entry(
+                                p.getCode(),
+                                p.getMethod().toUpperCase(),
+                                p.getPath(),
+                                compile(p.getPath())));
             }
         }
         this.apiEntries = entries;
@@ -69,14 +74,19 @@ public class ApiPermissionRegistry {
     }
 
     public boolean isRegistered(String method, String uri) {
+        return findCode(method, uri).isPresent();
+    }
+
+    /** 匹配已登记接口对应的权限码，如 api:GET:/api/users */
+    public Optional<String> findCode(String method, String uri) {
         ensureLoaded();
         String m = method == null ? "" : method.toUpperCase();
         for (Entry entry : apiEntries) {
             if (entry.method.equals(m) && entry.pattern.matcher(uri).matches()) {
-                return true;
+                return Optional.ofNullable(entry.code);
             }
         }
-        return false;
+        return Optional.empty();
     }
 
     public ApiRegistryVO snapshot() {

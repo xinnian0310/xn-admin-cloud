@@ -99,6 +99,13 @@ public class UserService {
         rbacService.checkPermission("user:update");
         User user = findUserWithRoles(id);
         dataScopeService.assertUserAccessible(user);
+        if (isSeedAccount(user.getUsername())
+                && !user.getUsername().equalsIgnoreCase(request.getUsername())) {
+            throw new BusinessException("不能修改默认管理员账号的用户名");
+        }
+        if (isSeedAccount(user.getUsername())) {
+            request.setUsername(user.getUsername());
+        }
         if (!user.getUsername().equals(request.getUsername())
                 && userRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException("用户名已存在");
@@ -362,6 +369,10 @@ public class UserService {
 
     private static String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private static boolean isSeedAccount(String username) {
+        return "SuperAdmin".equalsIgnoreCase(username) || "admin".equalsIgnoreCase(username);
     }
 
     private User findUserWithRoles(Long id) {

@@ -52,7 +52,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "SELECT un.name, COUNT(u) FROM User u JOIN u.unit un GROUP BY un.id, un.name ORDER BY COUNT(u) DESC")
     List<Object[]> countGroupByUnit();
 
-    /** 超级管理员优先，其次按 id 倒序。 roleId / unitIds 为空时不过滤。 */
+    /** SuperAdmin、admin 固定前两位，其余按创建时间倒序。 roleId / unitIds 为空时不过滤。 */
     @Query(
             value =
                     """
@@ -70,11 +70,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
                       ))
                       AND (:unitIdsEmpty = true OR unit.id IN :unitIds)
                       AND (:selfUserId IS NULL OR u.id = :selfUserId)
-                    ORDER BY CASE WHEN EXISTS (
-                        SELECT 1 FROM u.roles sr WHERE sr.code = 'SUPER_ADMIN'
-                    ) OR EXISTS (
-                        SELECT 1 FROM u.unit un2 JOIN un2.roles ur2 WHERE ur2.code = 'SUPER_ADMIN'
-                    ) THEN 0 ELSE 1 END ASC, u.id DESC
+                    ORDER BY CASE
+                        WHEN LOWER(u.username) = 'superadmin' THEN 0
+                        WHEN LOWER(u.username) = 'admin' THEN 1
+                        ELSE 2
+                    END ASC, u.createdAt DESC, u.id DESC
                     """,
             countQuery =
                     """

@@ -48,6 +48,7 @@ public class AppConfigVO {
         private FontSizeUi fontSize = new FontSizeUi();
         private TagsViewUi tagsView = new TagsViewUi();
         private ElementPlusUi elementPlus = new ElementPlusUi();
+        private AntdUi antd = new AntdUi();
     }
 
     @Getter
@@ -108,6 +109,32 @@ public class AppConfigVO {
         private Boolean alignCenter = true;
         private Boolean draggable = true;
         private Boolean overflow = false;
+    }
+
+    @Getter
+    @Setter
+    public static class AntdUi {
+        private String locale = "zh-cn";
+        private String componentSize = "middle";
+        private String prefixCls = "ant";
+        private ButtonUi button = new ButtonUi();
+        private AntdMessageUi message = new AntdMessageUi();
+        private AntdModalUi modal = new AntdModalUi();
+    }
+
+    @Getter
+    @Setter
+    public static class AntdMessageUi {
+        private Integer maxCount = 3;
+    }
+
+    @Getter
+    @Setter
+    public static class AntdModalUi {
+        private Boolean centered = true;
+
+        /** React XnModal 可拖拽；与 Element Plus dialog.draggable 语义对齐 */
+        private Boolean draggable = true;
     }
 
     @Getter
