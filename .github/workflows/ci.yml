@@ -25,6 +25,11 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x mvnw
 
+      - name: Check shared code drift (system → file/log/job)
+        run: |
+          chmod +x scripts/sync-shared-from-system.sh
+          bash scripts/sync-shared-from-system.sh --check
+
       - name: Spotless + compile + test + SpotBugs + JaCoCo
         run: ./mvnw -B -ntp verify
 

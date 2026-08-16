@@ -19,11 +19,15 @@ public class AppCacheService {
     public static final String PREFIX_PERM = "cache:perm:";
     public static final String PREFIX_DICT = "cache:dict:";
     public static final String KEY_APP_CONFIG = "cache:app-config:public";
+    public static final String KEY_SITE_CONTACT = "cache:site-contact:public";
+    public static final String PREFIX_SITE_UI_SHOTS = "cache:site-ui-shots:";
     public static final String PREFIX_MENUS = "cache:menus:";
 
     private static final Duration TTL_PERM = Duration.ofMinutes(30);
     private static final Duration TTL_DICT = Duration.ofHours(1);
     private static final Duration TTL_APP_CONFIG = Duration.ofMinutes(10);
+    private static final Duration TTL_SITE_CONTACT = Duration.ofMinutes(10);
+    private static final Duration TTL_SITE_UI_SHOTS = Duration.ofMinutes(10);
     private static final Duration TTL_MENUS = Duration.ofMinutes(30);
 
     private final AppKvStore kvStore;
@@ -100,6 +104,23 @@ public class AppCacheService {
 
     public void evictAppConfig() {
         evict(KEY_APP_CONFIG);
+    }
+
+    public <T> T getSiteContact(TypeReference<T> type, Supplier<T> loader) {
+        return getOrLoad(KEY_SITE_CONTACT, TTL_SITE_CONTACT, type, loader);
+    }
+
+    public void evictSiteContact() {
+        evict(KEY_SITE_CONTACT);
+    }
+
+    public <T> T getSiteUiShots(String project, TypeReference<T> type, Supplier<T> loader) {
+        String key = PREFIX_SITE_UI_SHOTS + (project == null ? "vue" : project);
+        return getOrLoad(key, TTL_SITE_UI_SHOTS, type, loader);
+    }
+
+    public void evictSiteUiShots() {
+        evictByPrefix(PREFIX_SITE_UI_SHOTS);
     }
 
     public <T> T getMenus(Long userId, TypeReference<T> type, Supplier<T> loader) {

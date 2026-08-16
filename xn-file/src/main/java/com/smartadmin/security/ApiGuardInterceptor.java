@@ -21,7 +21,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
  *
  * <ol>
  *   <li>校验被调用接口是否已在「权限内容」中登记（未登记一律拦截）
- *   <li>游客角色（无超管/管理员叠加时）须拥有对应 api:* 权限码，用于「按钮可展示、写接口不可调」
+ *   <li>游客角色（无超管/管理员叠加时）须拥有对应 api:* 权限码；游客仅分配查询类接口（不含导出等写操作）
  * </ol>
  */
 @Component
@@ -34,6 +34,7 @@ public class ApiGuardInterceptor implements HandlerInterceptor {
     private static final Set<String> WHITELIST =
             Set.of(
                     "/api/auth/login",
+                    "/api/auth/register",
                     "/api/auth/logout",
                     "/api/auth/captcha",
                     "/api/auth/captcha/slider",

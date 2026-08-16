@@ -29,7 +29,7 @@ spring:
       max-request-size: 55MB
   quartz:
     job-store-type: memory
-    auto-startup: true
+    auto-startup: false
     overwrite-existing-jobs: true
     properties:
       org.quartz.scheduler.instanceName: xnAdminScheduler
@@ -60,8 +60,12 @@ app:
     expiration: ${JWT_EXPIRATION:86400000}
   api-guard:
     enforce: true
+    # 接口注册表缓存存活秒数：同库其他服务改权限后本服务最多滞后这么久；0 表示只在启动与本进程改权限时刷新
+    registry-refresh-seconds: ${API_GUARD_REGISTRY_REFRESH_SECONDS:30}
   upload:
     dir: ${UPLOAD_DIR:uploads}
+    # 网关/站点公网根，如 https://api.example.com；空则本地文件返回 /uploads/... 相对路径
+    public-base-url: ${APP_PUBLIC_BASE_URL:}
   redis:
     enabled: ${REDIS_ENABLED:true}
     host: ${REDIS_HOST:127.0.0.1}
@@ -71,6 +75,7 @@ app:
   minio:
     enabled: ${MINIO_ENABLED:true}
     endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:9000}
+    public-endpoint: ${MINIO_PUBLIC_ENDPOINT:}
     access-key: ${MINIO_ACCESS_KEY:}
     secret-key: ${MINIO_SECRET_KEY:}
     bucket: ${MINIO_BUCKET:xn-admin}

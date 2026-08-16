@@ -137,6 +137,7 @@ public class RouteService {
         route = routeRepository.save(route);
         syncMenuPermission(route, true);
         appCacheService.evictByPrefix(AppCacheService.PREFIX_MENUS);
+        appCacheService.evictSiteUiShots();
         return RouteVO.from(route);
     }
 
@@ -154,6 +155,7 @@ public class RouteService {
         route = routeRepository.save(route);
         syncMenuPermission(route, false);
         appCacheService.evictByPrefix(AppCacheService.PREFIX_MENUS);
+        appCacheService.evictSiteUiShots();
         return RouteVO.from(route);
     }
 
@@ -185,6 +187,7 @@ public class RouteService {
         routeRepository.delete(route);
         appCacheService.evictByPrefix(AppCacheService.PREFIX_MENUS);
         appCacheService.evictAllPermissionCaches();
+        appCacheService.evictSiteUiShots();
     }
 
     public static String pathToViewPath(String path) {
@@ -221,6 +224,7 @@ public class RouteService {
                 throw new BusinessException("外部链接路由必须填写外部链接");
             }
             request.setLinkUrl(normalizeLinkUrl(request.getLinkUrl()));
+            // 访问路径由表单隐藏或后端自动生成，不要求用户填写
             if (StringUtils.hasText(request.getPath())) {
                 request.setPath(normalizePath(request.getPath()));
             } else {
@@ -241,6 +245,7 @@ public class RouteService {
                         });
     }
 
+    /** 由外部链接生成唯一访问路径，如 /link/www-baidu-com */
     private String allocateLinkPath(String linkUrl, Long excludeId) {
         String base = linkUrlToPathBase(linkUrl);
         String candidate = base;
@@ -293,14 +298,22 @@ public class RouteService {
             route.setLinkUrl(null);
         }
         route.setIcon(request.getIcon());
+        route.setIconAntd(request.getIconAntd());
         // permission 由系统自动生成，忽略前端传入
         route.setType(request.getType());
         route.setSort(request.getSort() != null ? request.getSort() : 0);
         route.setStatus(request.getStatus() != null ? request.getStatus() : 1);
         route.setHidden(request.getHidden() != null ? request.getHidden() : false);
         route.setAffix(request.getAffix() != null ? request.getAffix() : false);
-        route.setPermissionControl(
-                request.getPermissionControl() != null ? request.getPermissionControl() : false);
+        // 外部链接不启用菜单权限控制，登录用户均可访问
+        if (request.getType() == RouteType.LINK) {
+            route.setPermissionControl(false);
+        } else {
+            route.setPermissionControl(
+                    request.getPermissionControl() != null
+                            ? request.getPermissionControl()
+                            : false);
+        }
         if (request.getParentId() != null) {
             route.setParent(findRoute(request.getParentId()));
         } else {

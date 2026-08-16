@@ -8,9 +8,11 @@ import com.smartadmin.repository.PermissionRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -23,9 +25,17 @@ public class ApiPermissionRegistry {
 
     private final PermissionRepository permissionRepository;
 
+    /**
+     * 缓存存活秒数，超时后下次匹配自动重读库。 微服务下各服务独享进程内缓存，本服务的 {@link #reload()} 无法通知同库的其他服务： 例如在 xn-system
+     * 改权限或启动时补齐新接口，xn-file 若不过期就要重启才认。 置 0 或负数则只在启动与本进程改权限时刷新。
+     */
+    @Value("${app.api-guard.registry-refresh-seconds:30}")
+    private long refreshSeconds;
+
     private volatile List<Entry> apiEntries = List.of();
     private volatile List<String> allCodes = List.of();
     private volatile boolean loaded = false;
+    private volatile long loadedAtNanos;
 
     private record Entry(String code, String method, String rawPath, Pattern pattern) {}
 
@@ -49,13 +59,31 @@ public class ApiPermissionRegistry {
         }
         this.apiEntries = entries;
         this.allCodes = codes;
+        // 时间戳先于 loaded 写入，读到 loaded=true 的线程必然读到新时间戳
+        this.loadedAtNanos = System.nanoTime();
         this.loaded = true;
     }
 
     private void ensureLoaded() {
-        if (!loaded) {
+        if (isFresh()) {
+            return;
+        }
+        synchronized (this) {
+            if (isFresh()) {
+                return;
+            }
             reload();
         }
+    }
+
+    private boolean isFresh() {
+        if (!loaded) {
+            return false;
+        }
+        if (refreshSeconds <= 0) {
+            return true;
+        }
+        return System.nanoTime() - loadedAtNanos < TimeUnit.SECONDS.toNanos(refreshSeconds);
     }
 
     /** 将 /api/users/{id} 编译成正则 ^/api/users/[^/]+$ */

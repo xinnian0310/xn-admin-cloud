@@ -23,6 +23,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex) {
         HttpStatus status =
                 switch (ex.getCode()) {
+                    case 401 -> HttpStatus.UNAUTHORIZED;
                     case 403 -> HttpStatus.FORBIDDEN;
                     case 423 -> HttpStatus.LOCKED;
                     case 429 -> HttpStatus.TOO_MANY_REQUESTS;

@@ -56,9 +56,9 @@ public final class NacosConfigSupport {
         if (StringUtils.hasText(dataId)) {
             return dataId.trim();
         }
-        // 优先按 profile：xn-log-dev.yml
+        // 优先按 profile：xn-system-dev.yml
         String[] profiles = env.getActiveProfiles();
-        String appName = env.getProperty("spring.application.name", "xn-log");
+        String appName = env.getProperty("spring.application.name", "xn-system");
         if (profiles.length > 0 && StringUtils.hasText(profiles[0])) {
             return appName + "-" + profiles[0] + ".yml";
         }

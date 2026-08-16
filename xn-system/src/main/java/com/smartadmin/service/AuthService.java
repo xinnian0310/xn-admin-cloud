@@ -7,13 +7,17 @@ import com.smartadmin.dto.ChangePasswordRequest;
 import com.smartadmin.dto.LoginRequest;
 import com.smartadmin.dto.LoginResponse;
 import com.smartadmin.dto.ProfileUpdateRequest;
+import com.smartadmin.dto.RegisterRequest;
+import com.smartadmin.entity.Role;
 import com.smartadmin.entity.User;
+import com.smartadmin.repository.RoleRepository;
 import com.smartadmin.repository.UserRepository;
 import com.smartadmin.security.JwtUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +39,7 @@ public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final JwtUtil jwtUtil;
     private final RbacService rbacService;
     private final PasswordEncoder passwordEncoder;
@@ -89,6 +94,34 @@ public class AuthService {
         AuthUserVO authUser = buildAuthUser(user);
         loginLogService.record(user.getUsername(), ip, userAgent, 1, "登录成功");
         return new LoginResponse(token, authUser);
+    }
+
+    /** 公开注册：固定分配游客（GUEST）角色 */
+    @Transactional
+    public void register(RegisterRequest request) {
+        captchaService.validateForLogin(request.getCaptchaId(), request.getCaptchaCode());
+
+        String username = request.getUsername().trim();
+        if (userRepository.existsByUsernameIgnoreCase(username)) {
+            throw new BusinessException("用户名已存在");
+        }
+
+        Role guestRole =
+                roleRepository
+                        .findByCode("GUEST")
+                        .orElseThrow(() -> new BusinessException("游客角色未配置，请联系管理员"));
+
+        User user = new User();
+        user.setUsername(username);
+        user.setNickname(
+                StringUtils.hasText(request.getNickname())
+                        ? request.getNickname().trim()
+                        : username);
+        user.setStatus(1);
+        user.setRoles(new HashSet<>(Set.of(guestRole)));
+        rbacService.syncLegacyRoleField(user);
+        passwordPolicyService.assignPassword(user, request.getPassword().trim(), false);
+        userRepository.save(user);
     }
 
     /** 登出：将当前令牌加入黑名单 */

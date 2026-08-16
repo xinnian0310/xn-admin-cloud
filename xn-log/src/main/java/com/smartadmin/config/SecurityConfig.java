@@ -1,6 +1,7 @@
 package com.smartadmin.config;
 
 import com.smartadmin.security.JwtAuthFilter;
+import com.smartadmin.security.RestAuthEntryPoint;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final RestAuthEntryPoint restAuthEntryPoint;
     private final SecurityProperties securityProperties;
     private final Environment environment;
 
@@ -40,6 +42,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(
                         auth -> {
                             auth.requestMatchers("/api/auth/login")
+                                    .permitAll()
+                                    .requestMatchers("/api/auth/register")
                                     .permitAll()
                                     .requestMatchers("/api/auth/logout")
                                     .permitAll()
@@ -74,6 +78,7 @@ public class SecurityConfig {
                                     .permitAll();
                             auth.anyRequest().authenticated();
                         })
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(restAuthEntryPoint))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

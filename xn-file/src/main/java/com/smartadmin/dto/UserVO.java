@@ -17,6 +17,10 @@ public class UserVO {
     private String nickname;
     private String email;
     private String phone;
+
+    /** 当前调用方看不到明文时为 true（列表/详情已打码） */
+    private Boolean sensitiveMasked;
+
     private Integer status;
 
     /**

@@ -178,16 +178,18 @@ docker build -f xn-job/Dockerfile .
 
 - 当前为「共享代码 + 按控制器拆进程」：降低拆分风险，业务服务裁剪各自 Controller。  
 - 鉴权在各业务服务内完成（JWT）；网关负责路由与发现，不作统一鉴权过滤器。  
-- 后续可再抽 `xn-common`、Feign/MQ、按服务拆库。  
+- **共享代码同步**：以 `xn-system` 为规范源，改完安全/公共类后执行  
+  `scripts/sync-shared-from-system.ps1`（或 `.sh`）；CI 可用 `-Check` / `--check` 防漂移。  
+  后续可再抽独立 `xn-common` 模块。  
 - 新业务：新增 module（如 `xn-order`），并在 gateway 增加路由即可。
 
 ## 支持捐赠
 
 如果这个项目对你有帮助，欢迎请作者喝杯咖啡 ☕
 
-| 微信支付 | 支付宝 |
-| -------- | ------ |
-| ![微信支付](./docs/donation/wechat.jpg) | ![支付宝](./docs/donation/alipay.jpg) |
+<p align="center">
+  <img src="./docs/donation/donate.png" alt="支持捐赠（微信支付 / 支付宝）" width="480" />
+</p>
 
 ## 许可证
 

@@ -3,6 +3,8 @@ package com.smartadmin.service;
 import com.smartadmin.common.BusinessException;
 import com.smartadmin.config.KkFileViewProperties;
 import com.smartadmin.config.MinioProperties;
+import com.smartadmin.config.UploadProperties;
+import com.smartadmin.dto.AttachmentItem;
 import com.smartadmin.dto.FileBrowseVO;
 import com.smartadmin.dto.FileInfoVO;
 import com.smartadmin.dto.FileTreeNodeVO;
@@ -15,8 +17,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -25,9 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -39,6 +43,16 @@ public class FileManageService {
 
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
+
+    private static final DateTimeFormatter LOCAL_DATE_TIME =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /** MinIO / 本地上传目录：年/月/日/ */
+    private static final DateTimeFormatter DATE_DIR_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy/MM/dd");
+
+    /** 可安全拼进 URL 的扩展名：点 + 1~16 位字母数字 */
+    private static final Pattern EXTENSION_PATTERN = Pattern.compile("\\.[A-Za-z0-9]{1,16}");
 
     /** kkFileView 常见可预览扩展名（与官方支持列表对齐的常用子集） */
     private static final Set<String> KK_PREVIEW_EXTENSIONS =
@@ -200,12 +214,7 @@ public class FileManageService {
     private final KkFileViewProperties kkFileViewProperties;
     private final SysFileRepository sysFileRepository;
     private final RecycleService recycleService;
-
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
-
-    @Value("${server.port:8080}")
-    private int serverPort;
+    private final UploadProperties uploadProperties;
 
     public List<FileInfoVO> list(String keyword) {
         rbacService.checkPermission("file:view");
@@ -294,37 +303,67 @@ public class FileManageService {
         parent.getChildren().sort(Comparator.comparing(FileTreeNodeVO::getLabel));
     }
 
+    /** 旧附件可能缺 size / uploadedAt，按 objectKey 从 sys_file 补上，避免 JSON 里留下 null。 */
+    public void enrichAttachments(List<AttachmentItem> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        List<String> missing = new ArrayList<>();
+        for (AttachmentItem item : items) {
+            if (item == null || !StringUtils.hasText(item.getPath())) {
+                continue;
+            }
+            if (item.getSize() == null || !StringUtils.hasText(item.getUploadedAt())) {
+                missing.add(item.getPath());
+            }
+        }
+        if (missing.isEmpty()) {
+            return;
+        }
+        Map<String, SysFile> files = new HashMap<>();
+        for (SysFile file : sysFileRepository.findByObjectKeyIn(missing)) {
+            files.putIfAbsent(file.getObjectKey(), file);
+        }
+        for (AttachmentItem item : items) {
+            if (item == null || !StringUtils.hasText(item.getPath())) {
+                continue;
+            }
+            SysFile file = files.get(item.getPath());
+            if (file == null) {
+                continue;
+            }
+            if (item.getSize() == null) {
+                item.setSize(file.getSizeBytes());
+            }
+            if (!StringUtils.hasText(item.getUploadedAt()) && file.getCreatedAt() != null) {
+                item.setUploadedAt(file.getCreatedAt().format(LOCAL_DATE_TIME));
+            }
+        }
+    }
+
     @Transactional
     public FileInfoVO upload(MultipartFile file, String prefix) throws IOException {
         rbacService.checkPermission("file:upload");
-        if (file == null || file.isEmpty()) {
+        if (missingUpload(file)) {
             throw new BusinessException("请选择文件");
         }
-        String original = file.getOriginalFilename();
-        String ext = "";
-        if (StringUtils.hasText(original) && original.contains(".")) {
-            ext = original.substring(original.lastIndexOf('.'));
-        }
-        String storedName = UUID.randomUUID().toString().replace("-", "") + ext;
-        // 严格按当前目录上传；根路径 prefix 为空，不再默认落到 files/
-        String dir = MinioStorageService.normalizePrefix(prefix);
+        // 统一按 yyyy/MM/dd/ 落盘；prefix 仅兼容旧入参，不再参与路径
+        AllocatedObject target = allocateObject(file.getOriginalFilename());
         String contentType =
                 StringUtils.hasText(file.getContentType())
                         ? file.getContentType()
                         : "application/octet-stream";
-        String displayName = StringUtils.hasText(original) ? original : storedName;
 
         if (minioStorageService.isReady()) {
-            String objectKey = dir + storedName;
-            minioStorageService.upload(file, objectKey);
-            String url = minioStorageService.publicUrl(objectKey);
+            minioStorageService.upload(file, target.objectKey());
+            String url = minioStorageService.publicUrl(target.objectKey());
             SysFile saved =
                     saveMeta(
-                            objectKey,
-                            dir,
-                            displayName,
-                            storedName,
-                            ext,
+                            target.objectKey(),
+                            target.prefix(),
+                            target.displayName(),
+                            target.storedName(),
+                            target.extension(),
                             contentType,
                             file.getSize(),
                             "minio",
@@ -334,27 +373,139 @@ public class FileManageService {
         }
 
         Path targetDir =
-                dir.isEmpty() ? resolveRoot() : resolveSafePath(dir.substring(0, dir.length() - 1));
+                resolveSafePath(target.prefix().substring(0, target.prefix().length() - 1));
         if (!Files.isDirectory(targetDir)) {
             Files.createDirectories(targetDir);
         }
-        Path target = targetDir.resolve(storedName);
-        file.transferTo(target.toFile());
-        String relative = resolveRoot().relativize(target).toString().replace('\\', '/');
-        String url = "http://127.0.0.1:" + serverPort + "/uploads/" + relative;
+        Path stored = targetDir.resolve(target.storedName());
+        file.transferTo(stored.toFile());
+        String relative = resolveRoot().relativize(stored).toString().replace('\\', '/');
+        String url = uploadProperties.localPublicUrl(relative);
         SysFile saved =
                 saveMeta(
                         relative,
-                        dir,
-                        displayName,
-                        storedName,
-                        ext,
+                        target.prefix(),
+                        target.displayName(),
+                        target.storedName(),
+                        target.extension(),
                         contentType,
                         file.getSize(),
                         "local",
                         null,
                         url);
         return toDbVO(saved);
+    }
+
+    /** 目标对象定位结果：统一 {@code yyyy/MM/dd/} 目录，文件名为 uuid + 扩展名 */
+    public record AllocatedObject(
+            String prefix,
+            String storedName,
+            String objectKey,
+            String displayName,
+            String extension) {}
+
+    /**
+     * 为待写入的文件分配落盘位置：{@code yyyy/MM/dd/<uuid><ext>}，原始文件名只进库不进 key。
+     *
+     * <p>不用原名做 key 有三层考虑：
+     *
+     * <ol>
+     *   <li>同名必然唯一，无需「先查库再写」——分片上传在 init 就要定 key，而元数据行要到 complete 才落库， 查库判重根本盖不住这段窗口，并发传同名文件会互相覆盖
+     *   <li>库外对象（手工传进桶、换过库）也不会被覆盖
+     *   <li>key 全为 ASCII，中文名 / 空格 / {@code #} 之类不会破坏返回的 URL
+     * </ol>
+     *
+     * <p>列表页展示的是库里的原始文件名，因此用户侧仍然可读。
+     */
+    public AllocatedObject allocateObject(String originalFilename) {
+        String safeName = sanitizeFileName(originalFilename);
+        String ext = urlSafeExtension(safeName);
+        String storedName = UUID.randomUUID().toString().replace("-", "") + ext;
+        String displayName = StringUtils.hasText(safeName) ? safeName : storedName;
+        String dir = dateDirPrefix();
+        return new AllocatedObject(dir, storedName, dir + storedName, displayName, ext);
+    }
+
+    /** 登记已写入存储的对象元数据（分片合并完成后调用） */
+    @Transactional
+    public FileInfoVO registerUploadedFile(
+            String objectKey,
+            String prefix,
+            String displayName,
+            String storedName,
+            String extension,
+            String contentType,
+            long size,
+            String storage,
+            String bucket,
+            String url) {
+        return toDbVO(
+                saveMeta(
+                        objectKey,
+                        prefix,
+                        displayName,
+                        storedName,
+                        extension,
+                        contentType,
+                        size,
+                        storage,
+                        bucket,
+                        url));
+    }
+
+    /** 已登记文件的视图；不存在或已进回收站时返回空 */
+    public FileInfoVO findRegisteredFile(String objectKey) {
+        return sysFileRepository
+                .findByObjectKey(objectKey)
+                .filter(f -> f.getDeletedAt() == null)
+                .map(this::toDbVO)
+                .orElse(null);
+    }
+
+    /** 本地上传根目录 */
+    public Path uploadRoot() {
+        return resolveRoot();
+    }
+
+    /** 当日上传目录，形如 {@code 2026/08/15/} */
+    private static String dateDirPrefix() {
+        return LocalDate.now().format(DATE_DIR_FORMATTER) + "/";
+    }
+
+    /** 没选文件才拒绝；0 字节空文件（空 txt 等）允许上传 */
+    private static boolean missingUpload(MultipartFile file) {
+        return file == null
+                || (!StringUtils.hasText(file.getOriginalFilename()) && file.getSize() == 0);
+    }
+
+    /** 去掉路径、替换非法字符，保留可读原名 */
+    private static String sanitizeFileName(String original) {
+        if (!StringUtils.hasText(original)) {
+            return "";
+        }
+        String name = Paths.get(original.replace('\\', '/')).getFileName().toString().trim();
+        name = name.replaceAll("[\\\\/:*?\"<>|]", "_");
+        if (!StringUtils.hasText(name) || ".".equals(name) || "..".equals(name)) {
+            return "";
+        }
+        return name;
+    }
+
+    /**
+     * 取扩展名并保证 key 可直接拼进 URL：只认 {@code .} + 字母数字，其余（含中文、空格、超长后缀）一律丢弃。
+     *
+     * <p>扩展名要保留在 key 里，kkFileView 等下游按 URL 后缀判类型。
+     */
+    private static String urlSafeExtension(String fileName) {
+        if (!StringUtils.hasText(fileName)) {
+            return "";
+        }
+        int dot = fileName.lastIndexOf('.');
+        if (dot <= 0 || dot == fileName.length() - 1) {
+            return "";
+        }
+        String ext = fileName.substring(dot);
+        return EXTENSION_PATTERN.matcher(ext).matches() ? ext : "";
     }
 
     @Transactional
@@ -492,13 +643,11 @@ public class FileManageService {
         vo.setId(f.getId());
         vo.setPath(f.getObjectKey());
         vo.setName(f.getOriginalName());
-        vo.setStoredName(f.getStoredName());
         vo.setExtension(f.getExtension());
         vo.setContentType(f.getContentType());
         vo.setSize(f.getSizeBytes() == null ? 0 : f.getSizeBytes());
         vo.setDirectory(false);
         vo.setStorage(f.getStorage());
-        vo.setBucket(f.getBucket());
         vo.setUrl(f.getUrl());
         vo.setPreviewUrl(buildPreviewUrl(f.getUrl(), f.getOriginalName(), f.getExtension()));
         vo.setUploader(f.getUploader());
@@ -640,7 +789,7 @@ public class FileManageService {
         vo.setStorage("local");
         if (!vo.isDirectory()) {
             vo.setExtension(extractExtension(vo.getName()));
-            vo.setUrl("http://127.0.0.1:" + serverPort + "/uploads/" + relative);
+            vo.setUrl(uploadProperties.localPublicUrl(relative));
             vo.setPreviewUrl(buildPreviewUrl(vo.getUrl(), vo.getName(), vo.getExtension()));
         }
         try {
@@ -659,7 +808,8 @@ public class FileManageService {
                 || !StringUtils.hasText(kkFileViewProperties.getBaseUrl())) {
             return null;
         }
-        if (!StringUtils.hasText(fileUrl)) {
+        String absolute = uploadProperties.absoluteForPreview(fileUrl);
+        if (!StringUtils.hasText(absolute)) {
             return null;
         }
         String ext = StringUtils.hasText(extension) ? extension : extractExtension(fileName);
@@ -668,7 +818,7 @@ public class FileManageService {
         }
         String base = kkFileViewProperties.getBaseUrl().replaceAll("/+$", "");
         String encoded =
-                Base64.getEncoder().encodeToString(fileUrl.getBytes(StandardCharsets.UTF_8));
+                Base64.getEncoder().encodeToString(absolute.getBytes(StandardCharsets.UTF_8));
         return base + "/onlinePreview?url=" + URLEncoder.encode(encoded, StandardCharsets.UTF_8);
     }
 
@@ -691,7 +841,7 @@ public class FileManageService {
     }
 
     private Path resolveRoot() {
-        return Paths.get(uploadDir).toAbsolutePath().normalize();
+        return Paths.get(uploadProperties.getDir()).toAbsolutePath().normalize();
     }
 
     private Path resolveSafePath(String relativePath) {

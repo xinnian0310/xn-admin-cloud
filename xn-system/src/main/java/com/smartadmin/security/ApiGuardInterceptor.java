@@ -34,6 +34,7 @@ public class ApiGuardInterceptor implements HandlerInterceptor {
     private static final Set<String> WHITELIST =
             Set.of(
                     "/api/auth/login",
+                    "/api/auth/register",
                     "/api/auth/logout",
                     "/api/auth/captcha",
                     "/api/auth/captcha/slider",

@@ -2,6 +2,7 @@ package com.smartadmin.dto;
 
 import com.smartadmin.entity.SysNotice;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Data;
 
 @Data
@@ -10,6 +11,8 @@ public class MyNoticeVO {
     private Long id;
     private String title;
     private String content;
+    private List<AttachmentItem> attachments;
+
     private LocalDateTime publishedAt;
 
     /** 接收时间（下发时写入接收记录的时间） */
@@ -30,6 +33,7 @@ public class MyNoticeVO {
         vo.setId(notice.getId());
         vo.setTitle(notice.getTitle());
         vo.setContent(notice.getContent());
+        vo.setAttachments(AttachmentSupport.resolve(notice.getAttachments()));
         vo.setPublishedAt(notice.getPublishedAt());
         vo.setReceivedAt(receivedAt);
         vo.setRead(read);

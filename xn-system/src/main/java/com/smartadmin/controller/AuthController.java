@@ -9,6 +9,7 @@ import com.smartadmin.dto.LoginRequest;
 import com.smartadmin.dto.LoginResponse;
 import com.smartadmin.dto.PasswordRulesVO;
 import com.smartadmin.dto.ProfileUpdateRequest;
+import com.smartadmin.dto.RegisterRequest;
 import com.smartadmin.dto.SliderVerifyRequest;
 import com.smartadmin.security.ApiPermissionRegistry;
 import com.smartadmin.service.AuthService;
@@ -40,6 +41,13 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.success(authService.login(request));
+    }
+
+    /** 公开注册，注册用户固定为游客角色 */
+    @PostMapping("/register")
+    public ApiResponse<Void> register(@Valid @RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ApiResponse.success("注册成功，请登录", null);
     }
 
     @PostMapping("/logout")

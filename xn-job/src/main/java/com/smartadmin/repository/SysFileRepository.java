@@ -11,6 +11,8 @@ public interface SysFileRepository extends JpaRepository<SysFile, Long> {
 
     Optional<SysFile> findByObjectKey(String objectKey);
 
+    List<SysFile> findByObjectKeyIn(Iterable<String> objectKeys);
+
     void deleteByObjectKey(String objectKey);
 
     @Query(

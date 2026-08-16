@@ -1,6 +1,7 @@
 package com.smartadmin.service;
 
 import com.smartadmin.common.BusinessException;
+import com.smartadmin.dto.AttachmentSupport;
 import com.smartadmin.dto.MyNoticeVO;
 import com.smartadmin.dto.NoticeReaderVO;
 import com.smartadmin.dto.NoticeRequest;
@@ -15,6 +16,7 @@ import com.smartadmin.repository.SysNoticeRepository;
 import com.smartadmin.repository.UserRepository;
 import com.smartadmin.websocket.NoticeSessionHub;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +40,7 @@ public class NoticeService {
     private final RbacService rbacService;
     private final NoticeSessionHub sessionHub;
     private final DataScopeService dataScopeService;
+    private final FileManageService fileManageService;
 
     public PageResult<NoticeVO> list(int page, int size, String keyword, String status) {
         rbacService.checkPermission("notice:view");
@@ -90,6 +93,7 @@ public class NoticeService {
         SysNotice notice = new SysNotice();
         notice.setTitle(request.getTitle().trim());
         notice.setContent(request.getContent());
+        applyAttachments(notice, request);
         notice.setStatus(NoticeStatus.DRAFT);
         notice.setPublisherId(rbacService.currentUser().getId());
         return toAdminVO(noticeRepository.save(notice), currentPublisherName());
@@ -105,6 +109,7 @@ public class NoticeService {
         }
         notice.setTitle(request.getTitle().trim());
         notice.setContent(request.getContent());
+        applyAttachments(notice, request);
         return toAdminVO(noticeRepository.save(notice), currentPublisherName());
     }
 
@@ -316,6 +321,12 @@ public class NoticeService {
 
     private SysNotice findNotice(Long id) {
         return noticeRepository.findById(id).orElseThrow(() -> new BusinessException("公告不存在"));
+    }
+
+    private void applyAttachments(SysNotice notice, NoticeRequest request) {
+        var items = new ArrayList<>(AttachmentSupport.normalize(request.getAttachments()));
+        fileManageService.enrichAttachments(items);
+        notice.setAttachments(items.isEmpty() ? null : List.copyOf(items));
     }
 
     private NoticeVO toAdminVO(SysNotice notice, String publisherName) {

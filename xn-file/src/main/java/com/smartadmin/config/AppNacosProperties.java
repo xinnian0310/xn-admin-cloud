@@ -28,7 +28,7 @@ public class AppNacosProperties {
         private String namespace = "";
         private String group = "DEFAULT_GROUP";
 
-        /** 默认 dataId；留空则按 spring.application.name + profile，如 xn-file-dev.yml */
+        /** 默认 dataId；留空则按 spring.application.name + profile，如 xn-system-dev.yml */
         private String dataId = "";
 
         private boolean refresh = true;

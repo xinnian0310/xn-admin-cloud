@@ -1,6 +1,7 @@
 package com.smartadmin.service;
 
 import com.smartadmin.common.BusinessException;
+import com.smartadmin.dto.AttachmentSupport;
 import com.smartadmin.dto.MessageReaderVO;
 import com.smartadmin.dto.MessageRequest;
 import com.smartadmin.dto.MessageSendRequest;
@@ -16,6 +17,7 @@ import com.smartadmin.repository.SysMessageRepository;
 import com.smartadmin.repository.UserRepository;
 import com.smartadmin.websocket.NoticeSessionHub;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ public class MessageService {
     private final RbacService rbacService;
     private final NoticeSessionHub sessionHub;
     private final DataScopeService dataScopeService;
+    private final FileManageService fileManageService;
 
     public PageResult<MessageVO> list(int page, int size, String keyword, String status) {
         rbacService.checkPermission("message:view");
@@ -73,6 +76,7 @@ public class MessageService {
         SysMessage message = new SysMessage();
         message.setTitle(request.getTitle().trim());
         message.setContent(request.getContent());
+        applyAttachments(message, request);
         message.setStatus(MessageStatus.DRAFT);
         message.setSenderId(rbacService.currentUser().getId());
         return toAdminVO(messageRepository.save(message), currentSenderName());
@@ -88,6 +92,7 @@ public class MessageService {
         }
         message.setTitle(request.getTitle().trim());
         message.setContent(request.getContent());
+        applyAttachments(message, request);
         return toAdminVO(messageRepository.save(message), currentSenderName());
     }
 
@@ -301,6 +306,12 @@ public class MessageService {
 
     private SysMessage findMessage(Long id) {
         return messageRepository.findById(id).orElseThrow(() -> new BusinessException("消息不存在"));
+    }
+
+    private void applyAttachments(SysMessage message, MessageRequest request) {
+        var items = new ArrayList<>(AttachmentSupport.normalize(request.getAttachments()));
+        fileManageService.enrichAttachments(items);
+        message.setAttachments(items.isEmpty() ? null : List.copyOf(items));
     }
 
     private MessageVO toAdminVO(SysMessage message, String senderName) {

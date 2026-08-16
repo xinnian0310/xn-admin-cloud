@@ -6,9 +6,13 @@ import lombok.Data;
 public class FileInfoVO {
 
     private Long id;
+
+    /** 存储侧路径（MinIO object key / 本地相对路径） */
     private String path;
+
+    /** 原始文件名，列表与回显都用它 */
     private String name;
-    private String storedName;
+
     private String extension;
     private String contentType;
     private long size;
@@ -17,8 +21,6 @@ public class FileInfoVO {
 
     /** local | minio */
     private String storage;
-
-    private String bucket;
 
     /** 可直接访问的文件 URL */
     private String url;

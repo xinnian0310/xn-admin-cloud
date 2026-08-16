@@ -59,7 +59,8 @@ class RbacServicePermissionTest {
     void superAdminBypassesPermissionCheck() {
         User user = user("SuperAdmin", Set.of(role("SUPER_ADMIN")));
         authenticate("SuperAdmin");
-        when(userRepository.findByUsernameWithRoles("SuperAdmin")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsernameWithRolesIgnoreCase("SuperAdmin"))
+                .thenReturn(Optional.of(user));
         when(permissionRepository.findRoleCodesByUserId(user.getId()))
                 .thenReturn(Set.of("SUPER_ADMIN"));
 
@@ -70,7 +71,8 @@ class RbacServicePermissionTest {
     void normalUserDeniedWithoutPermission() {
         User user = user("alice", Set.of(role("USER")));
         authenticate("alice");
-        when(userRepository.findByUsernameWithRoles("alice")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsernameWithRolesIgnoreCase("alice"))
+                .thenReturn(Optional.of(user));
         when(permissionRepository.findRoleCodesByUserId(user.getId())).thenReturn(Set.of("USER"));
         when(appCacheService.getPermissionCodes(anyLong(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(List.of("menu:dashboard"));
@@ -86,7 +88,7 @@ class RbacServicePermissionTest {
     void normalUserAllowedWithPermission() {
         User user = user("bob", Set.of(role("ADMIN")));
         authenticate("bob");
-        when(userRepository.findByUsernameWithRoles("bob")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsernameWithRolesIgnoreCase("bob")).thenReturn(Optional.of(user));
         when(permissionRepository.findRoleCodesByUserId(user.getId())).thenReturn(Set.of("ADMIN"));
         when(appCacheService.getPermissionCodes(anyLong(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(List.of("api:GET:/api/users"));

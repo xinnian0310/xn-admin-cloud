@@ -1,20 +1,31 @@
 package com.smartadmin.service;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.smartadmin.common.BusinessException;
 import com.smartadmin.config.MinioProperties;
 import io.minio.BucketExistsArgs;
 import io.minio.ListObjectsArgs;
+import io.minio.ListPartsResponse;
 import io.minio.MakeBucketArgs;
+import io.minio.MinioAsyncClient;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.Result;
 import io.minio.SetBucketPolicyArgs;
+import io.minio.StatObjectArgs;
+import io.minio.errors.ErrorResponseException;
 import io.minio.messages.Item;
+import io.minio.messages.Part;
 import jakarta.annotation.PostConstruct;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,9 +37,19 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class MinioStorageService {
 
+    /** S3 原生 multipart 除最后一片外的最小分片大小（5 MiB），MinIO 服务端强制校验 */
+    public static final int MIN_MULTIPART_PART_SIZE = 5 * 1024 * 1024;
+
+    /** S3 原生 multipart 单个对象的最大分片数 */
+    public static final int MAX_MULTIPART_PARTS = 10000;
+
     private final MinioProperties properties;
 
     private volatile MinioClient client;
+
+    /** 原生 multipart 接口只在异步客户端上公开，故与同步客户端并存 */
+    private volatile MinioAsyncClient asyncClient;
+
     private volatile boolean ready;
 
     @PostConstruct
@@ -40,6 +61,11 @@ public class MinioStorageService {
         try {
             client =
                     MinioClient.builder()
+                            .endpoint(properties.getEndpoint())
+                            .credentials(properties.getAccessKey(), properties.getSecretKey())
+                            .build();
+            asyncClient =
+                    MinioAsyncClient.builder()
                             .endpoint(properties.getEndpoint())
                             .credentials(properties.getAccessKey(), properties.getSecretKey())
                             .build();
@@ -186,6 +212,152 @@ public class MinioStorageService {
         }
     }
 
+    /** 已上传分片信息。分片字节数不取存储侧返回值，由调用方按 chunkSize 推算，避免依赖可选字段。 */
+    public record PartInfo(int partNumber, String etag) {}
+
+    /** 创建原生 multipart 上传，返回存储侧 uploadId */
+    public String createMultipartUpload(String objectKey, String contentType) {
+        assertReady();
+        Multimap<String, String> headers = HashMultimap.create();
+        headers.put(
+                "Content-Type",
+                StringUtils.hasText(contentType) ? contentType : "application/octet-stream");
+        return await(
+                        () ->
+                                asyncClient.createMultipartUploadAsync(
+                                        properties.getBucket(), null, objectKey, headers, null),
+                        "创建分片上传")
+                .result()
+                .uploadId();
+    }
+
+    /** 上传单个分片，partNumber 从 1 开始，返回分片 ETag */
+    public String uploadPart(String objectKey, String uploadId, int partNumber, byte[] data) {
+        assertReady();
+        return await(
+                        () ->
+                                asyncClient.uploadPartAsync(
+                                        properties.getBucket(),
+                                        null,
+                                        objectKey,
+                                        new ByteArrayInputStream(data),
+                                        data.length,
+                                        uploadId,
+                                        partNumber,
+                                        null,
+                                        null),
+                        "上传分片 " + partNumber)
+                .etag();
+    }
+
+    /** 查询存储侧已收到的分片（自动翻页） */
+    public List<PartInfo> listParts(String objectKey, String uploadId) {
+        assertReady();
+        List<PartInfo> parts = new ArrayList<>();
+        int marker = 0;
+        while (true) {
+            final int partNumberMarker = marker;
+            ListPartsResponse response =
+                    await(
+                            () ->
+                                    asyncClient.listPartsAsync(
+                                            properties.getBucket(),
+                                            null,
+                                            objectKey,
+                                            MAX_MULTIPART_PARTS,
+                                            partNumberMarker,
+                                            uploadId,
+                                            null,
+                                            null),
+                            "查询已上传分片");
+            for (Part part : response.result().partList()) {
+                parts.add(new PartInfo(part.partNumber(), part.etag()));
+            }
+            if (!response.result().isTruncated()) {
+                return parts;
+            }
+            marker = response.result().nextPartNumberMarker();
+        }
+    }
+
+    /** 合并分片。parts 必须按 partNumber 升序且连续。 */
+    public void completeMultipartUpload(String objectKey, String uploadId, List<PartInfo> parts) {
+        assertReady();
+        Part[] array = new Part[parts.size()];
+        for (int i = 0; i < parts.size(); i++) {
+            PartInfo part = parts.get(i);
+            array[i] = new Part(part.partNumber(), part.etag());
+        }
+        await(
+                () ->
+                        asyncClient.completeMultipartUploadAsync(
+                                properties.getBucket(),
+                                null,
+                                objectKey,
+                                uploadId,
+                                array,
+                                null,
+                                null),
+                "合并分片");
+    }
+
+    /** 放弃 multipart 上传并清理已上传分片；失败只记日志，便于取消操作幂等。 */
+    public void abortMultipartUpload(String objectKey, String uploadId) {
+        if (!isReady()) {
+            return;
+        }
+        try {
+            await(
+                    () ->
+                            asyncClient.abortMultipartUploadAsync(
+                                    properties.getBucket(), null, objectKey, uploadId, null, null),
+                    "取消分片上传");
+        } catch (RuntimeException e) {
+            log.warn("取消 MinIO 分片上传失败（可忽略）：{} {}", objectKey, e.getMessage());
+        }
+    }
+
+    /** 对象字节数；对象不存在返回 null（用于判断合并是否已经完成过） */
+    public Long objectSizeOrNull(String objectKey) {
+        assertReady();
+        try {
+            return client.statObject(
+                            StatObjectArgs.builder()
+                                    .bucket(properties.getBucket())
+                                    .object(objectKey)
+                                    .build())
+                    .size();
+        } catch (ErrorResponseException e) {
+            String code = e.errorResponse() == null ? "" : e.errorResponse().code();
+            if ("NoSuchKey".equals(code) || "NoSuchObject".equals(code)) {
+                return null;
+            }
+            throw new BusinessException("读取 MinIO 对象信息失败：" + e.getMessage());
+        } catch (Exception e) {
+            throw new BusinessException("读取 MinIO 对象信息失败：" + e.getMessage());
+        }
+    }
+
+    /** 统一处理异步调用的等待与异常转换 */
+    private <T> T await(MinioCall<T> call, String action) {
+        try {
+            return call.get().get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException("MinIO " + action + "被中断");
+        } catch (ExecutionException | CompletionException e) {
+            Throwable cause = e.getCause() == null ? e : e.getCause();
+            throw new BusinessException("MinIO " + action + "失败：" + cause.getMessage());
+        } catch (Exception e) {
+            throw new BusinessException("MinIO " + action + "失败：" + e.getMessage());
+        }
+    }
+
+    @FunctionalInterface
+    private interface MinioCall<T> {
+        CompletableFuture<T> get() throws Exception;
+    }
+
     /** 创建“目录”（写入空占位对象 prefix/.keep） */
     public void mkdir(String prefix) {
         assertReady();
@@ -220,7 +392,7 @@ public class MinioStorageService {
     }
 
     public String publicUrl(String objectKey) {
-        String endpoint = properties.getEndpoint().replaceAll("/+$", "");
+        String endpoint = properties.resolvedPublicEndpoint();
         return endpoint + "/" + properties.getBucket() + "/" + objectKey.replace("\\", "/");
     }
 

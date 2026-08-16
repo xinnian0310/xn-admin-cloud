@@ -23,6 +23,9 @@ public class NoticeSessionHub {
 
     private static final Logger log = LoggerFactory.getLogger(NoticeSessionHub.class);
 
+    /** 强制下线专用关闭码；4000-4999 为应用私有区间，浏览器可原样拿到 code 与 reason。 */
+    public static final CloseStatus KICKED_STATUS = new CloseStatus(4401, "kicked");
+
     private final ObjectMapper objectMapper;
 
     /** userId -> sessions（同一用户可多端） */
@@ -82,15 +85,25 @@ public class NoticeSessionHub {
 
     /** 强制下线：关闭该用户全部 WebSocket 会话，返回关闭的连接数 */
     public int kickUser(Long userId) {
+        return kickUser(userId, null);
+    }
+
+    /** 强制下线：先向该用户各端推送 payload，再关闭全部 WebSocket 会话，返回关闭的连接数 */
+    public int kickUser(Long userId, Object payload) {
         Set<WebSocketSession> sessions = sessionsByUser.remove(userId);
         if (sessions == null || sessions.isEmpty()) {
             return 0;
         }
+        TextMessage notice =
+                payload == null ? null : new TextMessage(objectMapper.writeValueAsString(payload));
         int closed = 0;
         for (WebSocketSession session : sessions) {
+            if (notice != null) {
+                sendSafe(session, notice);
+            }
             try {
                 if (session.isOpen()) {
-                    session.close(CloseStatus.NORMAL.withReason("kicked"));
+                    session.close(KICKED_STATUS);
                     closed++;
                 }
             } catch (IOException e) {

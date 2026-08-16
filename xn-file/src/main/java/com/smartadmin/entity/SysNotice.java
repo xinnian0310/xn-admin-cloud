@@ -1,7 +1,9 @@
 package com.smartadmin.entity;
 
+import com.smartadmin.dto.AttachmentItem;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
@@ -23,6 +25,11 @@ public class SysNotice {
     @Lob
     @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String content;
+
+    /** 全部附件；空表示无附件 */
+    @Convert(converter = AttachmentListConverter.class)
+    @Column(name = "attachments", columnDefinition = "LONGTEXT")
+    private List<AttachmentItem> attachments;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

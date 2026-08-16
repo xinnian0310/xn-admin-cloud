@@ -13,6 +13,8 @@ import com.smartadmin.repository.PermissionRepository;
 import com.smartadmin.repository.RoleRepository;
 import com.smartadmin.repository.SysPageUiConfigRepository;
 import com.smartadmin.repository.SysRouteRepository;
+import com.smartadmin.util.CodegenClientProfile;
+import com.smartadmin.util.CodegenFrontendEmitter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +37,6 @@ public class RouteCodegenService {
 
     private static final String JAVA_BASE =
             "xn-admin-cloud/xn-system/src/main/java/com/smartadmin/";
-    private static final String VUE_BASE = "xn-admin-vue3-ts/src/";
 
     private final SysRouteRepository routeRepository;
     private final PermissionRepository permissionRepository;
@@ -58,6 +59,7 @@ public class RouteCodegenService {
 
         String prefix = normalizePrefix(request.getModulePrefix());
         String apiBase = normalizeApiBase(request.getApiBasePath());
+        CodegenClientProfile profile = CodegenClientProfile.fromClientId(request.getClientId());
         boolean persistPerms =
                 request.getPersistPermissions() == null || request.getPersistPermissions();
         boolean genPageUi = request.getGeneratePageUi() == null || request.getGeneratePageUi();
@@ -74,7 +76,13 @@ public class RouteCodegenService {
                 .append(" (")
                 .append(route.getPath())
                 .append(")\n");
-        sql.append("-- 模板=CRUD 前缀=").append(prefix).append(" API=").append(apiBase).append("\n\n");
+        sql.append("-- 模板=CRUD 前缀=")
+                .append(prefix)
+                .append(" API=")
+                .append(apiBase)
+                .append(" client=")
+                .append(profile.getClientId())
+                .append("\n\n");
 
         for (PermSpec spec : specs) {
             sql.append(toInsertSql(spec, menuPerm));
@@ -97,7 +105,7 @@ public class RouteCodegenService {
         String schemaSql = schemaSql(toTableName(prefix), route.getTitle());
         sql.append("\n").append(schemaSql);
 
-        List<RouteCodegenVO.GeneratedFile> files = buildFiles(route, prefix, apiBase);
+        List<RouteCodegenVO.GeneratedFile> files = buildFiles(route, prefix, apiBase, profile);
 
         RouteCodegenVO vo = new RouteCodegenVO();
         vo.setRouteId(route.getId());
@@ -230,7 +238,7 @@ public class RouteCodegenService {
     }
 
     private List<RouteCodegenVO.GeneratedFile> buildFiles(
-            SysRoute route, String prefix, String apiBase) {
+            SysRoute route, String prefix, String apiBase, CodegenClientProfile profile) {
         List<RouteCodegenVO.GeneratedFile> files = new ArrayList<>();
         String viewPath = route.getViewPath();
         String title = route.getTitle();
@@ -238,7 +246,6 @@ public class RouteCodegenService {
         String pascal = toPascal(prefix);
         String camel = toCamel(pascal);
         String table = toTableName(prefix);
-        String apiModule = prefix;
         String apiUrl = apiBase.startsWith("/api/") ? apiBase.substring(4) : apiBase;
 
         files.add(
@@ -263,21 +270,20 @@ public class RouteCodegenService {
                 RouteCodegenVO.GeneratedFile.of(
                         JAVA_BASE + "controller/" + pascal + "Controller.java",
                         controllerJava(pascal, camel, apiBase, title)));
-        files.add(
-                RouteCodegenVO.GeneratedFile.of(
-                        VUE_BASE + "views/" + viewPath + "/index.vue",
-                        crudIndexVue(title, routePath, apiModule, prefix)));
-        files.add(
-                RouteCodegenVO.GeneratedFile.of(
-                        VUE_BASE + "views/" + viewPath + "/save.vue",
-                        crudSaveVue(title, apiModule, pascal)));
-        files.add(
-                RouteCodegenVO.GeneratedFile.of(
-                        VUE_BASE + "api/" + apiModule + ".ts", apiTs(apiModule, apiUrl)));
+
+        for (CodegenFrontendEmitter.FrontendFile ff :
+                CodegenFrontendEmitter.emitRouteCrud(
+                        new CodegenFrontendEmitter.RouteFrontendParams(
+                                profile, title, routePath, viewPath, prefix, pascal, apiUrl))) {
+            files.add(RouteCodegenVO.GeneratedFile.of(ff.path(), ff.content()));
+        }
+
         files.add(
                 RouteCodegenVO.GeneratedFile.of(
                         "README.md",
-                        readmeCrud(title, prefix, pascal, table, apiBase, viewPath, routePath)));
+                        readmeCrud(
+                                profile, title, prefix, pascal, table, apiBase, viewPath,
+                                routePath)));
         files.add(
                 RouteCodegenVO.GeneratedFile.of(
                         "sql/" + prefix + "-schema.sql", schemaSql(table, title)));
@@ -494,6 +500,7 @@ public class RouteCodegenService {
     // ---------- README ----------
 
     private String readmeCrud(
+            CodegenClientProfile profile,
             String title,
             String prefix,
             String pascal,
@@ -505,31 +512,48 @@ public class RouteCodegenService {
                 # %s — 路由脚手架（标准 CRUD）
 
                 标准字段：`code` / `name` / `sort` / `status` / `remark`。表名：`%s`。
+                前端工程：`%s`
 
                 ## 使用步骤
 
                 1. 将 ZIP 内文件按路径拷贝到工程（覆盖前请确认无同名冲突）
                    - 后端 → `xn-admin-cloud/xn-system/...`
-                   - 前端 → `xn-admin-vue3-ts/src/...`
+                   - 前端 → `%s...`
                 2. 开发环境重启 **xn-system**（`ddl-auto:update` 会按 Entity 自动建表）
                    - 生产建议执行 `sql/%s-schema.sql`，并将 `ddl-auto` 设为 `validate`
                 3. 刷新浏览器；打开菜单 `%s`（`%s`）试用增删改查
-                4. 按业务改字段：同步改 Entity / Request / VO / Repository / Vue 列与表单
+                4. 按业务改字段：同步改 Entity / Request / VO / Repository / 前端页面与表单
 
                 ## 生成信息
 
                 | 项 | 值 |
                 |----|----|
+                | clientId | `%s` |
                 | 模块前缀 | `%s` |
                 | API | `%s` |
                 | Entity | `%s` |
-                | 视图 | `views/%s` |
+                | 页面 | `%s/%s` |
 
                 权限码示例：`%s:create`、`%s:view`、`%s:update`、`%s:delete`。
                 """
                 .formatted(
-                        title, table, prefix, title, routePath, prefix, apiBase, pascal, viewPath,
-                        prefix, prefix, prefix, prefix);
+                        title,
+                        table,
+                        profile.getClientId(),
+                        profile.getSrcBase(),
+                        prefix,
+                        title,
+                        routePath,
+                        profile.getClientId(),
+                        prefix,
+                        apiBase,
+                        pascal,
+                        profile.getPageDir(),
+                        viewPath,
+                        prefix,
+                        prefix,
+                        prefix,
+                        prefix);
     }
 
     // ---------- Java templates ----------
@@ -863,380 +887,6 @@ public class RouteCodegenService {
                         pascal, pascal, prefix, camel, pascal, pascal, pascal, camel, pascal,
                         pascal, prefix, pascal, camel, pascal, camel, prefix, camel, prefix, camel,
                         pascal, pascal, pascal, camel);
-    }
-
-    // ---------- Vue templates ----------
-
-    private String crudIndexVue(String title, String routePath, String apiModule, String prefix) {
-        return """
-                <template>
-                  <xnPageLayout
-                    v-model:view-mode="viewMode"
-                    v-model:page="page"
-                    v-model:page-size="size"
-                    :show-pagination="true"
-                    :total="total"
-                    :loading="loading"
-                    @page-change="loadData"
-                  >
-                    <template #search>
-                      <xnSearch :search-item="searchItems" @query-form="inquires" @reset="reset" />
-                    </template>
-
-                    <template #toolbar>
-                      <xnButton :list-item="buttonItems" :selected="selected" @button-click="buttonClick" />
-                    </template>
-
-                    <template #table>
-                      <xnTable
-                        v-model:page="page"
-                        v-model:page-size="size"
-                        :data="tableData"
-                        :total="total"
-                        :loading="loading"
-                        table-key="%s"
-                        entity-name="%s"
-                        name-field="name"
-                        :columns="columns"
-                        :action-items="tableButtonItems"
-                        stripe
-                        @selection-change="(rows) => (selected = rows as any[])"
-                        @page-change="loadData"
-                      >
-                        <template #status="{ row }">
-                          <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
-                            {{ row.status === 1 ? '启用' : '停用' }}
-                          </el-tag>
-                        </template>
-                        <template #actions="{ row }">
-                          <xnTableActions
-                            :items="tableButtonItems"
-                            :row="row"
-                            @action-click="onTableAction"
-                          />
-                        </template>
-                      </xnTable>
-                    </template>
-                  </xnPageLayout>
-
-                  <SaveDialog ref="saveRef" @success="loadData" />
-                </template>
-
-                <script setup lang="ts">
-                import { onMounted, ref } from 'vue'
-                import { ElMessage, ElMessageBox } from 'element-plus'
-                import xnPageLayout from '@/components/xnPageLayout/xnPageLayout.vue'
-                import xnSearch from '@/components/xnSearch/xnSearch.vue'
-                import xnButton from '@/components/xnButton/xnButton.vue'
-                import xnTableActions from '@/components/xnButton/xnTableActions.vue'
-                import xnTable from '@/components/xnTable/xnTable.vue'
-                import SaveDialog from './save.vue'
-                import { usePageUi } from '@/composables/usePageUi'
-                import { list, batchRemove, remove } from '@/api/%s'
-                import type { SearchForm } from '@/types/search'
-                import type { SaveMode } from '@/types/save'
-                import type { TableColumnItem } from '@/types/table'
-
-                defineOptions({ name: '%s' })
-
-                const { searchItems, buttonItems, tableButtonItems } = usePageUi('%s')
-                const saveRef = ref<InstanceType<typeof SaveDialog>>()
-                const loading = ref(false)
-                const tableData = ref<any[]>([])
-                const total = ref(0)
-                const page = ref(1)
-                const size = ref(10)
-                const queryForm = ref<SearchForm>({})
-                const viewMode = ref<'table' | 'card'>('table')
-                const selected = ref<any[]>([])
-
-                const columns: TableColumnItem[] = [
-                  { type: 'selection', width: 50, fixed: true },
-                  { prop: 'id', label: 'ID', width: 80 },
-                  { prop: 'code', label: '编码', minWidth: 120 },
-                  { prop: 'name', label: '名称', minWidth: 160 },
-                  { prop: 'sort', label: '排序', width: 90 },
-                  { type: 'slot', slot: 'status', label: '状态', width: 90 },
-                  { prop: 'remark', label: '备注', minWidth: 140, showOverflowTooltip: true },
-                  { type: 'slot', slot: 'actions', label: '操作', fixed: 'right', width: 140 },
-                ]
-
-                function openSave(mode: SaveMode, id?: number) {
-                  saveRef.value?.open(mode, id)
-                }
-
-                async function loadData() {
-                  loading.value = true
-                  try {
-                    const res = await list({
-                      page: page.value - 1,
-                      size: size.value,
-                      keyword: String(queryForm.value.FuzzyWord ?? '').trim() || undefined,
-                    })
-                    tableData.value = res.data.records
-                    total.value = res.data.total
-                  } finally {
-                    loading.value = false
-                  }
-                }
-
-                async function inquires(form: SearchForm) {
-                  queryForm.value = form
-                  page.value = 1
-                  await loadData()
-                }
-
-                async function reset() {
-                  queryForm.value = {}
-                  page.value = 1
-                  await loadData()
-                }
-
-                async function handleDelete(row: any) {
-                  await ElMessageBox.confirm(`确认删除「${row.name ?? row.id}」？`, '提示', { type: 'warning' })
-                  await remove(row.id)
-                  ElMessage.success('删除成功')
-                  await loadData()
-                }
-
-                async function handleBatchDelete() {
-                  if (!selected.value.length) {
-                    ElMessage.warning('请先选择数据')
-                    return
-                  }
-                  await ElMessageBox.confirm(`确认删除选中的 ${selected.value.length} 条？`, '提示', { type: 'warning' })
-                  await batchRemove(selected.value.map((r) => r.id))
-                  ElMessage.success('删除成功')
-                  await loadData()
-                }
-
-                function buttonClick(action: string) {
-                  switch (action) {
-                    case 'add':
-                      openSave('add')
-                      break
-                    case 'edit':
-                      if (selected.value.length !== 1) {
-                        ElMessage.warning('请选择一条记录')
-                        return
-                      }
-                      openSave('edit', selected.value[0].id)
-                      break
-                    case 'view':
-                      if (selected.value.length !== 1) {
-                        ElMessage.warning('请选择一条记录')
-                        return
-                      }
-                      openSave('view', selected.value[0].id)
-                      break
-                    case 'delete':
-                      void handleBatchDelete()
-                      break
-                  }
-                }
-
-                function onTableAction(payload: { action: string; row: Record<string, any> }) {
-                  const row = payload.row
-                  switch (payload.action) {
-                    case 'edit':
-                      openSave('edit', row.id)
-                      break
-                    case 'delete':
-                      void handleDelete(row)
-                      break
-                  }
-                }
-
-                onMounted(loadData)
-                </script>
-                """
-                .formatted(
-                        routePath.replace('/', ':').replaceAll("^:", ""),
-                        title,
-                        apiModule,
-                        toPascal(prefix) + "Page",
-                        routePath);
-    }
-
-    private String crudSaveVue(String title, String apiModule, String pascal) {
-        return """
-                <template>
-                  <el-dialog
-                    v-model="visible"
-                    :title="dialogTitle"
-                    width="520px"
-                    destroy-on-close
-                    @closed="handleClosed"
-                  >
-                    <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" :disabled="mode === 'view'">
-                      <el-form-item label="名称" prop="name">
-                        <el-input v-model="form.name" maxlength="50" />
-                      </el-form-item>
-                      <el-form-item label="编码" prop="code">
-                        <el-input
-                          v-model="form.code"
-                          :disabled="mode === 'view'"
-                          maxlength="50"
-                          placeholder="字母开头，如 demo01"
-                        />
-                      </el-form-item>
-                      <el-form-item label="排序" prop="sort">
-                        <el-input-number v-model="form.sort" :min="0" :max="9999" />
-                      </el-form-item>
-                      <el-form-item label="状态" prop="status">
-                        <el-radio-group v-model="form.status">
-                          <el-radio :value="1">启用</el-radio>
-                          <el-radio :value="0">停用</el-radio>
-                        </el-radio-group>
-                      </el-form-item>
-                      <el-form-item label="备注" prop="remark">
-                        <el-input v-model="form.remark" type="textarea" :rows="3" maxlength="200" />
-                      </el-form-item>
-                    </el-form>
-                    <template #footer>
-                      <el-button @click="visible = false">{{ mode === 'view' ? '关闭' : '取消' }}</el-button>
-                      <el-button v-if="mode !== 'view'" type="primary" :loading="submitting" @click="handleSubmit">保存</el-button>
-                    </template>
-                  </el-dialog>
-                </template>
-
-                <script setup lang="ts">
-                import { computed, reactive, ref } from 'vue'
-                import type { FormInstance, FormRules } from 'element-plus'
-                import { ElMessage } from 'element-plus'
-                import { create, get, update } from '@/api/%s'
-                import { saveDialogTitle, type SaveMode } from '@/types/save'
-
-                defineOptions({ name: '%sSave' })
-
-                const emit = defineEmits<{ success: [] }>()
-
-                const visible = ref(false)
-                const mode = ref<SaveMode>('add')
-                const editingId = ref<number | null>(null)
-                const submitting = ref(false)
-                const formRef = ref<FormInstance>()
-
-                const dialogTitle = computed(() => saveDialogTitle(mode.value, '%s'))
-
-                const form = reactive({
-                  code: '',
-                  name: '',
-                  sort: 0,
-                  status: 1 as number,
-                  remark: '',
-                })
-
-                const rules: FormRules = {
-                  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
-                  code: [
-                    { required: true, message: '请输入编码', trigger: 'blur' },
-                    {
-                      pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
-                      message: '需以字母开头，只能包含字母、数字、下划线',
-                      trigger: 'blur',
-                    },
-                  ],
-                }
-
-                function resetForm() {
-                  form.code = ''
-                  form.name = ''
-                  form.sort = 0
-                  form.status = 1
-                  form.remark = ''
-                  editingId.value = null
-                  formRef.value?.clearValidate()
-                }
-
-                async function loadDetail(id: number) {
-                  const res = await get(id)
-                  form.code = res.data.code ?? ''
-                  form.name = res.data.name ?? ''
-                  form.sort = res.data.sort ?? 0
-                  form.status = res.data.status ?? 1
-                  form.remark = res.data.remark ?? ''
-                }
-
-                async function open(openMode: SaveMode, id?: number) {
-                  mode.value = openMode
-                  resetForm()
-                  editingId.value = id ?? null
-                  visible.value = true
-                  if (openMode !== 'add' && id) {
-                    await loadDetail(id)
-                  }
-                }
-
-                async function handleSubmit() {
-                  if (!formRef.value) return
-                  await formRef.value.validate(async (valid) => {
-                    if (!valid) return
-                    submitting.value = true
-                    try {
-                      if (mode.value === 'edit' && editingId.value) {
-                        await update(editingId.value, { ...form })
-                        ElMessage.success('更新成功')
-                      } else {
-                        await create({ ...form })
-                        ElMessage.success('创建成功')
-                      }
-                      visible.value = false
-                      emit('success')
-                    } finally {
-                      submitting.value = false
-                    }
-                  })
-                }
-
-                function handleClosed() {
-                  resetForm()
-                }
-
-                defineExpose({ open })
-                </script>
-                """
-                .formatted(apiModule, pascal, title);
-    }
-
-    private String apiTs(String apiModule, String apiUrl) {
-        return """
-                import request from '@/utils/request'
-                import type { ApiResponse, PageResult } from '@/types'
-
-                export type ListParams = { page: number; size: number; keyword?: string; status?: number }
-
-                /** 分页列表 */
-                export function list(params?: ListParams) {
-                  return request.get<any, ApiResponse<PageResult<any>>>('%s', { params })
-                }
-
-                /** 详情 */
-                export function get(id: number) {
-                  return request.get<any, ApiResponse<any>>(`%s/${id}`)
-                }
-
-                /** 新增 */
-                export function create(data: Record<string, unknown>) {
-                  return request.post<any, ApiResponse<any>>('%s', data)
-                }
-
-                /** 更新 */
-                export function update(id: number, data: Record<string, unknown>) {
-                  return request.put<any, ApiResponse<any>>(`%s/${id}`, data)
-                }
-
-                /** 删除 */
-                export function remove(id: number) {
-                  return request.delete<any, ApiResponse<void>>(`%s/${id}`)
-                }
-
-                /** 批量删除 */
-                export function batchRemove(ids: number[]) {
-                  return request.post<any, ApiResponse<{ count: number }>>('%s/batch-delete', { ids })
-                }
-                """
-                .formatted(apiUrl, apiUrl, apiUrl, apiUrl, apiUrl, apiUrl);
     }
 
     // ---------- specs ----------

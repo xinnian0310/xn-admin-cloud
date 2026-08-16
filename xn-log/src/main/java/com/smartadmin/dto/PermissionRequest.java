@@ -34,6 +34,9 @@ public class PermissionRequest {
     @Size(max = 50, message = "图标长度不能超过50")
     private String icon;
 
+    @Size(max = 80, message = "Ant 图标长度不能超过80")
+    private String iconAntd;
+
     @Size(max = 20, message = "按钮颜色长度不能超过20")
     private String buttonColor;
 

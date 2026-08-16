@@ -1,6 +1,7 @@
 package com.smartadmin.websocket;
 
 import com.smartadmin.security.JwtUtil;
+import com.smartadmin.service.TokenBlacklistService;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -22,6 +23,7 @@ public class NoticeWebSocketHandler extends TextWebSocketHandler {
     private final JwtUtil jwtUtil;
     private final NoticeSessionHub sessionHub;
     private final ObjectMapper objectMapper;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -33,6 +35,18 @@ public class NoticeWebSocketHandler extends TextWebSocketHandler {
         Long userId = jwtUtil.getUserId(token);
         if (userId == null) {
             session.close(CloseStatus.NOT_ACCEPTABLE.withReason("invalid token"));
+            return;
+        }
+        // 被踢用户的浏览器会自动重连，这里必须复核黑名单，否则会重新出现在在线列表里
+        if (tokenBlacklistService.isRevoked(token, userId, jwtUtil.getIssuedAtMillis(token))) {
+            session.sendMessage(
+                    new TextMessage(
+                            objectMapper.writeValueAsString(
+                                    Map.of(
+                                            "type", "auth:force-logout",
+                                            "reason", "kicked",
+                                            "message", "登录状态已失效，请重新登录"))));
+            session.close(NoticeSessionHub.KICKED_STATUS);
             return;
         }
         sessionHub.register(userId, session);

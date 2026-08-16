@@ -46,6 +46,7 @@ public class PageUiService {
         // 按钮统一来自「权限内容」：
         // - BUTTON → 工具栏 xnButton（新增/编辑/查看/删除）
         // - TABLE_BUTTON → 表格操作列 xnTableActions（查看/编辑/删除 + 页面扩展）
+        // - action=capability 仅作角色分配，不渲染到页面按钮
         Permission menu = resolveMenuPermission(routePath);
         if (menu != null) {
             vo.setButtons(collectButtons(menu, PermissionType.BUTTON));
@@ -71,6 +72,7 @@ public class PageUiService {
         }
         menu.getChildren().stream()
                 .filter(child -> child.getType() == type)
+                .filter(child -> !"capability".equals(child.getAction()))
                 .filter(child -> rbacService.hasPermission(child.getCode()))
                 .sorted(Comparator.comparing(p -> p.getSort() == null ? 0 : p.getSort()))
                 .forEach(child -> result.add(toButtonDto(child)));

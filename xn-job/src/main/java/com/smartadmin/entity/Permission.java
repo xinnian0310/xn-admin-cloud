@@ -47,6 +47,10 @@ public class Permission {
     @Column(length = 50)
     private String icon;
 
+    /** React / Ant Design 前端图标（可选） */
+    @Column(name = "icon_antd", length = 80)
+    private String iconAntd;
+
     /** 按钮颜色，对应前端 typeColor：primary / success / warning / danger / info / default */
     @Column(length = 20)
     private String buttonColor;

@@ -14,6 +14,12 @@ public class RouteCodegenRequest {
     @NotBlank(message = "请填写 API 路径")
     private String apiBasePath;
 
+    /**
+     * 前端工程标识，默认 xn-admin-vue3-ts。 允许：xn-admin-vue3-ts / xn-admin-vue3-js / xn-admin-vue2-js /
+     * xn-admin-react-ts
+     */
+    private String clientId = "xn-admin-vue3-ts";
+
     /** 是否将按钮/接口权限写入数据库（默认 true） */
     private Boolean persistPermissions = true;
 

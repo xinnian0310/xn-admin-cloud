@@ -17,6 +17,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -83,7 +84,15 @@ public class MonitorService {
     public int kick(Long userId) {
         rbacService.checkPermission("api:POST:/api/monitor/online/{userId}/kick");
         tokenBlacklistService.revokeUser(userId);
-        return sessionHub.kickUser(userId);
+        return sessionHub.kickUser(
+                userId,
+                Map.of(
+                        "type",
+                        "auth:force-logout",
+                        "reason",
+                        "kicked",
+                        "message",
+                        "您已被管理员强制下线，请重新登录"));
     }
 
     public ServerMonitorVO server() {

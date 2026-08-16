@@ -13,7 +13,13 @@ public class AppConfigVO {
     private AppInfo app = new AppInfo();
     private SessionConfig session = new SessionConfig();
     private UiConfig ui = new UiConfig();
-    private StorageConfig storage = new StorageConfig();
+
+    /**
+     * 对象存储访问前缀字典：key=名字（如 minio），value=路径前缀（如 http://127.0.0.1:9000/xn-admin/）。 由 sys_cfg_storage
+     * 行表组装；空则前端使用本地 app.ts 兜底。
+     */
+    private Map<String, String> storage = new LinkedHashMap<>();
+
     private LogRetentionConfig logRetention = new LogRetentionConfig();
     private SensitiveDataConfig sensitiveData = new SensitiveDataConfig();
 
@@ -108,7 +114,7 @@ public class AppConfigVO {
     @Getter
     @Setter
     public static class DialogUi {
-        private String maxHeight = "95vh";
+        private String maxHeight = "80vh";
     }
 
     @Getter
@@ -193,20 +199,6 @@ public class AppConfigVO {
 
         /** React XnModal 可拖拽；与 Element Plus dialog.draggable 语义对齐 */
         private Boolean draggable = true;
-    }
-
-    @Getter
-    @Setter
-    public static class StorageConfig {
-        private MinioConfig minio = new MinioConfig();
-    }
-
-    @Getter
-    @Setter
-    public static class MinioConfig {
-        private String endpoint = "";
-        private String bucket = "";
-        private String region = "";
     }
 
     /** 日志保留天数；定时任务按此清理过期日志。0 或负数表示不清理。 */

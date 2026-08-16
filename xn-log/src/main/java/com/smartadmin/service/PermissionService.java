@@ -80,6 +80,7 @@ public class PermissionService {
         // action/icon/buttonColor 属于 UI 元数据，内置权限也允许调整
         permission.setAction(request.getAction());
         permission.setIcon(request.getIcon());
+        permission.setIconAntd(request.getIconAntd());
         permission.setButtonColor(request.getButtonColor());
         PermissionVO vo = PermissionVO.from(permissionRepository.save(permission));
         apiPermissionRegistry.reload();
@@ -111,6 +112,7 @@ public class PermissionService {
         permission.setMethod(request.getMethod());
         permission.setAction(request.getAction());
         permission.setIcon(request.getIcon());
+        permission.setIconAntd(request.getIconAntd());
         permission.setButtonColor(request.getButtonColor());
         permission.setSort(request.getSort() != null ? request.getSort() : 0);
         if (request.getParentId() != null) {

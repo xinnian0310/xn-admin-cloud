@@ -32,7 +32,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
             Long userId = jwtUtil.getUserId(token);
             long iat = jwtUtil.getIssuedAtMillis(token);
-            if (!tokenBlacklistService.isRevoked(token, userId, iat)) {
+            if (tokenBlacklistService.isRevoked(token, userId, iat)) {
+                request.setAttribute(RestAuthEntryPoint.REVOKED_ATTRIBUTE, Boolean.TRUE);
+            } else {
                 try {
                     UserDetails userDetails = resolveUserDetails(token, userId);
                     UsernamePasswordAuthenticationToken authentication =
