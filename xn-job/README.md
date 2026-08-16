@@ -10,3 +10,18 @@ set SPRING_PROFILES_ACTIVE=dev,cloud
 ```
 
 配置参考 [`env.example`](./env.example)。
+
+## API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/jobs` | 任务列表 |
+| GET | `/api/jobs/{id}` | 任务详情 |
+| POST | `/api/jobs` | 新增 |
+| PUT | `/api/jobs/{id}` | 修改 |
+| DELETE | `/api/jobs/{id}` | 删除 |
+| POST | `/api/jobs/batch-delete` | 批量删除 |
+| PUT | `/api/jobs/{id}/status` | 启停 |
+| POST | `/api/jobs/{id}/run` | 立即执行 |
+
+任务日志在 **xn-log**（`/api/logs/job`），不在本服务。前端定时任务页已闭环；任务日志页尚未落地。

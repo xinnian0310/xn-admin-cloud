@@ -1,6 +1,6 @@
 # xn-system
 
-微服务核心业务服务（端口 **8081**）：登录鉴权、RBAC、组织、字典、配置、公告、站内信、监控等。经网关 [`xn-gateway`](../xn-gateway/)（8088）对外提供 `/api/**`（除 files / logs / jobs）。
+微服务核心业务服务（端口 **8081**）：登录鉴权、RBAC、组织岗位、字典、配置、公告、站内信、监控、回收站、代码生成等。经网关 [`xn-gateway`](../xn-gateway/)（8088）对外提供 `/api/**`（除 files / logs / jobs）。
 
 属于本仓库 [`xn-admin-cloud`](../README.md)；配套前端为独立仓库 **xn-admin-vue3-ts** 等。
 
@@ -53,20 +53,27 @@ set SPRING_PROFILES_ACTIVE=dev,cloud
 
 | 前缀 | 说明 |
 |------|------|
-| `/api/auth` | 登录、刷新、当前用户、菜单、API 注册表、验证码 |
-| `/api/users` | 用户 CRUD、导入、状态、批量删除 |
+| `/api/auth` | 登录、注册、刷新、当前用户、改密、头像、菜单、API 注册表、验证码 |
+| `/api/users` | 用户 CRUD、导入导出、状态、批量删除 |
 | `/api/roles` | 角色 CRUD、分配权限、数据权限范围 |
 | `/api/permissions` | 权限树 / 分组 CRUD |
-| `/api/routes` | 路由树 CRUD、代码生成 |
-| `/api/units` | 组织单位树、单位角色 |
+| `/api/routes` | 路由树 CRUD、按路由代码生成 |
+| `/api/units` | 组织单位树、单位默认角色 |
+| `/api/posts` | 岗位 CRUD、导入导出、启停 |
 | `/api/dict-types` / `/api/dict-data` | 字典类型与数据 |
-| `/api/notices` | 公告管理、发布/撤回、我的公告 |
-| `/api/messages` | 站内信管理、我的消息 |
+| `/api/notices` | 公告管理、发布/撤回、我的公告、已读 |
+| `/api/messages` | 站内信管理、发送、我的消息 |
 | `/api/login-page-configs` | 登录页配置（含公开 `/active`） |
-| `/api/system-config` | 系统配置（含公开配置、品牌资源上传） |
-| `/api/security-policy` | 登录锁定 / 限流策略 |
+| `/api/system-config` | 系统配置（品牌、会话、UI、存储、日志保留、脱敏） |
+| `/api/security-policy` | 登录锁定 / 限流 / 密码策略 / 解锁 |
+| `/api/site-contact` | 联系与捐赠（含公开接口） |
+| `/api/site-ui-shots` | 站点界面截图（公开） |
+| `/api/user-ui-config` | 登录用户个人布局 / 字号 |
 | `/api/page-ui` | 当前路由的搜索/按钮 UI |
 | `/api/table-columns` | 用户表格列偏好 |
+| `/api/attachments` | 附件上传 |
+| `/api/codegen` | 按表预览 / 生成代码 |
+| `/api/recycle` | 回收站：列表、恢复、彻底删除、清空 |
 | `/api/dashboard` | 工作台统计 |
 | `/api/monitor` | 在线用户、踢下线、服务 / Redis / SQL 监控 |
 | `/ws/notices` | 公告 WebSocket |
