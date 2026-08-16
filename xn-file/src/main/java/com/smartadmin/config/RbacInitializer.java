@@ -1777,14 +1777,17 @@ public class RbacInitializer implements CommandLineRunner {
         }
     }
 
-    /** 改密给全部角色；改资料/头像不授给管理员（超管由业务层禁止）。 */
+    /** 密码规则全角色可读；资料/头像/改密写接口不授给管理员。仅空库首次种子执行。 */
     private void grantProfileUpdateToAllRoles() {
         grantApiToAllRoles("api:GET:/api/auth/password-rules");
-        grantApiToAllRoles("api:PUT:/api/auth/me/password");
         if (!seedRolePermissions) {
             return;
         }
-        for (String code : List.of("api:PUT:/api/auth/me", "api:POST:/api/auth/me/avatar")) {
+        for (String code :
+                List.of(
+                        "api:PUT:/api/auth/me",
+                        "api:POST:/api/auth/me/avatar",
+                        "api:PUT:/api/auth/me/password")) {
             Permission permission = permissionRepository.findByCode(code).orElse(null);
             if (permission == null) {
                 continue;
@@ -2536,7 +2539,9 @@ public class RbacInitializer implements CommandLineRunner {
 
     private boolean belongsToAdminViewOnlyModule(Permission p) {
         String code = nullToEmpty(p.getCode());
-        if ("api:PUT:/api/auth/me".equals(code) || "api:POST:/api/auth/me/avatar".equals(code)) {
+        if ("api:PUT:/api/auth/me".equals(code)
+                || "api:POST:/api/auth/me/avatar".equals(code)
+                || "api:PUT:/api/auth/me/password".equals(code)) {
             return true;
         }
         for (String prefix :

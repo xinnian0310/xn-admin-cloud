@@ -177,10 +177,13 @@ public class AuthService {
         return buildAuthUser(refreshed);
     }
 
-    /** 修改密码：校验原密码 + 密码策略 */
+    /** 修改密码：校验原密码 + 密码策略；管理员禁止自助改密 */
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
         User user = rbacService.currentUser();
+        if (rbacService.isAdmin(user)) {
+            throw new BusinessException("管理员禁止修改密码");
+        }
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new BusinessException("原密码不正确");
         }
