@@ -43,7 +43,7 @@ public class AuthController {
         return ApiResponse.success(authService.login(request));
     }
 
-    /** 公开注册，注册用户固定为游客角色 */
+    /** 公开注册，注册用户固定为普通用户角色 */
     @PostMapping("/register")
     public ApiResponse<Void> register(@Valid @RequestBody RegisterRequest request) {
         authService.register(request);
@@ -81,7 +81,7 @@ public class AuthController {
         return ApiResponse.success(authService.currentUser());
     }
 
-    /** 更新当前用户个人信息（超级管理员禁止） */
+    /** 更新当前用户个人信息（超管与管理员禁止） */
     @PutMapping("/me")
     public ApiResponse<AuthUserVO> updateMe(@Valid @RequestBody ProfileUpdateRequest request) {
         return ApiResponse.success(authService.updateProfile(request));

@@ -96,7 +96,7 @@ public class AuthService {
         return new LoginResponse(token, authUser);
     }
 
-    /** 公开注册：固定分配游客（GUEST）角色 */
+    /** 公开注册：固定分配普通用户（USER）角色 */
     @Transactional
     public void register(RegisterRequest request) {
         captchaService.validateForLogin(request.getCaptchaId(), request.getCaptchaCode());
@@ -106,10 +106,10 @@ public class AuthService {
             throw new BusinessException("用户名已存在");
         }
 
-        Role guestRole =
+        Role userRole =
                 roleRepository
-                        .findByCode("GUEST")
-                        .orElseThrow(() -> new BusinessException("游客角色未配置，请联系管理员"));
+                        .findByCode("USER")
+                        .orElseThrow(() -> new BusinessException("普通用户角色未配置，请联系管理员"));
 
         User user = new User();
         user.setUsername(username);
@@ -118,7 +118,7 @@ public class AuthService {
                         ? request.getNickname().trim()
                         : username);
         user.setStatus(1);
-        user.setRoles(new HashSet<>(Set.of(guestRole)));
+        user.setRoles(new HashSet<>(Set.of(userRole)));
         rbacService.syncLegacyRoleField(user);
         passwordPolicyService.assignPassword(user, request.getPassword().trim(), false);
         userRepository.save(user);
@@ -150,12 +150,12 @@ public class AuthService {
         return buildAuthUser(user);
     }
 
-    /** 更新当前登录用户资料；超级管理员禁止修改 */
+    /** 更新当前登录用户资料；超管与管理员禁止修改 */
     @Transactional
     public AuthUserVO updateProfile(ProfileUpdateRequest request) {
         User user = rbacService.currentUser();
-        if (rbacService.isSuperAdmin(user)) {
-            throw new BusinessException("超级管理员禁止编辑个人信息");
+        if (rbacService.isSuperAdmin(user) || rbacService.isAdmin(user)) {
+            throw new BusinessException("管理员禁止编辑个人信息");
         }
         if (request.getNickname() != null) {
             user.setNickname(request.getNickname());
@@ -177,10 +177,13 @@ public class AuthService {
         return buildAuthUser(refreshed);
     }
 
-    /** 修改密码：校验原密码 + 密码策略 */
+    /** 修改密码：校验原密码 + 密码策略；管理员禁止自助改密 */
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
         User user = rbacService.currentUser();
+        if (rbacService.isAdmin(user)) {
+            throw new BusinessException("管理员禁止修改密码");
+        }
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new BusinessException("原密码不正确");
         }
@@ -197,8 +200,8 @@ public class AuthService {
     @Transactional
     public AuthUserVO uploadAvatar(MultipartFile file) {
         User user = rbacService.currentUser();
-        if (rbacService.isSuperAdmin(user)) {
-            throw new BusinessException("超级管理员禁止编辑个人信息");
+        if (rbacService.isSuperAdmin(user) || rbacService.isAdmin(user)) {
+            throw new BusinessException("管理员禁止编辑个人信息");
         }
         if (file == null || file.isEmpty()) {
             throw new BusinessException("请选择头像文件");

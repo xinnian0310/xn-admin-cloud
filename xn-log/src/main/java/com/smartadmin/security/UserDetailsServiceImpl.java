@@ -50,8 +50,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         if (roleCodes.contains("ADMIN")) {
             authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
         }
-        if (roleCodes.contains("GUEST")) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_GUEST"));
+        if (roleCodes.contains("USER")) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         }
         permissionRepository
                 .findPermissionCodesByUserId(user.getId())

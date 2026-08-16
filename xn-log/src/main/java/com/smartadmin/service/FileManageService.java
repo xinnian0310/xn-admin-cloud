@@ -217,7 +217,7 @@ public class FileManageService {
     private final UploadProperties uploadProperties;
 
     public List<FileInfoVO> list(String keyword) {
-        rbacService.checkPermission("file:view");
+        rbacService.checkPermission("file:refresh");
         FileBrowseVO browse = browse("", keyword, true);
         return browse.getFiles();
     }
@@ -227,7 +227,7 @@ public class FileManageService {
     }
 
     private FileBrowseVO browse(String prefix, String keyword, boolean recursiveFiles) {
-        rbacService.checkPermission("file:view");
+        rbacService.checkPermission("file:refresh");
         FileBrowseVO vo = new FileBrowseVO();
         String normalized = MinioStorageService.normalizePrefix(prefix);
         String kw = keyword == null ? "" : keyword.trim();
@@ -269,7 +269,7 @@ public class FileManageService {
     }
 
     public FileTreeNodeVO tree() {
-        rbacService.checkPermission("file:view");
+        rbacService.checkPermission("file:refresh");
         FileTreeNodeVO root = new FileTreeNodeVO();
         root.setId("");
         root.setPath("");

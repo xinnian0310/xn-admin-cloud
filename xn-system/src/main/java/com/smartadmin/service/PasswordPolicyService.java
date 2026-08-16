@@ -126,9 +126,9 @@ public class PasswordPolicyService {
         trimHistory(user.getId(), nz(policy.getPwdHistoryCount(), 0));
     }
 
-    /** 是否需强制改密（超管豁免） */
+    /** 是否需强制改密（超管、管理员豁免：管理员不可自助改密） */
     public boolean mustChangePassword(User user) {
-        if (user == null || rbacService.isSuperAdmin(user)) {
+        if (user == null || rbacService.isSuperAdmin(user) || rbacService.isAdmin(user)) {
             return false;
         }
         if (Boolean.TRUE.equals(user.getPwdForceChange())) {
@@ -138,7 +138,7 @@ public class PasswordPolicyService {
     }
 
     public boolean isPasswordExpired(User user) {
-        if (user == null || rbacService.isSuperAdmin(user)) {
+        if (user == null || rbacService.isSuperAdmin(user) || rbacService.isAdmin(user)) {
             return false;
         }
         SysSecurityPolicy policy = loadPolicy();

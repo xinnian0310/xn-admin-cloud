@@ -21,7 +21,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
  *
  * <ol>
  *   <li>校验被调用接口是否已在「权限内容」中登记（未登记一律拦截）
- *   <li>游客角色（无超管/管理员叠加时）须拥有对应 api:* 权限码；游客仅分配查询类接口（不含导出等写操作）
+ *   <li>仅超管跳过 api:* 校验；管理员与普通用户都必须持有对应接口权限码
  * </ol>
  */
 @Component
@@ -68,30 +68,25 @@ public class ApiGuardInterceptor implements HandlerInterceptor {
         }
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (isGuestReadOnly(auth) && !hasAuthority(auth, apiCode.get())) {
-            String message = "游客仅可访问已授权的查询类接口：" + request.getMethod() + " " + uri;
-            log.warn("[api-guard] 拦截游客未授权接口：{} {} ({})", request.getMethod(), uri, apiCode.get());
+        if (isNonPrivileged(auth) && !hasAuthority(auth, apiCode.get())) {
+            String message = "当前角色无权访问该接口：" + request.getMethod() + " " + uri;
+            log.warn("[api-guard] 拦截未授权接口：{} {} ({})", request.getMethod(), uri, apiCode.get());
             return deny(response, message);
         }
         return true;
     }
 
-    /** 持有 GUEST 且未叠加 SUPER_ADMIN / ADMIN 时，按接口权限码收紧写操作 */
-    private boolean isGuestReadOnly(Authentication auth) {
+    /** 仅超管跳过接口码校验；ADMIN 按已授权的 api:* 访问 */
+    private boolean isNonPrivileged(Authentication auth) {
         if (auth == null || !auth.isAuthenticated()) {
             return false;
         }
-        boolean guest = false;
-        boolean privileged = false;
         for (GrantedAuthority authority : auth.getAuthorities()) {
-            String code = authority.getAuthority();
-            if ("ROLE_GUEST".equals(code)) {
-                guest = true;
-            } else if ("ROLE_SUPER_ADMIN".equals(code) || "ROLE_ADMIN".equals(code)) {
-                privileged = true;
+            if ("ROLE_SUPER_ADMIN".equals(authority.getAuthority())) {
+                return false;
             }
         }
-        return guest && !privileged;
+        return true;
     }
 
     private boolean hasAuthority(Authentication auth, String code) {

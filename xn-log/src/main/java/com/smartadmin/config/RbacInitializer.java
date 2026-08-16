@@ -5,6 +5,7 @@ import com.smartadmin.repository.PermissionRepository;
 import com.smartadmin.repository.RoleRepository;
 import com.smartadmin.repository.UserRepository;
 import com.smartadmin.security.ApiPermissionRegistry;
+import com.smartadmin.service.AppCacheService;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -23,6 +24,7 @@ public class RbacInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final ApiPermissionRegistry apiPermissionRegistry;
+    private final AppCacheService appCacheService;
 
     /**
      * 仅空库首次初始化时为 true：可写入 sys_role_permission。 已有库启动时为
@@ -71,9 +73,10 @@ public class RbacInitializer implements CommandLineRunner {
         ensureCodegenPermissions();
         removeLegacyPermissionIfEmpty("menu:system:logs");
         ensureRoleDataScopes();
-        // 游客只读权限：仅空库首次写入；已有库以库内授权为准，启动不再覆盖
+        // 普通用户只读、管理员受限模块：仅空库首次写入；已有库以库内授权为准
         if (seedRolePermissions) {
-            ensureGuestPermissions();
+            ensureUserReadOnlyPermissions();
+            ensureAdminViewOnlyModules();
         }
         // 启动补齐权限定义后刷新接口注册表，避免新 API 未登记被守卫拦截
         permissionRepository.flush();
@@ -84,8 +87,11 @@ public class RbacInitializer implements CommandLineRunner {
                         @Override
                         public void afterCommit() {
                             apiPermissionRegistry.reload();
+                            appCacheService.evictAllPermissionCaches();
                         }
                     });
+        } else {
+            appCacheService.evictAllPermissionCaches();
         }
     }
 
@@ -1771,15 +1777,33 @@ public class RbacInitializer implements CommandLineRunner {
         }
     }
 
-    /** 个人信息相关接口授权给全部启用角色（超管仍由业务层禁止编辑） */
+    /** 改密给全部角色；改资料/头像不授给管理员（超管由业务层禁止）。 */
     private void grantProfileUpdateToAllRoles() {
-        for (String code :
-                List.of(
-                        "api:PUT:/api/auth/me",
-                        "api:PUT:/api/auth/me/password",
-                        "api:POST:/api/auth/me/avatar",
-                        "api:GET:/api/auth/password-rules")) {
-            grantApiToAllRoles(code);
+        grantApiToAllRoles("api:GET:/api/auth/password-rules");
+        grantApiToAllRoles("api:PUT:/api/auth/me/password");
+        if (!seedRolePermissions) {
+            return;
+        }
+        for (String code : List.of("api:PUT:/api/auth/me", "api:POST:/api/auth/me/avatar")) {
+            Permission permission = permissionRepository.findByCode(code).orElse(null);
+            if (permission == null) {
+                continue;
+            }
+            for (Role role : roleRepository.findAll()) {
+                if ("ADMIN".equals(role.getCode())) {
+                    continue;
+                }
+                Role managed = roleRepository.findByIdWithPermissions(role.getId()).orElse(role);
+                Set<Permission> perms =
+                        new HashSet<>(
+                                managed.getPermissions() == null
+                                        ? Set.of()
+                                        : managed.getPermissions());
+                if (perms.add(permission)) {
+                    managed.setPermissions(perms);
+                    roleRepository.save(managed);
+                }
+            }
         }
     }
 
@@ -2019,12 +2043,16 @@ public class RbacInitializer implements CommandLineRunner {
         }
     }
 
-    /** 授给超管/管理员。仅空库首次种子执行；已有库不改 sys_role_permission。 */
+    /** 授给超管；组织/权限/系统设置类写接口不授给管理员（按钮仍授）。仅空库首次种子执行。 */
     private void grantToPrivilegedRoles(Permission permission) {
         if (!seedRolePermissions || permission == null) {
             return;
         }
-        for (String roleCode : List.of("SUPER_ADMIN", "ADMIN")) {
+        List<String> roleCodes =
+                isAdminRestrictedWrite(permission)
+                        ? List.of("SUPER_ADMIN")
+                        : List.of("SUPER_ADMIN", "ADMIN");
+        for (String roleCode : roleCodes) {
             roleRepository
                     .findByCode(roleCode)
                     .ifPresent(
@@ -2415,52 +2443,32 @@ public class RbacInitializer implements CommandLineRunner {
         Role superAdmin = roleRepository.findByCode("SUPER_ADMIN").orElse(null);
         Role admin = roleRepository.findByCode("ADMIN").orElse(null);
         Role user = roleRepository.findByCode("USER").orElse(null);
-        Role guest = roleRepository.findByCode("GUEST").orElse(null);
-        if (superAdmin == null || admin == null || user == null || guest == null) {
+        if (superAdmin == null || admin == null || user == null) {
             return Map.of();
         }
 
         superAdmin.setPermissions(new HashSet<>(permissions.values()));
         admin.setPermissions(new HashSet<>(permissions.values()));
+        // 普通用户只读集由 ensureUserReadOnlyPermissions 在首次种子末尾写入
+        user.setPermissions(new HashSet<>());
 
-        Set<Permission> userPerms = new HashSet<>();
-        List<String> userCodes =
-                List.of(
-                        "menu:dashboard",
-                        "menu:system",
-                        "menu:system:user",
-                        "user:view",
-                        "api:GET:/api/dashboard/stats",
-                        "api:GET:/api/auth/me",
-                        "api:GET:/api/users");
-        userCodes.forEach(
-                code -> {
-                    if (permissions.containsKey(code)) {
-                        userPerms.add(permissions.get(code));
-                    }
-                });
-        user.setPermissions(userPerms);
-
-        // 游客权限由 ensureGuestPermissions 在空库首次种子末尾写入
-        guest.setPermissions(new HashSet<>());
-
-        roleRepository.saveAll(List.of(superAdmin, admin, user, guest));
-        return Map.of("SUPER_ADMIN", superAdmin, "ADMIN", admin, "USER", user, "GUEST", guest);
+        roleRepository.saveAll(List.of(superAdmin, admin, user));
+        return Map.of("SUPER_ADMIN", superAdmin, "ADMIN", admin, "USER", user);
     }
 
     /**
-     * 游客角色权限（仅空库首次）：全部菜单 + 查询类按钮/表格按钮 + GET 查询接口； 排除新增/修改/删除/清空/导入/导出等写操作；另保留登录态个人/收件箱等通用非 GET 接口。
+     * 普通用户权限（仅空库首次）：全部菜单 + 查询类按钮/表格按钮 + GET 查询接口； 排除新增/修改/删除/清空/导入/导出等写操作；另保留登录态个人/收件箱等通用非 GET 接口。
      * 已有库启动不再调用，避免覆盖库内授权。
      */
-    private void ensureGuestPermissions() {
-        Role guest = roleRepository.findByCode("GUEST").orElse(null);
-        if (guest == null) {
+    private void ensureUserReadOnlyPermissions() {
+        Role user = roleRepository.findByCode("USER").orElse(null);
+        if (user == null) {
             return;
         }
-        Role managed = roleRepository.findByIdWithPermissions(guest.getId()).orElse(guest);
+        Role managed = roleRepository.findByIdWithPermissions(user.getId()).orElse(user);
         Set<Permission> desired = new HashSet<>();
         for (Permission p : permissionRepository.findAll()) {
-            if (isGuestAllowedPermission(p)) {
+            if (isReadOnlyRoleAllowedPermission(p)) {
                 desired.add(p);
             }
         }
@@ -2495,8 +2503,107 @@ public class RbacInitializer implements CommandLineRunner {
         }
     }
 
-    /** 游客可分配：菜单全开；按钮/接口排除写操作与导出类查询。 */
-    private boolean isGuestAllowedPermission(Permission p) {
+    /** 管理员对组织/权限/系统设置类模块：按钮保留，写接口收回。仅空库首次调用。 */
+    private void ensureAdminViewOnlyModules() {
+        Role admin = roleRepository.findByCode("ADMIN").orElse(null);
+        if (admin == null) {
+            return;
+        }
+        Role managed = roleRepository.findByIdWithPermissions(admin.getId()).orElse(admin);
+        if (managed.getPermissions() == null || managed.getPermissions().isEmpty()) {
+            return;
+        }
+        Set<Permission> desired =
+                managed.getPermissions().stream()
+                        .filter(p -> !isAdminRestrictedWrite(p))
+                        .collect(java.util.stream.Collectors.toSet());
+        if (desired.size() != managed.getPermissions().size()) {
+            managed.setPermissions(desired);
+            roleRepository.save(managed);
+        }
+    }
+
+    /** 管理员不可改的模块：只收回写接口，菜单/按钮/表格按钮仍授给管理员。 */
+    private boolean isAdminRestrictedWrite(Permission p) {
+        if (p == null || p.getType() != PermissionType.API) {
+            return false;
+        }
+        if (!belongsToAdminViewOnlyModule(p)) {
+            return false;
+        }
+        return !isViewOrQueryPermission(p);
+    }
+
+    private boolean belongsToAdminViewOnlyModule(Permission p) {
+        String code = nullToEmpty(p.getCode());
+        if ("api:PUT:/api/auth/me".equals(code) || "api:POST:/api/auth/me/avatar".equals(code)) {
+            return true;
+        }
+        for (String prefix :
+                List.of(
+                        "permission-content:",
+                        "route:",
+                        "role:",
+                        "user:",
+                        "unit:",
+                        "post:",
+                        "system-config:",
+                        "remote-storage:",
+                        "security-policy:")) {
+            if (code.startsWith(prefix)) {
+                return true;
+            }
+        }
+        String path = nullToEmpty(p.getPath());
+        String hay = code + " " + path;
+        for (String prefix :
+                List.of(
+                        "/api/permissions",
+                        "/api/routes",
+                        "/api/roles",
+                        "/api/users",
+                        "/api/units",
+                        "/api/posts",
+                        "/api/system-config",
+                        "/api/site-contact",
+                        "/api/security-policy")) {
+            if (hay.contains(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isViewOrQueryPermission(Permission p) {
+        if (p.getType() == PermissionType.MENU) {
+            return true;
+        }
+        if (p.getType() == PermissionType.BUTTON || p.getType() == PermissionType.TABLE_BUTTON) {
+            String action = nullToEmpty(p.getAction()).toLowerCase(Locale.ROOT);
+            String code = nullToEmpty(p.getCode()).toLowerCase(Locale.ROOT);
+            if ("view".equals(action) || "refresh".equals(action)) {
+                return true;
+            }
+            if (code.endsWith(":view")
+                    || code.endsWith(":table-view")
+                    || code.endsWith(":refresh")) {
+                return true;
+            }
+            return "刷新".equals(p.getName());
+        }
+        if (p.getType() == PermissionType.API) {
+            if (!"GET".equalsIgnoreCase(p.getMethod())) {
+                return false;
+            }
+            String path = nullToEmpty(p.getPath()).toLowerCase(Locale.ROOT);
+            String code = nullToEmpty(p.getCode()).toLowerCase(Locale.ROOT);
+            return !path.contains("/export") && !code.contains("export");
+        }
+        return false;
+    }
+
+    /** 普通用户可分配：菜单全开；按钮/接口排除写操作与导出类查询。 */
+    private boolean isReadOnlyRoleAllowedPermission(Permission p) {
         if (p == null || p.getType() == null) {
             return false;
         }
@@ -2504,19 +2611,19 @@ public class RbacInitializer implements CommandLineRunner {
             return true;
         }
         if (p.getType() == PermissionType.BUTTON || p.getType() == PermissionType.TABLE_BUTTON) {
-            return !isGuestExcludedWriteLike(p);
+            return !isReadOnlyExcludedWriteLike(p);
         }
         if (p.getType() == PermissionType.API) {
             if (p.getMethod() == null || !"GET".equalsIgnoreCase(p.getMethod())) {
                 return false;
             }
-            return !isGuestExcludedWriteLike(p);
+            return !isReadOnlyExcludedWriteLike(p);
         }
         return false;
     }
 
-    /** 判断权限是否属于游客应排除的写操作：新增/修改/删除/清空/导入/导出，以及下线、重启等变更类能力。 */
-    private boolean isGuestExcludedWriteLike(Permission p) {
+    /** 判断权限是否属于普通用户应排除的写操作：新增/修改/删除/清空/导入/导出，以及下线、重启等变更类能力。 */
+    private boolean isReadOnlyExcludedWriteLike(Permission p) {
         String hay =
                 String.join(
                                 " ",

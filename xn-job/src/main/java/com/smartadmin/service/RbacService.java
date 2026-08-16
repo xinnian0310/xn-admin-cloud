@@ -59,6 +59,10 @@ public class RbacService {
         return isSuperAdmin(currentUser());
     }
 
+    public boolean isAdmin(User user) {
+        return getRoleCodes(user).contains("ADMIN");
+    }
+
     public boolean hasPermission(String permissionCode) {
         if (isSuperAdmin()) {
             return true;
@@ -73,7 +77,7 @@ public class RbacService {
         }
     }
 
-    /** 生效角色码 = 个人角色 ∪ 单位默认角色 */
+    /** 生效角色码 = 个人角色 ∪ 单位默认角色（超管/管理员不叠加单位角色） */
     public List<String> getRoleCodes(User user) {
         return permissionRepository.findRoleCodesByUserId(user.getId()).stream().sorted().toList();
     }
@@ -150,10 +154,7 @@ public class RbacService {
         if ("USER".equals(code)) {
             return 2;
         }
-        if ("GUEST".equals(code)) {
-            return 3;
-        }
-        return 4;
+        return 3;
     }
 
     public void ensureSuperAdminExists(User user, List<Long> newRoleIds) {
