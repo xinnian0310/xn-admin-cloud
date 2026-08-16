@@ -82,7 +82,7 @@ app:
     region: ${MINIO_REGION:us-east-1}
   kkfileview:
     enabled: ${KKFILEVIEW_ENABLED:true}
-    base-url: ${KKFILEVIEW_BASE_URL:http://127.0.0.1:8012}
+    base-url: ${KKFILEVIEW_BASE_URL:http://127.0.0.1:8012/kkFileView}
   nacos:
     enabled: ${NACOS_ENABLED:true}
     server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8849}

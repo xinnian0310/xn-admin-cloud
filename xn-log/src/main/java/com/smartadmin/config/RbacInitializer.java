@@ -9,7 +9,6 @@ import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -23,7 +22,6 @@ public class RbacInitializer implements CommandLineRunner {
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final ApiPermissionRegistry apiPermissionRegistry;
 
     /**
@@ -42,8 +40,6 @@ public class RbacInitializer implements CommandLineRunner {
             initRoles(permissionMap);
         }
         migrateExistingUsers();
-        ensureBuiltinRoles();
-        ensureSeedAccounts();
         ensureRoutePermissions();
         ensureStandardButtonPermissions();
         ensurePermissionMenuRenamed();
@@ -93,14 +89,10 @@ public class RbacInitializer implements CommandLineRunner {
         }
     }
 
-    /** 补齐角色数据权限：SUPER_ADMIN/ADMIN=ALL，其余默认 UNIT_AND_CHILDREN */
+    /** 仅补空的 data_scope，不改已有角色配置。 */
     private void ensureRoleDataScopes() {
         for (Role role : roleRepository.findAll()) {
             if (role.getDataScope() != null) {
-                if ("SUPER_ADMIN".equals(role.getCode()) && role.getDataScope() != DataScope.ALL) {
-                    role.setDataScope(DataScope.ALL);
-                    roleRepository.save(role);
-                }
                 continue;
             }
             if ("SUPER_ADMIN".equals(role.getCode()) || "ADMIN".equals(role.getCode())) {
@@ -2418,11 +2410,15 @@ public class RbacInitializer implements CommandLineRunner {
         return saved;
     }
 
+    /** 空库首次：把权限挂到 Flyway 已写入的内置角色上，不新建、不改角色元数据。 */
     private Map<String, Role> initRoles(Map<String, Permission> permissions) {
-        Role superAdmin = createRole("SUPER_ADMIN", "超级管理员", "拥有全部权限，系统兜底角色", true);
-        Role admin = createRole("ADMIN", "管理员", "日常管理，含用户/角色/权限", true);
-        Role user = createRole("USER", "普通用户", "工作台与只读权限", true);
-        Role guest = createRole("GUEST", "游客", "全量菜单与查询权限；不含新增/修改/删除/清空/导入/导出等写操作", true);
+        Role superAdmin = roleRepository.findByCode("SUPER_ADMIN").orElse(null);
+        Role admin = roleRepository.findByCode("ADMIN").orElse(null);
+        Role user = roleRepository.findByCode("USER").orElse(null);
+        Role guest = roleRepository.findByCode("GUEST").orElse(null);
+        if (superAdmin == null || admin == null || user == null || guest == null) {
+            return Map.of();
+        }
 
         superAdmin.setPermissions(new HashSet<>(permissions.values()));
         admin.setPermissions(new HashSet<>(permissions.values()));
@@ -2450,97 +2446,6 @@ public class RbacInitializer implements CommandLineRunner {
 
         roleRepository.saveAll(List.of(superAdmin, admin, user, guest));
         return Map.of("SUPER_ADMIN", superAdmin, "ADMIN", admin, "USER", user, "GUEST", guest);
-    }
-
-    private Role createRole(String code, String name, String desc, boolean builtIn) {
-        Role role = new Role();
-        role.setCode(code);
-        role.setName(name);
-        role.setDescription(desc);
-        role.setStatus(1);
-        role.setBuiltIn(builtIn);
-        if ("SUPER_ADMIN".equals(code) || "ADMIN".equals(code)) {
-            role.setDataScope(DataScope.ALL);
-        } else {
-            role.setDataScope(DataScope.UNIT_AND_CHILDREN);
-        }
-        return role;
-    }
-
-    /** 内置角色展示名：SUPER_ADMIN=超级管理员，ADMIN=管理员，GUEST=游客 */
-    private void ensureBuiltinRoles() {
-        roleRepository
-                .findByCode("SUPER_ADMIN")
-                .ifPresent(
-                        role -> {
-                            boolean dirty = false;
-                            if (!"超级管理员".equals(role.getName())) {
-                                role.setName("超级管理员");
-                                dirty = true;
-                            }
-                            if (!"拥有全部权限，系统兜底角色".equals(role.getDescription())) {
-                                role.setDescription("拥有全部权限，系统兜底角色");
-                                dirty = true;
-                            }
-                            if (dirty) {
-                                roleRepository.save(role);
-                            }
-                        });
-        roleRepository
-                .findByCode("ADMIN")
-                .ifPresent(
-                        role -> {
-                            boolean dirty = false;
-                            if (!"管理员".equals(role.getName())) {
-                                role.setName("管理员");
-                                dirty = true;
-                            }
-                            if (!"日常管理，含用户/角色/权限".equals(role.getDescription())) {
-                                role.setDescription("日常管理，含用户/角色/权限");
-                                dirty = true;
-                            }
-                            if (dirty) {
-                                roleRepository.save(role);
-                            }
-                        });
-        roleRepository
-                .findByCode("GUEST")
-                .ifPresentOrElse(
-                        role -> {
-                            boolean dirty = false;
-                            if (!"游客".equals(role.getName())) {
-                                role.setName("游客");
-                                dirty = true;
-                            }
-                            if (!"全量菜单与查询权限；不含新增/修改/删除/清空/导入/导出等写操作"
-                                    .equals(role.getDescription())) {
-                                role.setDescription("全量菜单与查询权限；不含新增/修改/删除/清空/导入/导出等写操作");
-                                dirty = true;
-                            }
-                            if (!Boolean.TRUE.equals(role.getBuiltIn())) {
-                                role.setBuiltIn(true);
-                                dirty = true;
-                            }
-                            if (role.getStatus() == null || role.getStatus() != 1) {
-                                role.setStatus(1);
-                                dirty = true;
-                            }
-                            // 游客按单位数据范围；演示环境会挂到最高单位，勿升为 ALL
-                            if (role.getDataScope() == DataScope.ALL) {
-                                role.setDataScope(DataScope.UNIT_AND_CHILDREN);
-                                dirty = true;
-                            }
-                            if (dirty) {
-                                roleRepository.save(role);
-                            }
-                        },
-                        () ->
-                                roleRepository.save(
-                                        createRole(
-                                                "GUEST",
-                                                "游客",
-                                                "全量菜单与查询权限；不含新增/修改/删除/清空/导入/导出等写操作",
-                                                true)));
     }
 
     /**
@@ -2669,194 +2574,6 @@ public class RbacInitializer implements CommandLineRunner {
 
     private static String nullToEmpty(String value) {
         return value == null ? "" : value;
-    }
-
-    /** 种子账号（幂等校正用户名大小写 / 角色；密码仅在新建时写入默认值）： SuperAdmin → 超级管理员；admin → 管理员。 */
-    private void ensureSeedAccounts() {
-        Role superAdmin = roleRepository.findByCode("SUPER_ADMIN").orElse(null);
-        Role adminRole = roleRepository.findByCode("ADMIN").orElse(null);
-
-        // 旧超管用户名：SUPER_ADMIN / superadmin 等 → SuperAdmin（不预置邮箱/手机号）
-        normalizeSeedUser(
-                List.of("SuperAdmin", "SUPER_ADMIN", "superadmin", "superAdmin", "SUPERADMIN"),
-                "SuperAdmin",
-                "SuperAdmin",
-                "超级管理员",
-                null,
-                null,
-                "ADMIN",
-                superAdmin);
-        // 已存在超管账号：清空预置邮箱/手机号
-        userRepository
-                .findByUsernameIgnoreCase("SuperAdmin")
-                .ifPresent(
-                        user -> {
-                            if (user.getEmail() != null || user.getPhone() != null) {
-                                user.setEmail(null);
-                                user.setPhone(null);
-                                userRepository.save(user);
-                            }
-                        });
-
-        // 若仍无超管账号，且旧 admin 挂着 SUPER_ADMIN 角色，则升迁并改名
-        if (superAdmin != null && userRepository.findByUsernameIgnoreCase("SuperAdmin").isEmpty()) {
-            userRepository
-                    .findByUsernameWithRoles("admin")
-                    .ifPresent(
-                            legacy -> {
-                                boolean wasSuper =
-                                        legacy.getRoles() != null
-                                                && legacy.getRoles().stream()
-                                                        .anyMatch(
-                                                                r ->
-                                                                        "SUPER_ADMIN"
-                                                                                .equals(
-                                                                                        r
-                                                                                                .getCode()));
-                                if (wasSuper) {
-                                    legacy.setUsername("SuperAdmin");
-                                    legacy.setNickname("超级管理员");
-                                    legacy.setEmail(null);
-                                    legacy.setPhone(null);
-                                    legacy.setStatus(1);
-                                    legacy.setRoles(new HashSet<>(Set.of(superAdmin)));
-                                    legacy.setRole("ADMIN");
-                                    userRepository.save(legacy);
-                                }
-                            });
-        }
-
-        // 旧 sysadmin → admin（管理员）；若 admin 已存在则停用 sysadmin
-        userRepository
-                .findByUsernameIgnoreCase("sysadmin")
-                .ifPresent(
-                        legacy -> {
-                            if (userRepository.findByUsernameIgnoreCase("admin").isEmpty()
-                                    && adminRole != null) {
-                                legacy.setUsername("admin");
-                                legacy.setNickname("管理员");
-                                legacy.setEmail("admin@smartadmin.com");
-                                legacy.setPhone("13800000001");
-                                legacy.setStatus(1);
-                                legacy.setRoles(new HashSet<>(Set.of(adminRole)));
-                                legacy.setRole("ADMIN");
-                                userRepository.save(legacy);
-                            } else {
-                                legacy.setRoles(new HashSet<>());
-                                legacy.setRole("USER");
-                                legacy.setStatus(0);
-                                userRepository.save(legacy);
-                            }
-                        });
-
-        normalizeSeedUser(
-                List.of("admin", "Admin", "ADMIN"),
-                "admin",
-                "admin",
-                "管理员",
-                "admin@smartadmin.com",
-                "13800000001",
-                "ADMIN",
-                adminRole);
-
-        Role guestRole = roleRepository.findByCode("GUEST").orElse(null);
-        normalizeSeedUser(
-                List.of("guest", "Guest", "GUEST"),
-                "guest",
-                "guest",
-                "游客",
-                null,
-                null,
-                "GUEST",
-                guestRole);
-    }
-
-    /** 找到任一别名用户并校正为标准用户名/角色；不存在则新建（含默认密码）。已存在账号不覆盖密码。 */
-    private void normalizeSeedUser(
-            List<String> aliases,
-            String username,
-            String rawPassword,
-            String nickname,
-            String email,
-            String phone,
-            String legacyRole,
-            Role role) {
-        if (role == null) {
-            return;
-        }
-        User user = null;
-        for (String alias : aliases) {
-            user = userRepository.findByUsernameIgnoreCase(alias).orElse(null);
-            if (user != null) {
-                break;
-            }
-        }
-        if (user == null) {
-            ensureUser(username, rawPassword, nickname, email, phone, legacyRole, role);
-            user = userRepository.findByUsernameIgnoreCase(username).orElse(null);
-        }
-        if (user == null) {
-            return;
-        }
-        // 带角色重载，避免懒加载空集
-        user = userRepository.findByIdWithRoles(user.getId()).orElse(user);
-
-        boolean dirty = false;
-        if (!username.equals(user.getUsername())) {
-            // 大小写不敏感库：先改成临时名再改回，确保落库大小写正确
-            String tmp = username + "__tmp_seed__";
-            user.setUsername(tmp);
-            userRepository.saveAndFlush(user);
-            user.setUsername(username);
-            dirty = true;
-        }
-        if (!nickname.equals(user.getNickname())) {
-            user.setNickname(nickname);
-            dirty = true;
-        }
-        if (user.getStatus() == null || user.getStatus() != 1) {
-            user.setStatus(1);
-            dirty = true;
-        }
-        // 故意不回写密码：运维改密后重启不得被种子逻辑覆盖
-        Set<Role> expected = new HashSet<>(Set.of(role));
-        Set<String> currentCodes =
-                user.getRoles() == null
-                        ? Set.of()
-                        : user.getRoles().stream()
-                                .map(Role::getCode)
-                                .collect(java.util.stream.Collectors.toSet());
-        if (!currentCodes.equals(Set.of(role.getCode()))) {
-            user.setRoles(expected);
-            user.setRole("SUPER_ADMIN".equals(role.getCode()) ? "ADMIN" : role.getCode());
-            dirty = true;
-        }
-        if (dirty) {
-            userRepository.save(user);
-        }
-    }
-
-    private void ensureUser(
-            String username,
-            String rawPassword,
-            String nickname,
-            String email,
-            String phone,
-            String legacyRole,
-            Role role) {
-        if (role == null || userRepository.existsByUsernameIgnoreCase(username)) {
-            return;
-        }
-        User user = new User();
-        user.setUsername(username);
-        user.setPassword(passwordEncoder.encode(rawPassword));
-        user.setNickname(nickname);
-        user.setEmail(email);
-        user.setPhone(phone);
-        user.setStatus(1);
-        user.setRole(legacyRole);
-        user.setRoles(new HashSet<>(Set.of(role)));
-        userRepository.save(user);
     }
 
     private void migrateExistingUsers() {

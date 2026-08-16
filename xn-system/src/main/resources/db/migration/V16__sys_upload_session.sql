@@ -1,0 +1,27 @@
+-- 分片上传会话：断点续传 / 秒传。生产 ddl-auto=validate，必须先有表。
+CREATE TABLE IF NOT EXISTS sys_upload_session (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    upload_id VARCHAR(64) NOT NULL,
+    file_hash VARCHAR(128) NOT NULL,
+    hash_algo VARCHAR(40) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_size BIGINT NOT NULL,
+    chunk_size INT NOT NULL,
+    total_chunks INT NOT NULL,
+    content_type VARCHAR(128) NULL,
+    storage VARCHAR(16) NOT NULL,
+    object_key VARCHAR(500) NOT NULL,
+    prefix VARCHAR(500) NULL,
+    stored_name VARCHAR(255) NOT NULL,
+    bucket VARCHAR(128) NULL,
+    storage_upload_id VARCHAR(255) NULL,
+    status VARCHAR(20) NOT NULL,
+    url VARCHAR(1000) NULL,
+    uploader VARCHAR(64) NULL,
+    created_at DATETIME(6) NULL,
+    updated_at DATETIME(6) NULL,
+    completed_at DATETIME(6) NULL,
+    UNIQUE KEY idx_sys_upload_session_upload_id (upload_id),
+    KEY idx_sys_upload_session_fingerprint (hash_algo, file_hash, file_size),
+    KEY idx_sys_upload_session_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

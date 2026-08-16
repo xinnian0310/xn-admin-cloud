@@ -25,8 +25,6 @@ public class LoginPageConfigInitializer implements CommandLineRunner {
 
     private static final String NAME_CURRENT = "心念后台管理系统-当前登录页";
     private static final String NAME_SECURE = "心念后台管理系统-安全登录";
-    private static final String LEGACY_DEFAULT = "默认居中";
-    private static final String LEGACY_RIGHT = "右侧图形验证";
 
     private final SysLoginPageConfigRepository repository;
     private final JdbcTemplate jdbcTemplate;
@@ -36,9 +34,11 @@ public class LoginPageConfigInitializer implements CommandLineRunner {
     public void run(String... args) {
         // Hibernate ddl-auto 不会把已有 NOT NULL 改成可空，启动时兼容修正
         relaxNullableColumns();
+        if (repository.count() > 0) {
+            return;
+        }
 
-        // 1) 当前登录页：不开启验证 → 启用
-        SysLoginPageConfig current = findOrCreate(NAME_CURRENT, LEGACY_DEFAULT);
+        SysLoginPageConfig current = new SysLoginPageConfig();
         current.setName(NAME_CURRENT);
         current.setBackgroundUrl(null);
         current.setBackgroundFit("COVER");
@@ -48,11 +48,9 @@ public class LoginPageConfigInitializer implements CommandLineRunner {
         current.setCaptchaType(null);
         current.setRemark("与当前登录页一致：不开启验证（标题：" + APP_NAME + "）");
         current.setStatus(1);
-        repository.disableAllExcept(null);
         repository.save(current);
 
-        // 2) 备选：图形验证码 → 未启用
-        SysLoginPageConfig secure = findOrCreate(NAME_SECURE, LEGACY_RIGHT);
+        SysLoginPageConfig secure = new SysLoginPageConfig();
         secure.setName(NAME_SECURE);
         secure.setBackgroundUrl(null);
         secure.setBackgroundFit("COVER");
@@ -93,13 +91,5 @@ public class LoginPageConfigInitializer implements CommandLineRunner {
                         Integer.class,
                         column);
         return count != null && count > 0;
-    }
-
-    /** 优先按新名称查找，其次兼容旧种子名称 */
-    private SysLoginPageConfig findOrCreate(String name, String legacyName) {
-        return repository.findAll().stream()
-                .filter(c -> name.equals(c.getName()) || legacyName.equals(c.getName()))
-                .findFirst()
-                .orElseGet(SysLoginPageConfig::new);
     }
 }

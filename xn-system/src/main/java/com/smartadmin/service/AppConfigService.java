@@ -269,13 +269,9 @@ public class AppConfigService {
                         AppConfigVO.SensitiveDataConfig.class,
                         new AppConfigVO.SensitiveDataConfig()));
         vo.setStorage(loadStorageMap());
-        boolean clientsChanged = prepareAppClients(vo);
+        prepareAppClients(vo);
         normalize(vo);
-        if (clientsChanged) {
-            persistApp(vo.getApp());
-            appCacheService.evictAppConfig();
-        }
-        // 确保空分区有默认行
+        // 只补空分区行，不把内存默认值回写已有应用信息（名称 / logo / favicon）
         ensureSectionDefaults(vo);
         return vo;
     }

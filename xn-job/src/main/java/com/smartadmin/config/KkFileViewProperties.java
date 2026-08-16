@@ -11,6 +11,6 @@ public class KkFileViewProperties {
 
     private boolean enabled = false;
 
-    /** 如 http://127.0.0.1:8012 */
-    private String baseUrl = "http://127.0.0.1:8012";
+    /** 如 http://127.0.0.1:8012/kkFileView（与 KK_CONTEXT_PATH=/kkFileView 对齐） */
+    private String baseUrl = "http://127.0.0.1:8012/kkFileView";
 }

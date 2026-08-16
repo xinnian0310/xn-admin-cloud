@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
-/** 系统配置分区种子：触发旧表迁移并补齐空分区默认值。 */
+/** 系统配置分区种子：仅补空分区默认行，不覆盖已有应用信息 / 品牌图标。 */
 @Slf4j
 @Component
 @Order(8)
