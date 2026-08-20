@@ -17,6 +17,14 @@ xn-admin-cloud 是「心念后台」的开源微服务后端，面向中后台�
 
 > 本仓库独立开源，采用 Apache License 2.0，**免费用于个人自用与商业项目**。配套四套管理端为**其它独立仓库**（见下方「相关仓库」），不随本仓库一并发布。
 
+## 在线演示
+
+- 官网：https://xinniankeji.vip
+- Vue 3 + TypeScript：https://vue3-ts.xinniankeji.vip
+- Vue 3 + JavaScript：https://vue3-js.xinniankeji.vip
+- Vue 3 Options API：https://vue2.xinniankeji.vip
+- React：https://react.xinniankeji.vip
+
 ## 服务一览
 
 | 服务 | 端口 | 职责 |
