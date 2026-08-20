@@ -1,0 +1,99 @@
+# 本地中间件：MySQL / Redis / Nacos / MinIO
+# 用法（仓库根目录）：
+#   docker compose up -d
+# 账号与端口对齐 application-dev.yml / env.example（仅开发，勿用于生产）
+
+name: xn-admin
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: xn-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: xn_admin
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - xn-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: xn-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  nacos:
+    image: nacos/nacos-server:v2.4.3
+    container_name: xn-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "false"
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+      TZ: Asia/Shanghai
+    ports:
+      - "8849:8848"
+      - "8850:8080"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://127.0.0.1:8848/nacos/v1/console/health/readiness || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  minio:
+    image: minio/minio:latest
+    container_name: xn-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - xn-minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: xn-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/xn-admin
+      "
+
+volumes:
+  xn-mysql-data:
+  xn-minio-data:

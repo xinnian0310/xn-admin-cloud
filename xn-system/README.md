@@ -17,7 +17,7 @@
 
 ## 快速启动
 
-要求：JDK 21、MySQL（库 `xn_admin`）、Nacos / Redis / MinIO 已就绪。建议按 [`env.example`](./env.example) 与仓库根 README 配置。
+要求：JDK 21。中间件与五服务启动见仓库根 README「快速启动（三步）」。建议按 [`env.example`](./env.example) 配置。
 
 ```bash
 # Windows（推荐 IDEA Start All Cloud）

@@ -35,7 +35,7 @@ xn-admin-cloud 是「心念后台」的开源微服务后端，面向中后台�
 | **xn-log** | 8083 | 登录 / 操作 / 异常 / 任务日志（查询、详情、删除、清空、导出） |
 | **xn-job** | 8084 | Quartz 定时任务 CRUD / 启停 / 立即执行 |
 
-中间件：MySQL、Redis、MinIO、Nacos（默认库名 `xn_admin`，可按配置修改）。演示库 Navicat 备份：[`docs/sql/xn_admin.nb3`](./docs/sql/xn_admin.nb3)。
+中间件：MySQL、Redis、MinIO、Nacos（默认库名 `xn_admin`，可按配置修改）。本机可用根目录 `docker compose up -d`。演示库 Navicat 备份：[`docs/sql/xn_admin.nb3`](./docs/sql/xn_admin.nb3)。
 
 ## 相关仓库
 
@@ -69,7 +69,7 @@ xn-admin-cloud 是「心念后台」的开源微服务后端，面向中后台�
 | 任务 | Quartz CRUD、启停、立即执行 | xn-job |
 | 工具 | 回收站 / 代码生成 / 路由一键生成 | xn-system |
 
-**与前端对齐：** 四套管理端已闭环上述绝大多数页面。登录 / 操作 / 异常 / 任务日志的**接口、菜单、page-ui 已种子**，前端页面尚未落地（点菜单会 404）。详见各前端仓库 README。
+**与前端对齐：** 四套管理端已闭环上述页面，含登录 / 操作 / 异常 / 任务日志。
 
 ## 网关路由
 
@@ -106,29 +106,55 @@ xn-admin-cloud 是「心念后台」的开源微服务后端，面向中后台�
 - **本机默认**：`dev,cloud`（见 `application.yml`）
 - **正式部署**：设置 `SPRING_PROFILES_ACTIVE=prod,cloud`（或仅 `prod`），**不要带 `dev`**
 
-## 快速启动
+## 快速启动（三步）
 
-### 前提
+需要：Docker、JDK 21。Maven 可用仓库自带的 `mvnw`。
 
-1. **JDK 21**、Maven 3.9+（本仓库自带 `mvnw`，可不装全局 Maven）
-2. **MySQL**、**Redis**、**Nacos**、**MinIO** 已就绪，且库 / 桶 / 账号与配置一致  
-   （可用 Docker Compose 或本机安装；端口与账号以各服务 `application-*.yml` / `env.example` 为准）
-3. **数据库** `xn_admin` 已就绪（见下方）
+### 1. 启动中间件
 
-### 数据库
+```bash
+docker compose up -d
+```
 
-默认库名 `xn_admin`。初始化任选其一：
+会拉起 MySQL `3306`（库 `xn_admin` / 密码 `root`）、Redis `6379`、Nacos `8849`（控制台 `8850`）、MinIO `9000`（控制台 `9001`）。账号与 `application-dev.yml` / `env.example` 一致，**仅用于本机**。Nacos 首次大约 30–60 秒就绪。
 
-| 方式 | 说明 |
-|------|------|
-| 空库 + Flyway（推荐日常开发） | 先创建空库，启动服务后自动执行 `db/migration`；`dev` 会写入 SuperAdmin / admin 种子账号 |
-| Navicat 还原演示库 | 用 [`docs/sql/xn_admin.nb3`](./docs/sql/xn_admin.nb3) 还原到 `xn_admin`（需 Navicat），可快速对齐演示数据 |
+空库即可：启动后端后由 Flyway + 种子写入表和 SuperAdmin / admin。也可用 [`docs/sql/xn_admin.nb3`](./docs/sql/xn_admin.nb3) 用 Navicat 还原演示数据。
 
-Navicat：连接 MySQL → 若无库则先建 `xn_admin` → 右键该库 → 还原备份 → 选择上述 `.nb3`。
+### 2. 启动五个后端服务
 
-### Maven（推荐，可复现）
+Windows：
 
-在仓库根目录分别启动（需 5 个终端，或自行写脚本并行）：
+```bat
+scripts\run-dev.bat
+```
+
+Linux / macOS：
+
+```bash
+chmod +x mvnw scripts/run-dev.sh
+./scripts/run-dev.sh
+```
+
+五个窗口 / 进程起来后访问网关：http://127.0.0.1:8088  
+健康检查：http://127.0.0.1:8088/actuator/health
+
+IDEA：为 `xn-system` / `xn-file` / `xn-log` / `xn-job` / `xn-gateway` 各建 Spring Boot 运行配置，Active profiles 填 `dev,cloud`，或做一个 Compound。
+
+### 3. 启动任一管理端
+
+另开配套前端仓库（见「相关仓库」），例如基准端：
+
+```bash
+cd xn-admin-vue3-ts
+npm install
+npm run dev
+```
+
+浏览器打开 http://localhost:1803 。默认账号 `SuperAdmin` / `SuperAdmin` 或 `admin` / `admin`（仅开发环境，登录后请改密）。
+
+---
+
+手动分终端启动（等价于第 2 步）：
 
 ```bat
 set SPRING_PROFILES_ACTIVE=dev,cloud
@@ -140,19 +166,6 @@ mvnw -pl xn-gateway spring-boot:run
 ```
 
 Linux / macOS 将 `set` 换为 `export`，并用 `./mvnw`。
-
-各模块目录内也有独立 `mvnw`，可在模块目录执行 `mvnw spring-boot:run`。
-
-启动成功后访问网关：http://127.0.0.1:8088
-
-### IDEA
-
-1. 打开本仓库根目录，等待 Maven 导入完成  
-2. 为 `xn-system` / `xn-file` / `xn-log` / `xn-job` / `xn-gateway` 各建一个 Spring Boot 运行配置  
-3. Active profiles 填：`dev,cloud`  
-4. 五个服务全部启动后访问 http://127.0.0.1:8088  
-
-也可在 IDEA 中自建 Compound 配置一次拉起全部服务。
 
 ### 配置与密钥
 
@@ -206,7 +219,9 @@ CI 文件：
 
 ## Docker
 
-在**仓库根目录**构建（依赖根 `pom.xml` + `mvnw`）：
+**本机中间件**见上文「快速启动」第 1 步：`docker compose up -d`（`docker-compose.yml`）。
+
+**业务镜像**在**仓库根目录**构建（依赖根 `pom.xml` + `mvnw`）：
 
 ```bat
 docker build -f xn-gateway/Dockerfile .

@@ -24,4 +24,4 @@ set SPRING_PROFILES_ACTIVE=dev,cloud
 | PUT | `/api/jobs/{id}/status` | 启停 |
 | POST | `/api/jobs/{id}/run` | 立即执行 |
 
-任务日志在 **xn-log**（`/api/logs/job`），不在本服务。前端定时任务页已闭环；任务日志页尚未落地。
+任务日志在 **xn-log**（`/api/logs/job`），不在本服务。前端定时任务页与任务日志页均已闭环。

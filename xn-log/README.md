@@ -20,4 +20,4 @@ set SPRING_PROFILES_ACTIVE=dev,cloud
 | `/api/logs/exception` | 异常日志：列表、详情、删除、批量删除、清空、导出 |
 | `/api/logs/job` | 任务日志：列表、详情、删除、批量删除、清空、导出 |
 
-菜单与 page-ui 由 `xn-system` 种子（`/system/logs/login` · `oper` · `exception`，`/system/jobs/logs`）。四套管理端**接口模块已接、页面尚未落地**，点菜单会 404。
+菜单与 page-ui 由 `xn-system` 种子（`/system/logs/login` · `oper` · `exception`，`/system/jobs/logs`）。四套管理端页面已落地。

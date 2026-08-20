@@ -35,7 +35,7 @@ Version: `1.0.0` · License: [Apache-2.0](./LICENSE) · **Commercial / personal 
 | **xn-log** | 8083 | Login / operation / exception / job logs |
 | **xn-job** | 8084 | Quartz job CRUD / start-stop / run now |
 
-Middleware: MySQL, Redis, MinIO, Nacos (default database `xn_admin`). Demo dump: [`docs/sql/xn_admin.nb3`](./docs/sql/xn_admin.nb3).
+Middleware: MySQL, Redis, MinIO, Nacos (default database `xn_admin`). Local: `docker compose up -d` at the repo root. Demo dump: [`docs/sql/xn_admin.nb3`](./docs/sql/xn_admin.nb3).
 
 ## Related repositories
 
@@ -68,6 +68,8 @@ APIs and menu seeds are in place; pages are implemented by the frontend reposito
 | Files | Browse, upload, mkdir, delete, chunked upload | xn-file |
 | Jobs | Quartz CRUD, start/stop, run now | xn-job |
 | Tools | Recycle bin / codegen / one-click route generation | xn-system |
+
+**Aligned with frontends:** all four admin UIs include the pages above, including login / operation / exception / job logs.
 
 ## Gateway routes
 
@@ -104,24 +106,53 @@ Seeded on first `dev` start (written only when created; later password changes s
 - **Local default**: `dev,cloud`
 - **Production**: `SPRING_PROFILES_ACTIVE=prod,cloud` (do **not** include `dev`)
 
-## Quick start
+## Quick start (3 steps)
 
-### Prerequisites
+You need Docker and JDK 21. Maven can be the bundled `mvnw`.
 
-1. **JDK 21**, Maven 3.9+ (wrapper `mvnw` is included)
-2. **MySQL**, **Redis**, **Nacos**, **MinIO** ready
-3. Database `xn_admin` created
+### 1. Start middleware
 
-### Database
+```bash
+docker compose up -d
+```
 
-| Method | Notes |
-|------|------|
-| Empty DB + Flyway (recommended) | Create an empty schema; migrations run on startup. `dev` seeds SuperAdmin / admin |
-| Navicat restore | Restore [`docs/sql/xn_admin.nb3`](./docs/sql/xn_admin.nb3) into `xn_admin` |
+This starts MySQL `3306` (database `xn_admin` / password `root`), Redis `6379`, Nacos `8849` (console `8850`), and MinIO `9000` (console `9001`). Credentials match `application-dev.yml` / `env.example` — **local only**. Nacos takes about 30–60s on first boot.
 
-### Maven
+An empty database is enough: Flyway and seeds create tables plus SuperAdmin / admin. You can also restore [`docs/sql/xn_admin.nb3`](./docs/sql/xn_admin.nb3) in Navicat.
 
-From the repo root (five terminals, or run them in parallel):
+### 2. Start the five backend services
+
+Windows:
+
+```bat
+scripts\run-dev.bat
+```
+
+Linux / macOS:
+
+```bash
+chmod +x mvnw scripts/run-dev.sh
+./scripts/run-dev.sh
+```
+
+When they are up: http://127.0.0.1:8088  
+Health: http://127.0.0.1:8088/actuator/health
+
+IntelliJ: one Spring Boot run config per module, Active profiles `dev,cloud`, or a Compound.
+
+### 3. Start any admin frontend
+
+Clone a frontend repo (see Related repositories), for example the baseline:
+
+```bash
+cd xn-admin-vue3-ts
+npm install
+npm run dev
+```
+
+Open http://localhost:1803. Default accounts: `SuperAdmin` / `SuperAdmin` or `admin` / `admin` (dev only — change passwords after login).
+
+Manual equivalent of step 2:
 
 ```bat
 set SPRING_PROFILES_ACTIVE=dev,cloud
@@ -133,17 +164,6 @@ mvnw -pl xn-gateway spring-boot:run
 ```
 
 On Linux / macOS use `export` and `./mvnw`.
-
-Gateway: http://127.0.0.1:8088
-
-### IntelliJ IDEA
-
-1. Open the repo root and wait for Maven import
-2. Create a Spring Boot run config for each of `xn-system` / `xn-file` / `xn-log` / `xn-job` / `xn-gateway`
-3. Active profiles: `dev,cloud`
-4. After all five are up, open http://127.0.0.1:8088
-
-A Compound run configuration can start all five at once.
 
 ### Config and secrets
 
@@ -185,7 +205,9 @@ Commit example: `feat(system): add password policy`. See [CONTRIBUTING.md](CONTR
 
 ## Docker
 
-Build from the **repo root**:
+**Local middleware** is step 1 in Quick start: `docker compose up -d` (`docker-compose.yml`).
+
+**Service images** are built from the **repo root**:
 
 ```bat
 docker build -f xn-gateway/Dockerfile .
