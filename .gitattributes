@@ -8,6 +8,8 @@
 *.sql text eol=lf
 *.sh text eol=lf
 
+*.nb3 binary
+
 *.cmd text eol=crlf
 *.bat text eol=crlf
 *.ps1 text eol=crlf

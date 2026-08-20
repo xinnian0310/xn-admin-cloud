@@ -25,7 +25,7 @@ xn-admin-cloud 是「心念后台」的开源微服务后端，面向中后台�
 | **xn-log** | 8083 | 登录 / 操作 / 异常 / 任务日志（查询、详情、删除、清空、导出） |
 | **xn-job** | 8084 | Quartz 定时任务 CRUD / 启停 / 立即执行 |
 
-中间件：MySQL、Redis、MinIO、Nacos（默认库名 `xn_admin`，可按配置修改）。
+中间件：MySQL、Redis、MinIO、Nacos（默认库名 `xn_admin`，可按配置修改）。演示库 Navicat 备份：[`docs/sql/xn_admin.nb3`](./docs/sql/xn_admin.nb3)。
 
 ## 相关仓库
 
@@ -103,6 +103,18 @@ xn-admin-cloud 是「心念后台」的开源微服务后端，面向中后台�
 1. **JDK 21**、Maven 3.9+（本仓库自带 `mvnw`，可不装全局 Maven）
 2. **MySQL**、**Redis**、**Nacos**、**MinIO** 已就绪，且库 / 桶 / 账号与配置一致  
    （可用 Docker Compose 或本机安装；端口与账号以各服务 `application-*.yml` / `env.example` 为准）
+3. **数据库** `xn_admin` 已就绪（见下方）
+
+### 数据库
+
+默认库名 `xn_admin`。初始化任选其一：
+
+| 方式 | 说明 |
+|------|------|
+| 空库 + Flyway（推荐日常开发） | 先创建空库，启动服务后自动执行 `db/migration`；`dev` 会写入 SuperAdmin / admin 种子账号 |
+| Navicat 还原演示库 | 用 [`docs/sql/xn_admin.nb3`](./docs/sql/xn_admin.nb3) 还原到 `xn_admin`（需 Navicat），可快速对齐演示数据 |
+
+Navicat：连接 MySQL → 若无库则先建 `xn_admin` → 右键该库 → 还原备份 → 选择上述 `.nb3`。
 
 ### Maven（推荐，可复现）
 
