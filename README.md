@@ -2,11 +2,18 @@
 
 心念后台 **微服务后端**（Spring Boot 4 + Spring Cloud Gateway + Nacos）。
 
+xn-admin-cloud 是「心念后台」的开源微服务后端，面向中后台场景提供完整系统能力：JWT 登录与会话、RBAC 与数据权限、组织岗位与字典、公告站内信、文件与分片上传、定时任务、系统监控、日志、回收站与代码生成等。工程按网关 + 系统 / 文件 / 日志 / 任务拆分，配套四套独立管理端仓库，采用 Apache License 2.0 开源，**可免费用于个人自用与商业项目**。
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+[![开源](https://img.shields.io/badge/开源-免费-success.svg)](./LICENSE)
+[![商用](https://img.shields.io/badge/商用-允许-brightgreen.svg)](./LICENSE)
+[![自用](https://img.shields.io/badge/自用-允许-brightgreen.svg)](./LICENSE)
+
 技术栈：Java 21、Maven 多模块、Flyway、JPA、Redis、MinIO、Quartz、OpenAPI。
 
-版本：`1.0.0` · 许可证：[Apache-2.0](./LICENSE) · Copyright 2026 心念
+版本：`1.0.0` · 许可证：[Apache-2.0](./LICENSE) · **可商用 / 可自用** · Copyright 2026 心念
 
-> 本仓库独立开源。配套四套管理端为**其它独立仓库**（见下方「相关仓库」），不随本仓库一并发布。
+> 本仓库独立开源，采用 Apache License 2.0，**免费用于个人自用与商业项目**。配套四套管理端为**其它独立仓库**（见下方「相关仓库」），不随本仓库一并发布。
 
 ## 服务一览
 
@@ -213,6 +220,18 @@ docker build -f xn-job/Dockerfile .
   <img src="./docs/donation/donate.png" alt="支持捐赠（微信支付 / 支付宝）" width="480" />
 </p>
 
-## 许可证
+## 开源与许可证
 
-[Apache License 2.0](./LICENSE)
+本项目采用 [Apache License 2.0](./LICENSE) **免费开源**，**允许个人自用与商业使用**，无需单独购买授权。
+
+| 用途 | 是否允许 |
+|------|----------|
+| 个人学习、自用部署 | 允许 |
+| 二次开发、修改源码 | 允许 |
+| 商业项目使用、对外交付 | 允许 |
+| 闭源商用 | 允许（须遵守 Apache-2.0） |
+| 再分发源码或编译产物 | 允许 |
+
+使用、修改或分发时请：保留版权声明、本许可证文本及 NOTICE（如有）；对修改过的文件注明变更。软件按「现状」提供，不附带任何明示或默示担保。完整条款见 [LICENSE](./LICENSE)。
+
+捐赠为自愿支持，不构成商业授权或付费售后。
