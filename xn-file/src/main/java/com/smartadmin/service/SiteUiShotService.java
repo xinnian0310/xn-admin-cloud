@@ -173,11 +173,14 @@ public class SiteUiShotService {
         map.put("/system/login-settings", "login-settings.png");
         map.put("/system/config", "config.png");
         map.put("/system/security", "security.png");
+        map.put("/system/remote-storage", "remote-storage.png");
+        map.put("/system/site-contact", "site-contact.png");
         map.put("/system/files", "files.png");
         map.put("/system/jobs", "jobs.png");
         map.put("/system/jobs/logs", "jobs-log.png");
         map.put("/system/recycle", "recycle.png");
         map.put("/system/codegen", "codegen.png");
+        map.put("/system/api-docs", "api-docs.png");
         return Map.copyOf(map);
     }
 }

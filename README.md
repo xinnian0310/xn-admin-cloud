@@ -1,5 +1,7 @@
 # xn-admin-cloud
 
+[简体中文](README.md) | [English](README.en.md)
+
 心念后台 **微服务后端**（Spring Boot 4 + Spring Cloud Gateway + Nacos）。
 
 xn-admin-cloud 是「心念后台」的开源微服务后端，面向中后台场景提供完整系统能力：JWT 登录与会话、RBAC 与数据权限、组织岗位与字典、公告站内信、文件与分片上传、定时任务、系统监控、日志、回收站与代码生成等。工程按网关 + 系统 / 文件 / 日志 / 任务拆分，配套四套独立管理端仓库，采用 Apache License 2.0 开源，**可免费用于个人自用与商业项目**。
