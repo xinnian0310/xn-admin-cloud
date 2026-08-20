@@ -6,7 +6,7 @@
 
 版本：`1.0.0` · 许可证：[Apache-2.0](./LICENSE) · Copyright 2026 心念
 
-> 本仓库独立开源。配套管理端 / 官网为**其它独立仓库**（见下方「相关仓库」），不随本仓库一并发布。
+> 本仓库独立开源。配套四套管理端为**其它独立仓库**（见下方「相关仓库」），不随本仓库一并发布。
 
 ## 服务一览
 
@@ -22,13 +22,15 @@
 
 ## 相关仓库
 
-| 仓库 | 说明 |
-|------|------|
-| `xn-admin-vue3-ts` | 基准管理端（Vue 3 + TypeScript + Element Plus） |
-| `xn-admin-vue3-js` | Vue 3 + JavaScript（Composition） |
-| `xn-admin-vue2-js` | Vue 3 + JavaScript（Options API） |
-| `xn-admin-react-ts` | React 19 + TypeScript + Ant Design |
-| `xn-home` | 官网 |
+开源范围仅下列仓库（不含官网等其它工程）：
+
+| 仓库 | Gitee | GitHub | 说明 |
+|------|-------|--------|------|
+| `xn-admin-cloud` | [Gitee](https://gitee.com/jenning/xn-admin-cloud) | [GitHub](https://github.com/xinnian0310/xn-admin-cloud) | 本仓库 |
+| `xn-admin-vue3-ts` | [Gitee](https://gitee.com/jenning/xn-admin-vue3-ts) | [GitHub](https://github.com/xinnian0310/xn-admin-vue3-ts) | 基准管理端（Vue 3 + TypeScript + Element Plus） |
+| `xn-admin-vue3-js` | [Gitee](https://gitee.com/jenning/xn-admin-vue3-js) | [GitHub](https://github.com/xinnian0310/xn-admin-vue3-js) | Vue 3 + JavaScript（Composition） |
+| `xn-admin-vue2-js` | [Gitee](https://gitee.com/jenning/xn-admin-vue2-js) | [GitHub](https://github.com/xinnian0310/xn-admin-vue2-js) | Vue 3 + JavaScript（Options API） |
+| `xn-admin-react-ts` | [Gitee](https://gitee.com/jenning/xn-admin-react-ts) | [GitHub](https://github.com/xinnian0310/xn-admin-react-ts) | React 19 + TypeScript + Ant Design |
 
 各前端开发代理默认指向本仓库网关 `http://127.0.0.1:8088`。
 
@@ -63,7 +65,7 @@
 
 - 注册中心默认：`127.0.0.1:8849`，账号以 Nacos 配置为准（示例环境常见 `nacos/nacos`，生产务必修改）
 - 健康检查：http://127.0.0.1:8088/actuator/health
-- 常用前端开发端口（其它仓库）：react-ts `1800`、vue2-js `1801`、vue3-js `1802`、vue3-ts `1803`、xn-home `8888`
+- 常用前端开发端口（其它仓库）：react-ts `1800`、vue2-js `1801`、vue3-js `1802`、vue3-ts `1803`
 
 ## 默认账号
 
